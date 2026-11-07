@@ -94,6 +94,12 @@ Copy `.dev.vars.example` to `.dev.vars` for local Worker development. Do not com
 cp .dev.vars.example .dev.vars
 ```
 
+For `npm run dev`, copy `.env.example` to `.env.local` and add the same browser-restricted Maps key. The Vite server supplies it through the local `/api/config` endpoint; it is not added to the static bundle.
+
+```sh
+cp .env.example .env.local
+```
+
 `OPENAI_API_KEY` enables the server-side triage agent. Without it, the triage route remains available in a safe, deterministic demo mode.
 
 `GOOGLE_MAPS_BROWSER_KEY` enables the Google Maps basemap. It is a browser key (not a secret), but must be limited by HTTP referrer and enabled only for the Maps JavaScript API. Exact rescue data must never be embedded in public JavaScript.
