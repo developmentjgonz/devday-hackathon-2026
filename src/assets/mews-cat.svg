@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96" fill="none">
+  <title>Mews cat mark</title>
+  <circle cx="48" cy="48" r="46" fill="#24231f"/>
+  <path d="M23 44 22 24Q22 20 26 22L40 31Q48 28 56 31L70 22Q74 20 74 25L72 45Q78 53 74 64Q69 78 48 78Q27 78 22 64Q18 53 23 44Z" fill="#fffaf2"/>
+  <path d="m28 30 2 12 8-6-10-6Zm40 0-10 6 8 6 2-12Z" fill="#ffa8c2"/>
+  <path d="M38 51v4" stroke="#24231f" stroke-width="5" stroke-linecap="round"/>
+  <path d="M55 54q4-5 8-1" stroke="#24231f" stroke-width="4" stroke-linecap="round"/>
+  <path d="M44 60q4-3 8 0l-4 5-4-5Z" fill="#f87c00"/>
+  <path d="M48 65v2m0 0q-4 5-8 0m8 0q4 5 8 0" stroke="#24231f" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="m20 57 11 3m-10 6 10-2m45-7-11 3m10 6-10-2" stroke="#24231f" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

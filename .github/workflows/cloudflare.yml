@@ -36,6 +36,9 @@ jobs:
       - name: Build app and check TypeScript
         run: npm run build
 
+      - name: Check local account and access rules
+        run: npm run test:auth
+
       - name: Build Storybook
         run: npm run build-storybook
 

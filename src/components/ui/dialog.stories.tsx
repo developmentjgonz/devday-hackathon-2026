@@ -7,14 +7,14 @@ const meta = {
   component: Dialog,
   render: () => (
     <Dialog>
-      <DialogTrigger render={<Button variant="outline" />}>Open dialog</DialogTrigger>
+      <DialogTrigger render={<Button variant="outline" />}>View last visit</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Dialog preview</DialogTitle>
-          <DialogDescription>A focused layer for a short task or message.</DialogDescription>
+          <DialogTitle>Canal colony · Last visit</DialogTitle>
+          <DialogDescription>Morning feeding · 8:15 am</DialogDescription>
         </DialogHeader>
-        <p className="text-sm text-muted-foreground">Try Escape, the close button, or the button below. Focus returns to the trigger after closing.</p>
-        <DialogFooter><DialogClose render={<Button />}>Done</DialogClose></DialogFooter>
+        <p className="text-sm text-muted-foreground">8 cats seen. Food and water bowls refilled. Miso and Pepper were both present.</p>
+        <DialogFooter><DialogClose render={<Button />}>Close visit</DialogClose></DialogFooter>
       </DialogContent>
     </Dialog>
   ),

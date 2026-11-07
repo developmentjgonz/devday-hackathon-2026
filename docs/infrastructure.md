@@ -1,6 +1,6 @@
 # Cloudflare infrastructure
 
-Dedicated resources were created for this project in the user's existing paid Cloudflare account. No application tables or product schema have been created.
+Dedicated resources were created for this project in the user's existing paid Cloudflare account. Account tables and seed fixtures are available for local development; they have not been applied to the remote database. See [local accounts](local-accounts.md).
 
 | Resource | Name | Management |
 | --- | --- | --- |
@@ -18,7 +18,7 @@ Both endpoints are public. Cloudflare dashboard links require an account with ac
 
 ## Source and configuration
 
-- `worker/index.js`: static asset routing and `/api/health`.
+- `worker/index.ts`: Hono API route groups and static asset fallback; `worker/routes/health.ts` checks D1.
 - `wrangler.jsonc`: Worker name, account, static assets, and the D1 `DB` binding.
 - `dist/`: compiled app assets; generated and ignored by Git.
 

@@ -53,7 +53,9 @@ export function LoadingStages({
       className={cn('w-full space-y-5', className)}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold">{label}</p>
+        <p className="font-heading text-base leading-snug font-semibold">
+          {label}
+        </p>
         <span className="text-xs tabular-nums text-muted-foreground">
           {finished ? steps.length : steps.length ? active + 1 : 0} /{' '}
           {steps.length}

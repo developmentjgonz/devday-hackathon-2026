@@ -5,13 +5,13 @@ import { Label } from './label'
 
 function TextareaPreview(args: ComponentProps<typeof Textarea>) {
   const id = useId()
-  return <div className="w-80 max-w-full space-y-2"><Label htmlFor={id}>Notes</Label><Textarea {...args} id={id} /></div>
+  return <div className="w-80 max-w-full space-y-2"><Label htmlFor={id}>Visit notes</Label><Textarea {...args} id={id} /></div>
 }
 
 const meta = {
   title: 'Forms/Textarea',
   component: Textarea,
-  args: { placeholder: 'Write a few details…', rows: 3, disabled: false },
+  args: { placeholder: '8 cats seen. Food and water bowls refilled. Miso and Pepper were both present.', rows: 3, disabled: false },
   render: (args) => <TextareaPreview {...args} />,
 } satisfies Meta<typeof Textarea>
 

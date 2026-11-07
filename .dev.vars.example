@@ -1,3 +1,6 @@
-# Reserved for local Cloudflare Worker configuration when the API is added.
-# Copy to .dev.vars when needed; that local file is ignored by Git.
-# Add documented variable names here as integrations are implemented.
+# Local account settings are supplied by npm run dev:api.
+# Do not add LOCAL_TEST_SIGN_IN to the deployed Worker configuration.
+# For a manually started local Worker, copy these settings to .dev.vars:
+# LOCAL_TEST_SIGN_IN=true
+# APP_ORIGIN=http://127.0.0.1:5197
+# .dev.vars is ignored by Git. Keep provider secrets out of VITE_ variables.

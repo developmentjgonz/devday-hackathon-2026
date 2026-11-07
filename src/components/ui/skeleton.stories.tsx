@@ -8,7 +8,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 export const Text: Story = {
   render: () => (
-    <div className="w-64 space-y-3" role="status" aria-label="Loading text">
+    <div className="w-64 space-y-3" role="status" aria-label="Loading care notes">
       <Skeleton className="h-3 w-full" />
       <Skeleton className="h-3 w-4/5" />
       <Skeleton className="h-3 w-3/5" />
@@ -18,7 +18,7 @@ export const Text: Story = {
 export const CareCard: Story = {
   render: () => (
     <div
-      className="w-72 max-w-full space-y-5 rounded-xl border bg-card p-5"
+      className="w-72 max-w-full space-y-5 rounded-surface border bg-card p-6"
       role="status"
       aria-label="Loading colony card"
       aria-busy="true"
@@ -34,7 +34,7 @@ export const CareCard: Story = {
         <Skeleton className="h-3 w-full" />
         <Skeleton className="h-3 w-4/5" />
       </div>
-      <Skeleton className="h-9 w-full rounded-lg" />
+      <Skeleton className="h-(--control-height) w-full rounded-control" />
     </div>
   ),
 }

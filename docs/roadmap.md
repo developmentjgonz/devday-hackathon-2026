@@ -13,9 +13,10 @@ This file records completed setup. A checked item means it has been completed lo
 - [x] Choose React Router in Data Mode and connect the existing Hello page to the router.
 - [x] Add separate landing (`/`) and workspace (`/app`) shells with placeholders and component boundaries.
 - [x] Install React Doctor for manual reviews without script, build, hook, or CI integration.
+- [x] Add local test sign-in, seeded administrator and test members, optional phone, pending signup, and server session checks. Google and administrator management screens remain deferred.
 
 ## Open planning
 
-No feature roadmap, implementation sequence, or delivery dates have been agreed. The first user flow, MVP scope, data model, authentication approach, and AI behavior remain undecided. Add milestones here only after they are agreed with the user.
+No broader feature roadmap or delivery dates have been agreed. Local account access is implemented as the first account step; see [local accounts](local-accounts.md). The first rescue workflow, MVP scope, rescue data model, production identity setup, and AI behavior remain undecided. Add milestones here only after they are agreed with the user.
 
 Proceed one agreed step at a time. The user has requested small, descriptive commits and pushes after completed, checked steps. Deployments and the final hackathon submission still require a separate request.

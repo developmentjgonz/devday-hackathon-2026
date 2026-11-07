@@ -3,12 +3,13 @@ import { composeStories, type Meta, type StoryObj } from '@storybook/react-vite'
 import { ArrowUpRight, Moon, Sun } from 'lucide-react'
 import preview from '../../.storybook/preview'
 import { Button } from '@/components/ui/button'
+import { Heading } from '@/components/ui/typography'
 import { LoadingStagesDemo } from './examples/loading-stages-demo'
 import { LoadingIndicatorDemo } from './examples/loading-indicator-demo'
 
 type ComponentStories = { default: Meta } & Record<string, StoryObj>
 const modules = import.meta.glob<ComponentStories>(
-  '../components/ui/**/*.stories.tsx',
+  ['../components/ui/**/*.stories.tsx', './brand.stories.tsx'],
   { eager: true },
 )
 const categoryOrder = [
@@ -40,6 +41,10 @@ const components = Object.entries(modules)
 const categories = ['All', ...categoryOrder]
 const themeTokens = [
   'background',
+  'brand-background',
+  'sidebar',
+  'card',
+  'muted',
   'foreground',
   'primary',
   'secondary',
@@ -80,12 +85,16 @@ function ComponentGallery() {
       <div className="mx-auto max-w-7xl px-5 py-7 sm:px-8">
         <header className="flex flex-wrap items-start justify-between gap-4 border-b pb-6">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
+            <Heading level={1} size="title">
               Component library
-            </h1>
+            </Heading>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               Mews · {components.length} components · Inspect variants, states,
               and shared theme tokens.
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              Examples use fictional cat care records. Changes stay in this
+              preview.
             </p>
           </div>
           <Button
@@ -99,14 +108,14 @@ function ComponentGallery() {
         </header>
 
         <section aria-labelledby="palette-title" className="border-b py-6">
-          <h2 id="palette-title" className="mb-4 text-base font-semibold">
+          <Heading level={2} size="card" id="palette-title" className="mb-4">
             Color palette
-          </h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:grid-cols-8">
+          </Heading>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 xl:grid-cols-6">
             {themeTokens.map((token) => (
               <div key={token} className="min-w-0">
                 <div
-                  className="mb-2 h-9 rounded-lg border border-foreground/20"
+                  className="mb-2 h-9 rounded-control border border-foreground/20"
                   style={{ background: `var(--${token})` }}
                 />
                 <code className="block break-all text-[11px]">--{token}</code>
@@ -119,18 +128,18 @@ function ComponentGallery() {
         </section>
 
         <section aria-labelledby="motion-title" className="py-7">
-          <h2 id="motion-title" className="mb-4 text-base font-semibold">
+          <Heading level={2} size="card" id="motion-title" className="mb-4">
             Loading and motion
-          </h2>
+          </Heading>
           <div className="grid items-stretch gap-4 md:grid-cols-2">
             <section
               aria-labelledby="stages-title"
-              className="min-w-0 rounded-xl border bg-card p-5 sm:p-6"
+              className="min-w-0 rounded-surface border bg-card p-5 sm:p-6"
             >
               <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
-                <h3 id="stages-title" className="text-sm font-semibold">
+                <Heading level={3} size="card" id="stages-title">
                   LoadingStages
-                </h3>
+                </Heading>
                 <a
                   href="./?path=/story/feedback-loading-stages--interactive"
                   target="_top"
@@ -144,12 +153,12 @@ function ComponentGallery() {
             </section>
             <section
               aria-labelledby="indicator-title"
-              className="min-w-0 rounded-xl border bg-card p-5 sm:p-6"
+              className="min-w-0 rounded-surface border bg-card p-5 sm:p-6"
             >
               <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
-                <h3 id="indicator-title" className="text-sm font-semibold">
+                <Heading level={3} size="card" id="indicator-title">
                   LoadingIndicator
-                </h3>
+                </Heading>
                 <a
                   href="./?path=/story/feedback-loading-indicator--fire"
                   target="_top"
@@ -166,9 +175,9 @@ function ComponentGallery() {
 
         <section aria-labelledby="components-title" className="pt-8 pb-6">
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="components-title" className="text-base font-semibold">
+            <Heading level={2} size="card" id="components-title">
               Components
-            </h2>
+            </Heading>
             <p className="text-xs text-muted-foreground">
               Select a variant name to open its story and controls.
             </p>
@@ -198,10 +207,12 @@ function ComponentGallery() {
               <section
                 key={component.title}
                 aria-label={component.name}
-                className="min-w-0 rounded-xl border bg-card text-card-foreground"
+                className="min-w-0 rounded-surface border bg-card text-card-foreground"
               >
                 <header className="flex flex-wrap items-baseline justify-between gap-2 border-b px-5 py-4">
-                  <h3 className="text-base font-semibold">{component.name}</h3>
+                  <Heading level={3} size="card">
+                    {component.name}
+                  </Heading>
                   <span className="text-xs text-muted-foreground">
                     {component.category} · {component.stories.length}{' '}
                     {component.stories.length === 1 ? 'variant' : 'variants'}

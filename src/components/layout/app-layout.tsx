@@ -1,21 +1,24 @@
 import { ChevronRight } from 'lucide-react'
-import { Outlet } from 'react-router'
-import { Badge } from '@/components/ui/badge'
+import { Outlet, useLoaderData } from 'react-router'
 import { AppSidebar } from './app-sidebar'
+import type { SessionUser } from '../../../shared/types/auth'
 
 export function AppLayout() {
+  const user = useLoaderData() as SessionUser
   return (
-    <div className="min-h-svh md:grid md:grid-cols-[232px_minmax(0,1fr)]">
-      <AppSidebar />
+    <div className="min-h-svh bg-background text-foreground md:grid md:grid-cols-[248px_minmax(0,1fr)]">
+      <AppSidebar user={user} />
       <div className="min-w-0">
-        <header className="flex min-h-16 items-center justify-between gap-4 border-b px-6 sm:px-10">
-          <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            Mews <ChevronRight className="size-3.5" aria-hidden="true" />
-            <span className="text-foreground">Workspace</span>
-          </p>
-          <Badge variant="outline">Preview</Badge>
+        <header className="flex min-h-16 items-center border-b px-6 sm:px-10 lg:px-12">
+          <nav aria-label="Breadcrumb">
+            <ol className="flex items-center gap-2.5 text-sm text-muted-foreground">
+              <li>Mews</li>
+              <li aria-hidden="true"><ChevronRight className="size-3.5 text-muted-foreground/60" /></li>
+              <li className="font-medium text-foreground" aria-current="page">Workspace</li>
+            </ol>
+          </nav>
         </header>
-        <main id="main-content" tabIndex={-1} className="mx-auto max-w-6xl px-6 py-8 outline-none sm:px-10 sm:py-12">
+        <main id="main-content" tabIndex={-1} className="mx-auto max-w-[1240px] px-6 py-9 outline-none sm:px-10 sm:py-12 lg:px-12 lg:py-14">
           <Outlet />
         </main>
       </div>

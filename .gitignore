@@ -16,6 +16,7 @@ build/
 coverage/
 storybook-static/
 .wrangler/
+worker/worker-configuration.d.ts
 .venv/
 venv/
 __pycache__/

@@ -1,7 +1,7 @@
 {
   "name": "devday-js-2026",
   "account_id": "d4501cb4c3a0ec6b4b67b051d83d3a30",
-  "main": "worker/index.js",
+  "main": "worker/index.ts",
   "compatibility_date": "2026-11-07",
   "workers_dev": true,
   "assets": {

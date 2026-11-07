@@ -8,7 +8,7 @@ const meta = {
   argTypes: { orientation: { control: 'select', options: ['horizontal', 'vertical'] } },
   render: (args) => (
     <div className={args.orientation === 'vertical' ? 'flex h-12 items-center gap-4 text-sm' : 'w-80 max-w-full space-y-4 text-sm'}>
-      <p>First section</p><Separator {...args} /><p className="text-muted-foreground">Second section</p>
+      <p>8 cats seen</p><Separator {...args} /><p className="text-muted-foreground">Food and water refilled</p>
     </div>
   ),
 } satisfies Meta<typeof Separator>

@@ -8,13 +8,13 @@ function CardPreview() {
   return (
     <Card className="w-80 max-w-full">
       <CardHeader>
-        <CardTitle><h2>A reusable content card</h2></CardTitle>
-        <CardDescription>Group related content and an action.</CardDescription>
+        <CardTitle><h2>Canal colony</h2></CardTitle>
+        <CardDescription>8 cats · Morning feeding</CardDescription>
       </CardHeader>
-      <CardContent><p className="text-muted-foreground">A shared component example with temporary preview state.</p></CardContent>
+      <CardContent><p className="text-muted-foreground">8 cats seen. Food and water bowls refilled. Miso and Pepper were both present.</p></CardContent>
       <CardFooter className="justify-between gap-3">
-        <span role="status" className="text-xs text-muted-foreground">{saved ? 'Saved for this preview' : 'Example content'}</span>
-        <Button variant="outline" onClick={() => setSaved((previous) => !previous)}>{saved ? 'Saved' : 'Save example'}</Button>
+        <span role="status" className="text-xs text-muted-foreground">{saved ? 'Visit logged' : 'Visit not logged'}</span>
+        <Button variant="outline" disabled={saved} onClick={() => setSaved(true)}>{saved ? 'Logged' : 'Log visit'}</Button>
       </CardFooter>
     </Card>
   )

@@ -17,16 +17,20 @@ export function LoadingIndicatorDemo() {
   return (
     <div className="space-y-5">
       <div
-        className="flex min-h-36 items-center justify-center rounded-lg border bg-background"
+        className="flex min-h-36 items-center justify-center rounded-control border bg-background"
         style={
-          { '--loader-playback-duration': slow ? 'calc(var(--duration-loading) * 3)' : undefined } as CSSProperties
+          {
+            '--loader-playback-duration': slow
+              ? 'calc(var(--duration-loading) * 3)'
+              : undefined,
+          } as CSSProperties
         }
       >
         <LoadingIndicator
           variant={variant}
           size={size}
           paused={paused}
-          label={`${variant} animation ${paused ? 'paused' : 'playing'}`}
+          label={paused ? 'Colony updates paused' : 'Loading colony updates'}
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -38,7 +42,7 @@ export function LoadingIndicatorDemo() {
             onChange={(event) =>
               setVariant(event.target.value as LoadingIndicatorProps['variant'])
             }
-            className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-(--control-height) w-full rounded-control border border-input bg-background px-4 text-base sm:text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="spinner">Spinner</option>
             <option value="paws">Paws</option>
@@ -53,7 +57,7 @@ export function LoadingIndicatorDemo() {
             onChange={(event) =>
               setSize(event.target.value as LoadingIndicatorProps['size'])
             }
-            className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-(--control-height) w-full rounded-control border border-input bg-background px-4 text-base sm:text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <option value="sm">Small · 16 px</option>
             <option value="md">Medium · 24 px</option>

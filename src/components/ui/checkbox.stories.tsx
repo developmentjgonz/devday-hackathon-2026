@@ -5,7 +5,7 @@ import { Label } from './label'
 
 function CheckboxPreview(args: ComponentProps<typeof Checkbox>) {
   const id = useId()
-  return <div className="flex items-center gap-3"><Checkbox {...args} id={id} /><Label htmlFor={id}>Enable this example</Label></div>
+  return <div className="flex items-center gap-3"><Checkbox {...args} id={id} /><Label htmlFor={id}>Fresh water provided</Label></div>
 }
 
 const meta = {

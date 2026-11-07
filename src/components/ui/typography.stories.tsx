@@ -4,7 +4,7 @@ import { Heading, Text } from './typography'
 const meta = {
   title: 'Foundations/Typography',
   component: Heading,
-  args: { children: 'Section heading', size: 'section', level: 2 },
+  args: { children: 'Today’s visits', size: 'section', level: 2 },
   argTypes: {
     size: {
       control: 'select',
@@ -21,10 +21,10 @@ export const Headings: Story = {
     <div className="w-full space-y-7">
       {(
         [
-          ['display', 'Display', '48 → 72 px · line height 0.98'],
-          ['title', 'Title', '30 → 36 px · line height 1.25'],
-          ['section', 'Section', '24 px · line height 1.25'],
-          ['card', 'Card', '18 px · line height 1.375'],
+          ['display', 'Every cat counts.', '48 → 72 px · line height 1.02'],
+          ['title', 'Care for your colony', '30 → 36 px · line height 1.25'],
+          ['section', 'Today’s visits', '24 px · line height 1.2'],
+          ['card', 'Canal colony', '18 px · line height 1.35'],
         ] as const
       ).map(([size, label, detail]) => (
         <div key={size} className="space-y-2">
@@ -32,7 +32,7 @@ export const Headings: Story = {
             size="{size}" · {detail}
           </p>
           <Heading level={4} size={size}>
-            {label} heading
+            {label}
           </Heading>
         </div>
       ))}
@@ -40,25 +40,29 @@ export const Headings: Story = {
   ),
 }
 export const Display: Story = {
-  args: { children: 'Display heading', size: 'display' },
+  args: { children: 'Every cat counts.', size: 'display' },
 }
 export const Body: Story = {
   render: () => (
     <div className="w-full space-y-6">
       {(
         [
-          ['body', 'Body text', '16 px / 28 px'],
-          ['small', 'Small text', '14 px / 24 px'],
-          ['label', 'Label text', '12 px / 20 px · uppercase'],
+          [
+            'body',
+            'Miso and Pepper joined the morning feeding. All 8 cats were seen.',
+            '16 px / 28 px',
+          ],
+          ['small', 'Last visit today at 8:15 am', '14 px / 24 px'],
+          ['label', 'Next feeding', '12 px / 20 px · semibold'],
         ] as const
       ).map(([size, label, detail]) => (
         <div key={size} className="space-y-2">
           <p className="font-mono text-[11px] text-muted-foreground">
             size="{size}" · {detail}
           </p>
-          <Text size={size}>{label} · Default tone</Text>
+          <Text size={size}>{label}</Text>
           <Text size={size} tone="muted">
-            {label} · Muted tone
+            {label}
           </Text>
         </div>
       ))}

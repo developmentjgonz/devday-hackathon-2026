@@ -12,7 +12,7 @@ const meta = {
     steps: careSteps,
     currentStep: 1,
     status: 'loading',
-    label: 'Preparing your workspace',
+    label: 'Saving feeding visit',
   },
   argTypes: {
     status: { control: 'select', options: ['loading', 'complete', 'error'] },
@@ -27,12 +27,12 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 export const InProgress: Story = {}
-export const Complete: Story = { args: { status: 'complete' } }
+export const Complete: Story = { args: { status: 'complete', label: 'Visit saved' } }
 export const Error: Story = {
   args: {
     status: 'error',
     errorMessage:
-      'We could not load colony updates. Try again when your connection is ready.',
+      'Could not upload visit photos. Check your connection and try again.',
   },
 }
 export const Empty: Story = { args: { steps: [] } }

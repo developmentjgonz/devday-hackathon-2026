@@ -4,7 +4,7 @@ Mews is Team JS's project for the [DevDay Exchange Community Hackathon](https://
 
 The project aims to help cat rescue coordinators and volunteers track colonies, cats, feeding visits, and care needs in one place. The project direction is confirmed; the first user flow and MVP scope still need to be agreed. Mews remains the working name.
 
-**Status:** The local app has a public landing placeholder at `/` and a workspace shell at `/app`. Storybook provides the separate component workspace. The Cloudflare Worker serves the last deployed frontend and a health API connected to an empty D1 database. No rescue workflows or sign-in are implemented.
+**Status:** The local app has a public landing placeholder at `/`, local test sign-in at `/sign-in`, and a protected workspace shell at `/app`. Local D1 includes a seeded administrator and test members. New users wait for approval; phone is optional. Storybook provides the separate component workspace. This account work has not been deployed. Google sign-in and rescue workflows remain unimplemented.
 
 ## Cloudflare deployment
 
@@ -20,7 +20,7 @@ Cloudflare dashboard links require an account with access to these resources. Th
 
 Pushes to `main` run checks. Pushes to `release` run checks and deploy to the live URL. Pull requests to either branch run checks only. See the [workflow](.github/workflows/cloudflare.yml), [Cloudflare configuration](wrangler.jsonc), and [infrastructure guide](docs/infrastructure.md) for setup and deployment details.
 
-Storybook runs locally and is not deployed. Product tables, migrations, and uploads remain unimplemented.
+Storybook runs locally and is not deployed. Account migrations are available for local development. Rescue data tables and uploads remain unimplemented.
 
 ## Project guide
 
@@ -30,6 +30,7 @@ Storybook runs locally and is not deployed. Product tables, migrations, and uplo
 - [Decision records](docs/decisions/README.md): significant choices and their reasons.
 - [Component library](docs/component-library.md): where components and theme tokens live, and how to extend the gallery.
 - [Infrastructure](docs/infrastructure.md): dedicated Cloudflare resources, deployment, and health checks.
+- [Local accounts](docs/local-accounts.md): seeded users, signup, sessions, and approval checks.
 - [Local skills](.agents/skills/README.md): installed guidance and source revisions.
 - [Feature map](.agents/skills/verify-mews/references/features/README.md): implemented user-visible behavior and verification notes.
 
@@ -42,7 +43,7 @@ Storybook runs locally and is not deployed. Product tables, migrations, and uplo
 | `src/components/ui/` | Shared shadcn and Base UI controls, with component stories |
 | `src/features/<area>/pages/` | Feature page content, starting with landing and overview |
 | `src/pages/` | Cross-feature not-found and route-error pages |
-| `worker/` | Cloudflare API routes, application services, and database queries |
+| `worker/` | Hono API in strict TypeScript: routes, middleware, services, and D1 queries |
 | `shared/` | Validation schemas and types shared across the API boundary |
 | `migrations/` | Versioned D1 database schema changes |
 | `public/` | Public static frontend assets |
@@ -61,7 +62,7 @@ npm ci
 npm run dev
 ```
 
-Open [the landing page](http://127.0.0.1:5197/) or [the workspace](http://127.0.0.1:5197/app). Both show placeholder content. Unknown workspace URLs keep the app shell and provide a link back to the overview.
+The development command applies local database migrations, seeds missing test users, and starts the frontend and API. Open [the landing page](http://127.0.0.1:5197/) or [local sign-in](http://127.0.0.1:5197/sign-in). Select Alex Morgan (`admin@mews.test`) for administrator access. The workspace still shows placeholder rescue content. Approved users see unknown workspace URLs inside the app shell.
 
 Start the component workspace separately:
 
@@ -73,12 +74,16 @@ Open [Storybook](http://127.0.0.1:6006/) to browse components, change their cont
 
 ```sh
 npm run build       # Type-check and build production assets
-npm run typecheck   # Type-check without bundling
+npm run typecheck   # Generate Worker types and check frontend, backend, and shared code
+npm run cf:typegen  # Refresh Cloudflare binding and runtime types
+npm run test:auth   # Check signup, sessions, and server access rules
 npm run preview     # Serve the production build on port 4197
 npm run build-storybook # Build the separate component workspace
 ```
 
 The frontend uses React, TypeScript, Vite, React Router in Data Mode, Tailwind CSS v4, and shadcn/ui with Base UI primitives. Public and workspace layouts have separate route branches. Product feature routes remain undecided. The Warm Company theme lives in `src/styles/tokens.css`; both shells use the shared theme. Storybook includes loading stages, spinner, paw and fire loaders, skeletons, and typography. Fonts and icons are bundled dependencies.
+
+The local backend uses Hono and TypeScript on Cloudflare Workers, with D1 for account data. Shared Zod schemas validate account inputs. Routes handle HTTP, middleware checks access, services own account operations, and `worker/db/` owns account SQL. Builds check the backend with strict TypeScript settings. See the [backend decision](docs/decisions/0004-hono-typescript-backend.md).
 
 React Doctor is installed as a development dependency for manual checks only:
 

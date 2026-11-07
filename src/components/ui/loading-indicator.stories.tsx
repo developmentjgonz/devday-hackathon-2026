@@ -7,7 +7,7 @@ const meta = {
   args: {
     variant: 'spinner',
     size: 'md',
-    label: 'Loading indicator preview',
+    label: 'Loading colony updates',
     paused: false,
   },
   argTypes: {
@@ -20,7 +20,7 @@ type Story = StoryObj<typeof meta>
 export const Spinner: Story = {}
 export const Paws: Story = { args: { variant: 'paws', size: 'lg' } }
 export const Fire: Story = {
-  args: { variant: 'fire', size: 'lg', label: 'Fire loading indicator' },
+  args: { variant: 'fire', size: 'lg', label: 'Loading colony updates' },
 }
 
 export const Paused: Story = {
@@ -28,6 +28,6 @@ export const Paused: Story = {
     variant: 'fire',
     size: 'lg',
     paused: true,
-    label: 'Paused fire indicator',
+    label: 'Colony updates paused',
   },
 }

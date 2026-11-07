@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button'
 import { LoadingStages } from '@/components/ui/loading-stages'
 
 export const careSteps = [
-  { id: 'connect', label: 'Connecting to your workspace' },
-  { id: 'colonies', label: 'Gathering colony updates' },
-  { id: 'ready', label: 'Preparing the overview' },
+  { id: 'visit', label: 'Saving visit details' },
+  { id: 'photos', label: 'Uploading visit photos' },
+  { id: 'history', label: 'Updating colony history' },
 ]
 
 export function LoadingStagesDemo() {
@@ -50,12 +50,12 @@ export function LoadingStagesDemo() {
           paused={!running}
           label={
             complete
-              ? 'Workspace ready'
+              ? 'Visit saved'
               : error
-                ? 'Could not load workspace'
-                : 'Preparing workspace'
+                ? 'Could not save visit'
+                : 'Saving feeding visit'
           }
-          errorMessage="Could not load updates. Select Retry to continue from this step."
+          errorMessage="Could not save this visit. Select Retry to continue from this step."
         />
       </div>
       <div className="flex flex-wrap items-center gap-2 border-t pt-4">
@@ -73,7 +73,7 @@ export function LoadingStagesDemo() {
                 ? 'Replay'
                 : stage > 0
                   ? 'Resume'
-                  : 'Run stages'}
+                  : 'Save visit'}
         </Button>
         <Button
           size="sm"
@@ -100,8 +100,8 @@ export function LoadingStagesDemo() {
         </Button>
       </div>
       <p className="text-xs leading-5 text-muted-foreground">
-        Sample state only. Pause or step through manually. Retry keeps the
-        failed step.
+        Canal colony · Morning feeding with two visit photos. Playback uses
+        sample state; no visit is sent.
       </p>
     </div>
   )

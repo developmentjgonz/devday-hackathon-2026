@@ -5,13 +5,13 @@ import { Input } from './input'
 
 function LabelPreview(args: ComponentProps<typeof Label>) {
   const id = useId()
-  return <div className="w-80 max-w-full space-y-2"><Label {...args} htmlFor={id} /><Input id={id} placeholder="Enter a value" /></div>
+  return <div className="w-80 max-w-full space-y-2"><Label {...args} htmlFor={id} /><Input id={id} placeholder="e.g. Canal colony" /></div>
 }
 
 const meta = {
   title: 'Forms/Label',
   component: Label,
-  args: { children: 'Field label' },
+  args: { children: 'Colony name' },
   render: (args) => <LabelPreview {...args} />,
 } satisfies Meta<typeof Label>
 

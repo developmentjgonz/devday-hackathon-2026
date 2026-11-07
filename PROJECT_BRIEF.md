@@ -7,7 +7,8 @@
 - Event: DevDay Exchange Community Hackathon
 - Challenge: Mangrove Mews cat colony tracking
 - Frontend foundation: Vite, React, TypeScript, Tailwind CSS, and shadcn/ui
-- Backend foundation: a dedicated Cloudflare Worker and empty D1 database, connected through a read-only health endpoint; R2 is not provisioned
+- Backend foundation: a dedicated Cloudflare Worker and D1 database, connected through a read-only health endpoint; account tables are implemented locally, and R2 is not provisioned
+- Local accounts: seeded administrator and test members, optional phone, and approval required for new users; Google and administrator management screens are deferred
 - Stage: local public landing and workspace shells with placeholders, separate Storybook component workspace, and a deployed infrastructure baseline; no rescue workflows implemented
 
 ## Organizer's problem statement
@@ -35,7 +36,7 @@ The project direction is confirmed. The questions below concern its scope and im
 - **MVP:** Agree on the first user flow and its exact success criteria.
 - **Design:** Choose the theme and custom visual system; current component previews use neutral defaults.
 - **Intake:** Choose the first supported report format.
-- **Identity:** Decide how members sign in and obtain access to a rescue's data.
+- **Identity:** Local account access is implemented. Google setup, production administrator setup, additional role permissions, and rescue membership remain open.
 - **Data model:** Entities, fields, and relationships have not been designed.
 - **AI:** Specific model behavior, integrations, and review flows have not been designed.
 - **Demo:** The demonstration flow has not been chosen.

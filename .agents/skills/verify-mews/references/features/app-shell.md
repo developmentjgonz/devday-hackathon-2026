@@ -4,12 +4,12 @@
 
 Run `npm run dev` and open `http://127.0.0.1:5197/`. For production asset checks, run `npm run build`, then `npm run preview` on port 4197.
 
-No account, API data, or database records are required. Content is placeholder content. Colony, cat, and report workflows are not implemented.
+Use an active local test account to open `/app`; see `docs/local-accounts.md`. The overview stays within the backoffice workspace. Colony, cat, and report workflows are not implemented.
 
 ## Implemented behavior
 
 - `/` shows the public layout with a landing placeholder and workspace links.
-- `/app` shows the workspace layout with an active Overview link and placeholder content.
+- `/app` shows the workspace layout with an active Overview link and a personal greeting. There is no action that sends users to the public community tracker.
 - Workspace navigation uses real links. Browser back, forward, and direct reload keep the requested page.
 - The first keyboard link skips to the main content. A path change moves focus to that region. Pages have distinct document titles.
 - The sidebar becomes a compact header and navigation on narrow screens; there is no menu drawer.
@@ -20,7 +20,7 @@ No account, API data, or database records are required. Content is placeholder c
 ## Manual checks
 
 1. Open `/`. Confirm the landing title and follow the workspace link.
-2. Confirm the address is `/app`, the page title is Overview, and the Overview link is active.
+2. Sign in with an active test account. Confirm the address is `/app`, the page title is Overview, and the Overview link is active. Confirm the greeting uses the account's first name and there is no Community tracker action.
 3. Use back, forward, and reload. Confirm each requested page renders.
 4. Open `/missing` and `/app/missing` directly. Confirm the matching layout and recovery link.
 5. Reload `/`, press Tab, then Enter. Confirm the skip link moves focus to the main region.
