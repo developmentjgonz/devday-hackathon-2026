@@ -5,8 +5,9 @@
 - Team: JS
 - Event: DevDay Exchange Community Hackathon
 - Challenge: Mangrove Mews cat colony tracking
-- Technology direction: Vite, React, TypeScript, and Cloudflare Workers, D1, and R2
-- Stage: Repository structure; no application implementation yet
+- Frontend foundation: Vite, React, TypeScript, Tailwind CSS, and shadcn/ui
+- Backend direction: Cloudflare Workers, D1, and R2; not implemented
+- Stage: Frontend foundation and component gallery; no rescue workflows implemented
 
 ## Organizer's problem statement
 
@@ -29,6 +30,7 @@ Her stated goal:
 
 - **Name:** Mews is the scaffold's working label; a final project name has not been chosen.
 - **MVP:** Agree on the first user flow and its exact success criteria.
+- **Design:** Choose the theme and custom visual system; current component previews use neutral defaults.
 - **Intake:** Choose the first supported report format.
 - **Identity:** Decide how members sign in and obtain access to a rescue's data.
 - **Data model:** Entities, fields, and relationships have not been designed.
