@@ -4,29 +4,32 @@
 
 - Team: JS
 - Event: DevDay Exchange Community Hackathon
-- Stage: Idea selection
+- Challenge: Mangrove Mews cat colony tracking
+- Technology direction: Vite, React, TypeScript, and Cloudflare Workers, D1, and R2
+- Stage: Repository structure; no application implementation yet
+
+## Problem and users
+
+Volunteer reports arrive as messages, photos, and locations. The rescue coordinator spends time reconciling those updates, cats may be counted twice, and urgent needs can be missed. Mangrove Mews is a fictional rescue used by the challenge.
+
+The intended users are volunteer feeders reporting from phones and rescue coordinators reviewing the colony census and outstanding needs.
 
 ## Decisions to make
 
-- **Problem:** What recurring task or pain point are we solving?
-- **User:** Who experiences it, and what do they do today?
-- **Outcome:** What should become faster, easier, or more reliable?
-- **Core workflow:** What is the single end-to-end flow in the demo?
-- **AI role:** What specific step benefits from AI?
-- **Inputs:** What data can we use for the demonstration?
-- **MVP scope:** What must work, and what can wait?
-- **Stack:** What can the team build and debug quickly?
+- **Name:** Mews is the scaffold's working label; a final project name has not been chosen.
+- **MVP:** Agree on the first user flow and its exact success criteria.
+- **Intake:** Choose the first supported report format.
+- **Identity:** Decide how members sign in and obtain access to a rescue's data.
+- **Data model:** Entities, fields, and relationships have not been designed.
+- **AI:** Specific model behavior, integrations, and review flows have not been designed.
+- **Demo:** The demonstration flow has not been chosen.
 
-## Demo outline
+## Challenge constraints
 
-1. Show the current problem.
-2. Run the core workflow with representative example data.
-3. Show the result and explain its value.
+- Keep reporting practical on a phone in one or two minutes.
+- Restrict colony locations and feeder contact information to rescue members.
+- Require human confirmation for cat-record merges and adopted or missing status changes.
+- Use exported chats or intentionally submitted messages; do not scrape live WhatsApp chats.
+- Use only fictional messages, photos, and locations for the hackathon.
 
-## Before submission
-
-- Replace the working title and placeholder description.
-- Select the matching challenge, if applicable.
-- Document setup, required environment variables, and how to run the project.
-- Add the demo video and any supporting material.
-- Check the repository for credentials and private data before pushing.
+The constraints above come from the challenge brief. They describe requirements to consider, not implemented features or an agreed implementation plan.

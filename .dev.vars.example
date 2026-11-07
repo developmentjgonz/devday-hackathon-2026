@@ -1,0 +1,3 @@
+# Reserved for local Cloudflare Worker configuration when the API is added.
+# Copy to .dev.vars when needed; that local file is ignored by Git.
+# Add documented variable names here as integrations are implemented.

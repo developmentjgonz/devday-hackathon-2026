@@ -2,6 +2,9 @@
 .env
 .env.*
 !.env.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
 *.pem
 *.key
 
@@ -11,6 +14,7 @@ dist/
 build/
 .next/
 coverage/
+.wrangler/
 .venv/
 venv/
 __pycache__/
