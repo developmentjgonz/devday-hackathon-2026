@@ -1,4 +1,4 @@
-import { triageReport } from "./triage-agent.js";
+import { predictLostCatLocation, triageReport } from "./triage-agent.js";
 
 const service = "devday-js-2026";
 
@@ -28,6 +28,13 @@ export default {
         if (!report || typeof report !== "object" || typeof report.message !== "string" || report.message.length > 4_000) return json({ error: "Invalid report" }, 400);
         return json(await triageReport(report, env));
       } catch { return json({ error: "Unable to triage this report" }, 400); }
+    }
+
+    if (pathname === "/api/lost-cat-search") {
+      if (request.method !== "POST") return json({ error: "Method not allowed" }, 405, { Allow: "POST" });
+      if (!(request.headers.get("content-type") ?? "").includes("application/json")) return json({ error: "Expected application/json" }, 415);
+      try { const input = await request.json(); if (!input || typeof input !== "object" || typeof input.description !== "string" || input.description.length > 2_000) return json({ error: "Invalid lost-cat report" }, 400); return json(await predictLostCatLocation(input, env)); }
+      catch { return json({ error: "Unable to plan this search" }, 400); }
     }
 
     if (pathname === "/api/health") {
