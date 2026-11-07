@@ -1,0 +1,10 @@
+<script>
+  // Set the landing page before Storybook reads the URL. Keep direct links intact.
+  {
+    const url = new URL(window.location.href)
+    if (!url.searchParams.get('path')) {
+      url.searchParams.set('path', '/story/gallery--all-components')
+      window.history.replaceState(window.history.state, '', url)
+    }
+  }
+</script>

@@ -7,7 +7,7 @@ const preview: Preview = {
     layout: 'centered',
     controls: { expanded: true },
     options: {
-      storySort: { order: ['Actions', 'Forms', 'Display', 'Overlays'] },
+      storySort: { order: ['Gallery', 'Actions', 'Forms', 'Display', 'Overlays'] },
     },
   },
 }
