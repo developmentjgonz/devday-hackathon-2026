@@ -1,0 +1,23 @@
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Dependencies and generated output
+node_modules/
+dist/
+build/
+.next/
+coverage/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Local tooling and OS files
+.DS_Store
+*.log
+.idea/
+.vscode/
