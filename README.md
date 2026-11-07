@@ -4,6 +4,13 @@ Working project for the [DevDay Exchange Community Hackathon](https://deepstatio
 
 **Status:** The main app is a minimal Hello shell. Storybook provides the separate component workspace. The deployed Cloudflare Worker serves the shell and a health API connected to an empty D1 database. No rescue workflows are implemented.
 
+## Deployed sites
+
+- [App](https://devday-js-2026.deal-finder.workers.dev/): the Hello shell.
+- [API health](https://devday-js-2026.deal-finder.workers.dev/api/health): checks the D1 connection with a read-only query.
+
+Storybook runs locally and is not deployed. Product tables, migrations, and uploads remain unimplemented.
+
 ## Project guide
 
 - [Project brief](PROJECT_BRIEF.md): the problem, intended users, and proposed scope.
@@ -57,7 +64,5 @@ npm run build-storybook # Build the separate component workspace
 ```
 
 The frontend uses React, TypeScript, Vite, Tailwind CSS v4, and shadcn/ui with Base UI primitives. Theme values are stock neutral defaults in `src/styles/tokens.css`; the custom product theme is undecided. Fonts and icons are bundled dependencies.
-
-The [deployed app](https://devday-js-2026.deal-finder.workers.dev/) displays the same Hello shell. [API health](https://devday-js-2026.deal-finder.workers.dev/api/health) checks the bound D1 database with a read-only query. Product tables, migrations, and uploads remain unimplemented. Storybook is a separate build and is not deployed with the app.
 
 Use fictional data for this hackathon. Uploaded colony photos belong in private R2 storage once configured; they must not be placed in `public/`.
