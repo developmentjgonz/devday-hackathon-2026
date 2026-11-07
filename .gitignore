@@ -14,6 +14,7 @@ dist/
 build/
 .next/
 coverage/
+storybook-static/
 .wrangler/
 .venv/
 venv/

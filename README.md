@@ -2,7 +2,7 @@
 
 Working project for the [DevDay Exchange Community Hackathon](https://deepstation.ai/hackathons/vtl7ctbeihnikitvjwl3941h), focused on the Mangrove Mews cat rescue challenge.
 
-**Status:** The frontend foundation and a local component gallery are running. Product features and hosted services have not been implemented.
+**Status:** The main app is a minimal Hello shell. Storybook provides the separate component workspace. The deployed Cloudflare Worker serves the shell and a health API connected to an empty D1 database. No rescue workflows are implemented.
 
 ## Project guide
 
@@ -11,6 +11,7 @@ Working project for the [DevDay Exchange Community Hackathon](https://deepstatio
 - [Roadmap](docs/roadmap.md): planned work and current progress.
 - [Decision records](docs/decisions/README.md): significant choices and their reasons.
 - [Component library](docs/component-library.md): where components and theme tokens live, and how to extend the gallery.
+- [Infrastructure](docs/infrastructure.md): dedicated Cloudflare resources, deployment, and health checks.
 - [Local skills](.agents/skills/README.md): installed guidance and source revisions.
 - [Feature map](.agents/skills/verify-mews/references/features/README.md): implemented user-visible behavior and verification notes.
 
@@ -38,16 +39,25 @@ npm ci
 npm run dev
 ```
 
-Open [the local component gallery](http://127.0.0.1:5197/). It shows eight component examples with search, category filters, and interactive previews. Example state is temporary.
+Open [the local app](http://127.0.0.1:5197/). It displays only Hello.
+
+Start the component workspace separately:
+
+```sh
+npm run storybook
+```
+
+Open [Storybook](http://127.0.0.1:6006/) to browse components, change their controls, and read their generated documentation. Stories use temporary sample state.
 
 ```sh
 npm run build       # Type-check and build production assets
 npm run typecheck   # Type-check without bundling
 npm run preview     # Serve the production build on port 4197
+npm run build-storybook # Build the separate component workspace
 ```
 
 The frontend uses React, TypeScript, Vite, Tailwind CSS v4, and shadcn/ui with Base UI primitives. Theme values are stock neutral defaults in `src/styles/tokens.css`; the custom product theme is undecided. Fonts and icons are bundled dependencies.
 
-Cloudflare API code, database migrations, and uploads remain unimplemented.
+The [deployed app](https://devday-js-2026.deal-finder.workers.dev/) displays the same Hello shell. [API health](https://devday-js-2026.deal-finder.workers.dev/api/health) checks the bound D1 database with a read-only query. Product tables, migrations, and uploads remain unimplemented. Storybook is a separate build and is not deployed with the app.
 
 Use fictional data for this hackathon. Uploaded colony photos belong in private R2 storage once configured; they must not be placed in `public/`.

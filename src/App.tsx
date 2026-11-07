@@ -1,5 +1,3 @@
-import { ComponentGallery } from '@/features/component-gallery/ComponentGallery'
-
 export default function App() {
-  return <ComponentGallery />
+  return <main className="p-8"><h1>Hello</h1></main>
 }

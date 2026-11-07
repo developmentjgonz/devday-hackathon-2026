@@ -1,8 +1,9 @@
 # Feature map
 
-The frontend currently provides a component gallery. No rescue workflows are implemented.
+The app currently provides a Hello shell and health API. Storybook provides the separate component workspace. No rescue workflows are implemented.
 
-- [Component gallery](component-gallery.md): search, filters, example controls, and dialog behavior.
+- [Storybook](storybook.md): component stories, generated documentation, controls, and example interactions.
+- App/API deployment checks are recorded in [the infrastructure guide](../../../../../docs/infrastructure.md).
 
 As each feature works, add a focused file here describing its user-visible behavior, entry points, prerequisites, success and failure paths, and concrete verification steps. Keep this index in a useful order for checking the whole app.
 

@@ -6,8 +6,8 @@
 - Event: DevDay Exchange Community Hackathon
 - Challenge: Mangrove Mews cat colony tracking
 - Frontend foundation: Vite, React, TypeScript, Tailwind CSS, and shadcn/ui
-- Backend direction: Cloudflare Workers, D1, and R2; not implemented
-- Stage: Frontend foundation and component gallery; no rescue workflows implemented
+- Backend foundation: a dedicated Cloudflare Worker and empty D1 database, connected through a read-only health endpoint; R2 is not provisioned
+- Stage: deployed Hello shell and separate Storybook component workspace; no rescue workflows implemented
 
 ## Organizer's problem statement
 

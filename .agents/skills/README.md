@@ -17,7 +17,7 @@ The agreed direction is Vite, React, and TypeScript, with Cloudflare Workers for
 
 Emil's upstream repository contains several separate skills. Only the main `emil-design-eng` skill is installed here.
 
-Work proceeds in small steps with the user. Keep changes local and uncommitted, and do not push or submit the hackathon project until the user asks.
+Work proceeds in small steps with the user. The user has requested small, descriptive commits and pushes after completed, checked steps. Deployments require an explicit request for the relevant work; do not submit the hackathon project until the user asks.
 
 ## Sources and updates
 
