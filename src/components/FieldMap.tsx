@@ -6,6 +6,7 @@ type FieldMapProps = {
   activeLayers: Set<MapLayer>;
   onSelect: (record: MapRecord) => void;
   selectedId?: string;
+  scope: "internal" | "sponsor" | "public";
 };
 
 type GoogleMapInstance = {
@@ -28,6 +29,20 @@ const colors: Record<MapLayer, string> = {
   feeding: "#23785d",
 };
 
+export function visibleRadiusMeters(record: MapRecord, scope: "internal" | "sponsor" | "public") {
+  // Internal and sponsor users can see the same operational precision, but
+  // only internal members receive feeder/contact information elsewhere in the
+  // product. Public viewers are always rounded to at least 500 m.
+  if (scope === "public") return Math.max(500, record.internalRadiusMeters * 2.4);
+  if (scope === "sponsor") return Math.max(45, record.internalRadiusMeters);
+  return record.internalRadiusMeters;
+}
+
+function fallbackRadiusPixels(record: MapRecord, scope: "internal" | "sponsor" | "public") {
+  const meters = visibleRadiusMeters(record, scope);
+  return Math.min(145, Math.max(scope === "public" ? 38 : 13, meters / (scope === "public" ? 13 : 9)));
+}
+
 function loadGoogleMaps(key: string) {
   if (window.google?.maps) return Promise.resolve();
   const existing = document.querySelector<HTMLScriptElement>("script[data-google-maps]");
@@ -46,7 +61,7 @@ function loadGoogleMaps(key: string) {
   });
 }
 
-export function FieldMap({ records, activeLayers, onSelect, selectedId }: FieldMapProps) {
+export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }: FieldMapProps) {
   const mapHost = useRef<HTMLDivElement>(null);
   const [googleReady, setGoogleReady] = useState(false);
   const [mapsFailed, setMapsFailed] = useState(false);
@@ -80,6 +95,18 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId }: FieldM
       styles: [{ featureType: "poi", stylers: [{ visibility: "off" }] }],
     });
     visibleRecords.forEach((record) => {
+      const Maps = window.google!.maps as any;
+      new Maps.Circle({
+        map,
+        center: record.position,
+        radius: visibleRadiusMeters(record, scope),
+        fillColor: colors[record.layer],
+        fillOpacity: scope === "public" ? .18 : .12,
+        strokeColor: colors[record.layer],
+        strokeOpacity: .72,
+        strokeWeight: 1.25,
+        clickable: false,
+      });
       const marker = new window.google!.maps!.Marker({
         map,
         position: record.position,
@@ -88,15 +115,18 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId }: FieldM
       });
       marker.addListener("click", () => onSelect(record));
     });
-  }, [googleReady, onSelect, visibleRecords]);
+  }, [googleReady, onSelect, scope, visibleRecords]);
 
   return <div className="field-map" aria-label="Interactive South Florida field map">
     <div ref={mapHost} className={googleReady ? "google-map active" : "google-map"} aria-hidden={!googleReady} />
     {!googleReady && <div className="map-fallback" role="img" aria-label="Synthetic South Florida map preview with approximate demo markers">
       <div className="fallback-water water-east" /><div className="fallback-water water-west" />
       <span className="fallback-label broward">BROWARD</span><span className="fallback-label miami">MIAMI-DADE</span><span className="fallback-label keys">SOUTH DADE</span>
-      {visibleRecords.map((record) => <button key={record.id} className={`map-pin ${record.layer} ${selectedId === record.id ? "selected" : ""}`} style={{ left: `${((record.position.lng + 80.9) / 1.05) * 100}%`, top: `${((26.45 - record.position.lat) / 1.35) * 100}%` }} aria-label={`${record.title}, ${record.area}, synthetic demo`} onClick={() => onSelect(record)} />)}
+      {visibleRecords.map((record) => <div key={record.id} className="fallback-record" style={{ left: `${((record.position.lng + 80.9) / 1.05) * 100}%`, top: `${((26.45 - record.position.lat) / 1.35) * 100}%` }}>
+        <span className={`probability-ring ${record.layer}`} style={{ width: fallbackRadiusPixels(record, scope) * 2, height: fallbackRadiusPixels(record, scope) * 2 }} />
+        <button className={`map-pin ${record.layer} ${selectedId === record.id ? "selected" : ""}`} aria-label={`${record.title}, ${record.area}, synthetic demo`} onClick={() => onSelect(record)} />
+      </div>)}
     </div>}
-    <div className="map-provider-status">{googleReady ? "Google Maps base layer · synthetic demo records" : mapsFailed ? "Map unavailable · showing local synthetic preview" : "Synthetic preview · add GOOGLE_MAPS_BROWSER_KEY for Google Maps"}</div>
+    <div className="map-provider-status">{googleReady ? `Google Maps · ${scope} confidence radii · synthetic demo records` : mapsFailed ? "Map unavailable · showing local synthetic preview" : "Synthetic preview · add GOOGLE_MAPS_BROWSER_KEY for Google Maps"}</div>
   </div>;
 }
