@@ -5,7 +5,7 @@ import { Button } from './button'
 const meta = {
   title: 'Actions/Button',
   component: Button,
-  args: { children: 'Button', variant: 'default', size: 'default', disabled: false },
+  args: { children: 'Button', variant: 'default', size: 'default', disabled: false, loading: false },
   argTypes: {
     variant: { control: 'select', options: ['default', 'secondary', 'outline', 'ghost', 'destructive', 'link'] },
     size: { control: 'select', options: ['xs', 'sm', 'default', 'lg', 'icon', 'icon-xs', 'icon-sm', 'icon-lg'] },
@@ -27,3 +27,5 @@ export const WithIcon: Story = {
   args: { children: <><Plus aria-hidden="true" />Add item</> },
   argTypes: { children: { control: false } },
 }
+
+export const Loading: Story = { args: { children: 'Saving update', loading: true } }

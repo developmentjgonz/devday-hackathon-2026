@@ -2,12 +2,14 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+@import "@fontsource-variable/fredoka";
 @import "./tokens.css";
+@import "./feedback.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-sans);
+    --font-heading: 'Fredoka Variable', sans-serif;
     --font-sans: 'Geist Variable', sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
@@ -34,6 +36,13 @@
     --color-secondary: var(--secondary);
     --color-primary-foreground: var(--primary-foreground);
     --color-primary: var(--primary);
+    --color-primary-hover: var(--primary-hover);
+    --color-primary-text: var(--primary-text);
+    --color-primary-display: var(--primary-display);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
     --color-popover-foreground: var(--popover-foreground);
     --color-popover: var(--popover);
     --color-card-foreground: var(--card-foreground);
@@ -64,7 +73,9 @@
 }
 @layer base {
   body { margin: 0; min-width: 320px; }
-  button, input, textarea { font: inherit; }
+  button, input, textarea { font-family: inherit; }
+  button, a, input, textarea { -webkit-tap-highlight-color: transparent; }
+  ::selection { background: var(--secondary); color: var(--secondary-foreground); }
 }
 
 @media (prefers-reduced-motion: reduce) {

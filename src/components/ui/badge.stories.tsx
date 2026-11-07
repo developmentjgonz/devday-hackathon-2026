@@ -5,7 +5,7 @@ const meta = {
   title: 'Display/Badge',
   component: Badge,
   args: { children: 'Badge', variant: 'default' },
-  argTypes: { variant: { control: 'select', options: ['default', 'secondary', 'outline', 'destructive'] } },
+  argTypes: { variant: { control: 'select', options: ['default', 'secondary', 'outline', 'destructive', 'success', 'warning'] } },
 } satisfies Meta<typeof Badge>
 
 export default meta
@@ -15,3 +15,6 @@ export const Default: Story = {}
 export const Secondary: Story = { args: { variant: 'secondary' } }
 export const Outline: Story = { args: { variant: 'outline' } }
 export const Destructive: Story = { args: { variant: 'destructive' } }
+
+export const Success: Story = { args: { children: 'All cared for', variant: 'success' } }
+export const Warning: Story = { args: { children: 'Needs a visit', variant: 'warning' } }

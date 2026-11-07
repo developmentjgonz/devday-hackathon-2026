@@ -78,7 +78,7 @@ npm run preview     # Serve the production build on port 4197
 npm run build-storybook # Build the separate component workspace
 ```
 
-The frontend uses React, TypeScript, Vite, React Router in Data Mode, Tailwind CSS v4, and shadcn/ui with Base UI primitives. Public and workspace layouts have separate route branches. Product feature routes remain undecided. Theme values live in `src/styles/tokens.css`; both shells use the shared theme. Fonts and icons are bundled dependencies.
+The frontend uses React, TypeScript, Vite, React Router in Data Mode, Tailwind CSS v4, and shadcn/ui with Base UI primitives. Public and workspace layouts have separate route branches. Product feature routes remain undecided. The Warm Company theme lives in `src/styles/tokens.css`; both shells use the shared theme. Storybook includes loading stages, spinner, paw and fire loaders, skeletons, and typography. Fonts and icons are bundled dependencies.
 
 React Doctor is installed as a development dependency for manual checks only:
 
