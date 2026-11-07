@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AlertTriangle, Check, ClipboardCheck, FileDown, MapPin, MessagesSquare, Stethoscope, UsersRound } from "lucide-react";
+import { CommunitySignals } from "@/components/CommunitySignals";
 
 /**
  * A deliberately local, transparent replay of the supplied fictional fixture.
@@ -59,5 +60,6 @@ export function DemoProof() {
       <div><p className="eyebrow">Sponsor/city-safe rollup</p><b>6 medical cases resolved · 2 active reviews</b><small>Aggregated results only; no feeder identities or precise locations.</small></div>
       <div className="snapshot-action"><Stethoscope size={17}/><span>{replayed ? "Demo batch added to coordinator review" : "Replay to show the same-day update"}</span></div>
     </div>
+    <CommunitySignals/>
   </section>;
 }

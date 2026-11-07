@@ -1,4 +1,4 @@
-import { predictLostCatLocation, triageReport } from "./triage-agent.js";
+import { analyzeCommunitySignal, predictLostCatLocation, triageReport } from "./triage-agent.js";
 
 const service = "devday-js-2026";
 
@@ -35,6 +35,16 @@ export default {
       if (!(request.headers.get("content-type") ?? "").includes("application/json")) return json({ error: "Expected application/json" }, 415);
       try { const input = await request.json(); if (!input || typeof input !== "object" || typeof input.description !== "string" || input.description.length > 2_000) return json({ error: "Invalid lost-cat report" }, 400); return json(await predictLostCatLocation(input, env)); }
       catch { return json({ error: "Unable to plan this search" }, 400); }
+    }
+
+    if (pathname === "/api/community-signal") {
+      if (request.method !== "POST") return json({ error: "Method not allowed" }, 405, { Allow: "POST" });
+      if (!(request.headers.get("content-type") ?? "").includes("application/json")) return json({ error: "Expected application/json" }, 415);
+      try {
+        const input = await request.json();
+        if (!input || typeof input !== "object" || input.authorized !== true || typeof input.content !== "string" || !input.content.trim() || input.content.length > 6_000) return json({ error: "Authorized, redacted community content is required" }, 400);
+        return json(await analyzeCommunitySignal(input, env));
+      } catch { return json({ error: "Unable to stage this community signal" }, 400); }
     }
 
     if (pathname === "/api/health") {

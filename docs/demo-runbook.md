@@ -27,6 +27,8 @@ For the best map demonstration, set `GOOGLE_MAPS_BROWSER_KEY` in a local Worker 
 9. **Open Cats & colonies.** Select any fictional cat to show a proper profile: identity markers, colony relationships, TNR/vaccination/medical history, sightings, photos, and the privacy-aware current-location signal. Emphasize that status changes and duplicate merges remain coordinator decisions.
 10. **Open Lost cat navigator.** Use Tux’s fictional report, or select the Miami Beach area, then add last-seen time, markings, reference photos, and whether a live tag is attached. The OpenAI agent uses bounded cat-record and safe-search-context tools to return a *probability-ranked* search plan—never a claim that it has located a cat. Its map zones and search guidance are reviewed by a coordinator before a task is assigned.
 11. **Open My field tasks.** Show the assignable, verified-volunteer search task rather than a public precise-location broadcast.
+12. **Return to Overview and open Community signals desk.** Load the redacted sample, confirm authorization, and stage it. Explain that the separate agent extracts a possible missing-cat or colony lead only from an approved source, removes contacts and exact home locations, keeps a broad area, and requires coordinator approval. It does not scrape Facebook groups or fetch the linked post. For a production connector, obtain each platform’s written authorization/API access or a moderator-provided export first.
+13. **Open Cats & colonies and choose Skipper.** Show the “live demo tag” profile, then open Field map with Sightings enabled. The Skipper marker moves every six seconds in the internal demo view; it is fictional and does not create an automatic task or expose a real tracker.
 
 ## Fixtures
 

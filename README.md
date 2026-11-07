@@ -15,6 +15,8 @@ Mangrove Mews helps a small rescue turn intentional field reports, exported chat
 - A review queue which treats duplicate matching as evidence-scored suggestions; a person must approve any merge or sensitive status change.
 - An OpenAI Agents SDK triage agent that can recommend urgency, a colony candidate, clarification, and coordinator tasks. It is not allowed to reveal precise locations or take irreversible action.
 - A bounded OpenAI Agents SDK lost-cat navigator that compares a report with fictional cat records and safe map-search context, then returns coordinator-reviewed probability zones and volunteer search guidance. It never claims to locate an animal or expose private routes.
+- A Community Signals desk that parses only authorized, redacted public-listing text, moderator exports, consent-based feeds, or volunteer submissions into coordinator-review candidates. It never automates Facebook access, fetches an arbitrary source URL, or retains phone numbers and exact home locations.
+- A clearly labeled fictional live-tracker simulation that moves one demo cat’s internal map marker every six seconds; it illustrates uncertainty radii without representing a real animal or device.
 - Offline-safe web intake: if the API is unavailable, the report is stored in browser local storage for later retry.
 - Synthetic WhatsApp and SMS fixture files plus fictional cat images for the live demo.
 

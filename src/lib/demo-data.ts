@@ -38,6 +38,7 @@ export const mapRecords: MapRecord[] = [
   { id: "search-2", title: "Under-cover follow-up", area: "Wynwood", position: { lat: 25.8, lng: -80.199 }, layer: "searches", status: "Assigned", detail: "Verified volunteer task", locationSignal: "last-seen", confidence: .64, internalRadiusMeters: 520, observedAt: "Last seen yesterday" },
   { id: "feed-1", title: "Evening feed", area: "Little River", position: { lat: 25.861, lng: -80.207 }, layer: "feeding", status: "Confirmed", detail: "Joel · 6:24 PM", locationSignal: "live-tag", confidence: .98, internalRadiusMeters: 28, observedAt: "Live tag · 2 min ago" },
   { id: "feed-2", title: "Route check", area: "Cutler Bay", position: { lat: 25.591, lng: -80.341 }, layer: "feeding", status: "Confirmed", detail: "Synthetic demo record", locationSignal: "verified-sighting", confidence: .84, internalRadiusMeters: 130, observedAt: "Seen today" },
+  { id: "live-scout", title: "Skipper · demo tracker", area: "Miami Beach", position: { lat: 25.794, lng: -80.133 }, layer: "sightings", status: "Live tag · synthetic", detail: "Updates every six seconds in the demo", locationSignal: "live-tag", confidence: .98, internalRadiusMeters: 26, observedAt: "Live demo ping" },
 ];
 
 export const demoChats = [
@@ -108,6 +109,13 @@ export const catProfiles: DemoCatProfile[] = [
       { time: "Tue · 6:00 PM", event: "Last verified sighting", note: "Seen near familiar shrub cover in a fictional, approximate demo area." },
       { time: "Today", event: "Search plan generated", note: "Agentic navigator proposed probability zones; a person assigns all volunteer tasks." },
       { time: "Apr 2026", event: "TNR record", note: "Fictional demo record: right ear tip and rabies vaccination recorded." },
+    ],
+  },
+  {
+    id: "skipper", name: "Skipper", tone: "good", status: "Tracked · demo only", species: "Domestic cat", sex: "Female", estimatedDob: "Est. 2023", estimatedAge: "Est. 3 yrs", breed: "Domestic shorthair", coat: "Gray tabby", markings: "Silver tabby coat; clipped left ear", microchip: "Fictional demo ID only", earTip: "Left ear tipped · TNR completed", colony: "Beach service-corridor group", tracker: "Live demo tag · internal view only", lastSeen: "Live simulated ping", care: "Observe only; no field action generated from a tag alone", vaccinations: "Rabies recorded · Jun 2026", history: [
+      { time: "Live demo", event: "Tracker simulation", note: "A fictional tag updates the internal map every six seconds to demonstrate changing location confidence." },
+      { time: "Yesterday", event: "Feeding observation", note: "Verified volunteer recorded normal feeding behavior in the synthetic demo area." },
+      { time: "Jun 2026", event: "TNR record", note: "Fictional demo record: returned after TNR and rabies vaccination." },
     ],
   },
 ];
