@@ -1,3 +1,24 @@
+import { useEffect, useRef } from 'react'
+import { Outlet, ScrollRestoration, useLocation } from 'react-router'
+import { SkipLink } from '@/components/layout/skip-link'
+
+/** Shared route behavior. Public and workspace layouts own their own UI. */
 export default function App() {
-  return <main className="p-8"><h1>Hello</h1></main>
+  const { pathname } = useLocation()
+  const previousPath = useRef(pathname)
+
+  useEffect(() => {
+    if (previousPath.current !== pathname) {
+      document.getElementById('main-content')?.focus({ preventScroll: true })
+      previousPath.current = pathname
+    }
+  }, [pathname])
+
+  return (
+    <>
+      <SkipLink />
+      <Outlet />
+      <ScrollRestoration />
+    </>
+  )
 }

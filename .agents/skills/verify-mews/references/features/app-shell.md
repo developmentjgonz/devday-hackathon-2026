@@ -1,0 +1,31 @@
+# Application shell
+
+## Entry points and prerequisites
+
+Run `npm run dev` and open `http://127.0.0.1:5197/`. For production asset checks, run `npm run build`, then `npm run preview` on port 4197.
+
+No account, API data, or database records are required. Content is placeholder content. Colony, cat, and report workflows are not implemented.
+
+## Implemented behavior
+
+- `/` shows the public layout with a landing placeholder and workspace links.
+- `/app` shows the workspace layout with an active Overview link and placeholder content.
+- Workspace navigation uses real links. Browser back, forward, and direct reload keep the requested page.
+- The first keyboard link skips to the main content. A path change moves focus to that region. Pages have distinct document titles.
+- The sidebar becomes a compact header and navigation on narrow screens; there is no menu drawer.
+- Unknown URLs outside `/app` use the public layout and return to `/`.
+- Unknown URLs under `/app/` keep the app layout and return to `/app`.
+- The root error boundary offers a full reload or a return home if a route fails unexpectedly.
+
+## Manual checks
+
+1. Open `/`. Confirm the landing title and follow the workspace link.
+2. Confirm the address is `/app`, the page title is Overview, and the Overview link is active.
+3. Use back, forward, and reload. Confirm each requested page renders.
+4. Open `/missing` and `/app/missing` directly. Confirm the matching layout and recovery link.
+5. Reload `/`, press Tab, then Enter. Confirm the skip link moves focus to the main region.
+6. Navigate between layouts with the keyboard. Confirm focus moves to the new main region.
+7. Check `/` and `/app` at 320px, 390px, 768px, and 1440px widths. Confirm no horizontal overflow.
+8. Check the browser console for uncaught errors.
+
+The production preview returns the SPA document for unknown frontend paths; the client renders the not-found page. Cloudflare already uses single-page application fallback for frontend URLs. API routing remains separate in the Worker.

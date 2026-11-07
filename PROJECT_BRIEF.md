@@ -8,7 +8,7 @@
 - Challenge: Mangrove Mews cat colony tracking
 - Frontend foundation: Vite, React, TypeScript, Tailwind CSS, and shadcn/ui
 - Backend foundation: a dedicated Cloudflare Worker and empty D1 database, connected through a read-only health endpoint; R2 is not provisioned
-- Stage: deployed Hello shell and separate Storybook component workspace; no rescue workflows implemented
+- Stage: local public landing and workspace shells with placeholders, separate Storybook component workspace, and a deployed infrastructure baseline; no rescue workflows implemented
 
 ## Organizer's problem statement
 

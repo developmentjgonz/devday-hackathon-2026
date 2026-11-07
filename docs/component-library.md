@@ -1,10 +1,14 @@
 # Component library
 
-The component library is the collection of reusable interface components. Together with agreed theme tokens and design rules, it will form the project's design system. The custom visual identity has not been decided.
+The component library is the collection of reusable interface components. Together with shared theme tokens and design rules, it forms the project's design system. The public and workspace shells use the shared theme.
 
 ## Locations
 
 - `src/components/ui/`: shadcn component source, currently using Base UI primitives.
+- `src/components/layout/`: separate public and workspace layouts, app navigation, and the shared skip link.
+- `src/components/brand.tsx` and `src/components/page-header.tsx`: shared product presentation components.
+- `src/features/<area>/pages/`: page content; feature-only components stay in the same feature folder as needed.
+- `src/pages/`: shared not-found and route-error pages.
 - `src/components/ui/*.stories.tsx`: colocated component states and interactive examples.
 - `src/stories/component-gallery.stories.tsx`: a single-page gallery that discovers and reuses all component stories.
 - `.storybook/main.ts` and `.storybook/preview.ts`: component discovery, documentation addon, and shared style import.
@@ -20,7 +24,7 @@ Run `npm run storybook` and visit http://127.0.0.1:6006/. The workspace includes
 
 Storybook opens **Gallery → Component gallery** by default. It shows all components and their variants on one page. Direct links to other stories and Docs pages still open those pages. The examples are interactive. Select a variant name to open its story and controls.
 
-Use Storybook's sidebar and search to select a component or state. The Docs page shows the available examples and controls. Examples use temporary local state and do not call a backend or persist data. The main app at http://127.0.0.1:5197/ is separate and displays only Hello.
+Use Storybook's sidebar and search to select a component or state. The Docs page shows the available examples and controls. Examples use temporary local state and do not call a backend or persist data. The main app is separate, with a landing placeholder at http://127.0.0.1:5197/ and a workspace shell at http://127.0.0.1:5197/app.
 
 `npm run build-storybook` produces `storybook-static/`, independently from the app's `dist/` build. Only the documentation addon is configured; no testing or hosting service is installed. The directory is ignored by Git.
 

@@ -4,13 +4,13 @@ Mews is Team JS's project for the [DevDay Exchange Community Hackathon](https://
 
 The project aims to help cat rescue coordinators and volunteers track colonies, cats, feeding visits, and care needs in one place. The project direction is confirmed; the first user flow and MVP scope still need to be agreed. Mews remains the working name.
 
-**Status:** The main app is a minimal Hello shell. Storybook provides the separate component workspace. The deployed Cloudflare Worker serves the shell and a health API connected to an empty D1 database. No rescue workflows are implemented.
+**Status:** The local app has a public landing placeholder at `/` and a workspace shell at `/app`. Storybook provides the separate component workspace. The Cloudflare Worker serves the last deployed frontend and a health API connected to an empty D1 database. No rescue workflows or sign-in are implemented.
 
 ## Cloudflare deployment
 
 | Service | URL or resource | Purpose |
 | --- | --- | --- |
-| Live app | [devday-js-2026.deal-finder.workers.dev](https://devday-js-2026.deal-finder.workers.dev/) | Cloudflare Worker serves the Hello shell and built frontend assets. |
+| Live app | [devday-js-2026.deal-finder.workers.dev](https://devday-js-2026.deal-finder.workers.dev/) | Cloudflare Worker serves the deployed frontend assets. Local changes need a separate deployment. |
 | API health | [/api/health](https://devday-js-2026.deal-finder.workers.dev/api/health) | Checks the D1 connection with a read-only query. |
 | Worker dashboard | [devday-js-2026](https://dash.cloudflare.com/d4501cb4c3a0ec6b4b67b051d83d3a30/workers/services/view/devday-js-2026/production) | Manage the Worker deployment. |
 | D1 dashboard | [devday-js-2026-db](https://dash.cloudflare.com/d4501cb4c3a0ec6b4b67b051d83d3a30/workers/d1/databases/5e49e8ba-625a-4954-9ebc-10d7f3100b90) | Manage the database, bound to the Worker as `DB`. |
@@ -38,6 +38,10 @@ Storybook runs locally and is not deployed. Product tables, migrations, and uplo
 | Directory | Responsibility |
 | --- | --- |
 | `src/` | React frontend, with related UI grouped under `features/` |
+| `src/components/layout/` | Public and workspace layouts, sidebar, and skip link |
+| `src/components/ui/` | Shared shadcn and Base UI controls, with component stories |
+| `src/features/<area>/pages/` | Feature page content, starting with landing and overview |
+| `src/pages/` | Cross-feature not-found and route-error pages |
 | `worker/` | Cloudflare API routes, application services, and database queries |
 | `shared/` | Validation schemas and types shared across the API boundary |
 | `migrations/` | Versioned D1 database schema changes |
@@ -57,7 +61,7 @@ npm ci
 npm run dev
 ```
 
-Open [the local app](http://127.0.0.1:5197/). It displays only Hello.
+Open [the landing page](http://127.0.0.1:5197/) or [the workspace](http://127.0.0.1:5197/app). Both show placeholder content. Unknown workspace URLs keep the app shell and provide a link back to the overview.
 
 Start the component workspace separately:
 
@@ -74,6 +78,14 @@ npm run preview     # Serve the production build on port 4197
 npm run build-storybook # Build the separate component workspace
 ```
 
-The frontend uses React, TypeScript, Vite, React Router in Data Mode, Tailwind CSS v4, and shadcn/ui with Base UI primitives. The router currently serves only the Hello page at `/`; product routes and navigation remain undecided. Theme values are stock neutral defaults in `src/styles/tokens.css`; the custom product theme is undecided. Fonts and icons are bundled dependencies.
+The frontend uses React, TypeScript, Vite, React Router in Data Mode, Tailwind CSS v4, and shadcn/ui with Base UI primitives. Public and workspace layouts have separate route branches. Product feature routes remain undecided. Theme values live in `src/styles/tokens.css`; both shells use the shared theme. Fonts and icons are bundled dependencies.
+
+React Doctor is installed as a development dependency for manual checks only:
+
+```sh
+npm exec -- react-doctor
+```
+
+It is not connected to package scripts, builds, hooks, or CI. Run it only when a review is wanted. See the [CLI reference](https://www.react.doctor/docs/reference/cli-reference).
 
 Use fictional data for this hackathon. Uploaded colony photos belong in private R2 storage once configured; they must not be placed in `public/`.

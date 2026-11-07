@@ -11,6 +11,8 @@ This file records completed setup. A checked item means it has been completed lo
 - [x] Move component examples into a separate Storybook workspace and reduce the main app to Hello.
 - [x] Create dedicated Cloudflare Worker and D1 resources; deploy and verify the app/API/database shell.
 - [x] Choose React Router in Data Mode and connect the existing Hello page to the router.
+- [x] Add separate landing (`/`) and workspace (`/app`) shells with placeholders and component boundaries.
+- [x] Install React Doctor for manual reviews without script, build, hook, or CI integration.
 
 ## Open planning
 
