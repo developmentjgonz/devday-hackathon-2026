@@ -14,6 +14,15 @@ type GoogleMapInstance = {
   setZoom: (zoom: number) => void;
 };
 
+type WeatherSnapshot = {
+  area: string;
+  temperature: number | null;
+  precipitationNextSixHours: number | null;
+  windSpeed: number | null;
+  weatherCode: number | null;
+  updatedAt: string;
+};
+
 declare global {
   interface Window {
     google?: { maps?: { Map: new (element: Element, options: object) => GoogleMapInstance; Marker: new (options: object) => { setMap: (map: GoogleMapInstance | null) => void; addListener: (name: string, handler: () => void) => void } } };
@@ -27,7 +36,27 @@ const colors: Record<MapLayer, string> = {
   hazards: "#a66a16",
   searches: "#7755ad",
   feeding: "#23785d",
+  weather: "#287ba2",
 };
+
+const weatherPoints = [
+  { area: "Miami-Dade weather cell", lat: 25.78, lng: -80.22 },
+  { area: "Broward weather cell", lat: 26.12, lng: -80.16 },
+];
+
+function weatherDetail(snapshot: WeatherSnapshot) {
+  const temperature = snapshot.temperature == null ? "temperature unavailable" : `${Math.round(snapshot.temperature)}°C`;
+  const rain = snapshot.precipitationNextSixHours == null ? "rain outlook unavailable" : `${snapshot.precipitationNextSixHours.toFixed(1)} mm forecast / 6 h`;
+  const wind = snapshot.windSpeed == null ? "wind unavailable" : `${Math.round(snapshot.windSpeed)} km/h wind`;
+  return `Live planning context · ${temperature} · ${rain} · ${wind}`;
+}
+
+function weatherStatus(snapshot: WeatherSnapshot) {
+  if ((snapshot.precipitationNextSixHours ?? 0) >= 8) return "Flood / cover review";
+  if ((snapshot.precipitationNextSixHours ?? 0) >= 2) return "Rain-cover review";
+  if ((snapshot.temperature ?? 0) >= 32) return "Heat-shade review";
+  return "Weather planning";
+}
 
 export function visibleRadiusMeters(record: MapRecord, scope: "internal" | "sponsor" | "public") {
   // Internal and sponsor users can see the same operational precision, but
@@ -65,10 +94,25 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
   const mapHost = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<GoogleMapInstance | null>(null);
   const overlays = useRef<{ setMap: (map: GoogleMapInstance | null) => void }[]>([]);
+  const trackerFocused = useRef(false);
   const [googleReady, setGoogleReady] = useState(false);
   const [mapsFailed, setMapsFailed] = useState(false);
   const [trackerTick, setTrackerTick] = useState(0);
-  const visibleRecords = useMemo(() => records.filter((record) => activeLayers.has(record.layer)), [records, activeLayers]);
+  const [weather, setWeather] = useState<WeatherSnapshot[]>([]);
+  const weatherRecords = useMemo<MapRecord[]>(() => weather.map((snapshot, index) => ({
+    id: `weather-${index}`,
+    title: snapshot.area,
+    area: snapshot.area,
+    position: { lat: weatherPoints[index].lat, lng: weatherPoints[index].lng },
+    layer: "weather",
+    status: weatherStatus(snapshot),
+    detail: weatherDetail(snapshot),
+    locationSignal: "unconfirmed-report",
+    confidence: .88,
+    internalRadiusMeters: 16_000,
+    observedAt: `Live source updated ${snapshot.updatedAt}`,
+  })), [weather]);
+  const visibleRecords = useMemo(() => [...records, ...weatherRecords].filter((record) => activeLayers.has(record.layer)), [records, weatherRecords, activeLayers]);
   const renderedRecords = useMemo(() => visibleRecords.map((record) => record.id !== "live-scout" ? record : {
     ...record,
     position: {
@@ -81,6 +125,38 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
   useEffect(() => {
     const interval = window.setInterval(() => setTrackerTick((tick) => tick + 1), 6000);
     return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const tracker = records.find((record) => record.id === "live-scout");
+    if (tracker && !trackerFocused.current) {
+      trackerFocused.current = true;
+      onSelect(tracker);
+    }
+  }, [onSelect, records]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadWeather() {
+      try {
+        const results = await Promise.all(weatherPoints.map(async (point) => {
+          const params = new URLSearchParams({ latitude: String(point.lat), longitude: String(point.lng), current: "temperature_2m,wind_speed_10m,weather_code", hourly: "precipitation", forecast_days: "1", timezone: "America/New_York" });
+          const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
+          if (!response.ok) throw new Error("Weather source unavailable");
+          const data = await response.json() as { current?: { temperature_2m?: number; wind_speed_10m?: number; weather_code?: number; time?: string }; hourly?: { time?: string[]; precipitation?: number[] } };
+          const now = data.current?.time ?? new Date().toISOString();
+          const start = Math.max(0, data.hourly?.time?.findIndex((time) => time >= now) ?? 0);
+          const precipitation = (data.hourly?.precipitation ?? []).slice(start, start + 6).reduce((sum, value) => sum + Number(value || 0), 0);
+          return { area: point.area, temperature: data.current?.temperature_2m ?? null, precipitationNextSixHours: precipitation, windSpeed: data.current?.wind_speed_10m ?? null, weatherCode: data.current?.weather_code ?? null, updatedAt: data.current?.time ?? "just now" };
+        }));
+        if (!cancelled) setWeather(results);
+      } catch {
+        if (!cancelled) setWeather([]);
+      }
+    }
+    void loadWeather();
+    const interval = window.setInterval(() => void loadWeather(), 15 * 60 * 1000);
+    return () => { cancelled = true; window.clearInterval(interval); };
   }, []);
 
   useEffect(() => {
@@ -139,8 +215,9 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
       const marker = new Maps.Marker({
         map,
         position: record.position,
-        title: `${record.title} · synthetic demo`,
-        icon: { path: 0, fillColor: colors[record.layer], fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2, scale: record.layer === "urgent" ? 9 : 7 },
+        title: record.id === "live-scout" ? "LIVE demo tracker · Skipper" : record.layer === "weather" ? `${record.title} · live weather planning` : `${record.title} · synthetic demo`,
+        label: record.id === "live-scout" ? { text: "LIVE", color: "#123f54", fontWeight: "700", fontSize: "9px" } : undefined,
+        icon: { path: 0, fillColor: record.id === "live-scout" ? "#43b8df" : colors[record.layer], fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2, scale: record.id === "live-scout" ? 14 : record.layer === "urgent" ? 9 : record.layer === "weather" ? 11 : 7 },
       });
       marker.addListener("click", () => onSelect(record));
       nextOverlays.push(circle, marker);
@@ -158,6 +235,6 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
         <button className={`map-pin ${record.layer} ${selectedId === record.id ? "selected" : ""}`} aria-label={`${record.title}, ${record.area}, synthetic demo`} onClick={() => onSelect(record)} />
       </div>)}
     </div>}
-    <div className="map-provider-status">{googleReady ? `Google Maps · ${scope} confidence radii · ${renderedRecords.some((record) => record.id === "live-scout") ? "demo tracker active" : "synthetic demo records"}` : mapsFailed ? "Map unavailable · showing local synthetic preview" : "Synthetic preview · add GOOGLE_MAPS_BROWSER_KEY for Google Maps"}</div>
+    <div className="map-provider-status">{googleReady ? `Google Maps · ${scope} confidence radii · ${renderedRecords.some((record) => record.id === "live-scout") ? "LIVE Skipper tracker" : "synthetic demo records"}${weather.length ? " · weather cells refreshed" : ""}` : mapsFailed ? "Map unavailable · showing local synthetic preview" : "Synthetic preview · add GOOGLE_MAPS_BROWSER_KEY for Google Maps"}</div>
   </div>;
 }

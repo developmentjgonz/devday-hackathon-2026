@@ -1,4 +1,4 @@
-export type MapLayer = "colonies" | "sightings" | "urgent" | "hazards" | "searches" | "feeding";
+export type MapLayer = "colonies" | "sightings" | "urgent" | "hazards" | "searches" | "feeding" | "weather";
 
 export type MapRecord = {
   id: string;
