@@ -8,11 +8,22 @@
 - Technology direction: Vite, React, TypeScript, and Cloudflare Workers, D1, and R2
 - Stage: Repository structure; no application implementation yet
 
-## Problem and users
+## Organizer's problem statement
 
-Volunteer reports arrive as messages, photos, and locations. The rescue coordinator spends time reconciling those updates, cats may be counted twice, and urgent needs can be missed. Mangrove Mews is a fictional rescue used by the challenge.
+Source: [the hackathon's Mangrove Mews challenge](https://deepstation.ai/hackathons/vtl7ctbeihnikitvjwl3941h?tab=problem-statements). The summary below records the organizer's scenario and requirements. Mangrove Mews is fictional; the organizers say the underlying problem comes from their survey of 14 South Florida nonprofits.
 
-The intended users are volunteer feeders reporting from phones and rescue coordinators reviewing the colony census and outstanding needs.
+Beatriz coordinates 20 volunteers and feeders caring for 18 Miami street-cat colonies alongside her day job. Updates are scattered across messages, photos, shared locations, notes, and a spreadsheet. Reconciliation takes hours each week; duplicate sightings inflate counts, urgent needs disappear, and reliable reporting becomes difficult.
+
+Her stated goal:
+
+> I just want anyone on my team to know, the same day, how each colony is doing and what it needs.
+
+### Organizer's success criteria
+
+- A phone report reaches the correct colony and cat without manual transcription.
+- A colony overview shows the census, sterilization/TNR status, veterinary needs, and latest feeding visit.
+- Duplicate sightings do not inflate the census.
+- Pregnancy, injury, kittens, and feeder gaps receive prompt attention.
 
 ## Decisions to make
 
@@ -26,6 +37,7 @@ The intended users are volunteer feeders reporting from phones and rescue coordi
 
 ## Challenge constraints
 
+- Keep operating costs minimal and administration manageable for volunteers.
 - Keep reporting practical on a phone in one or two minutes.
 - Restrict colony locations and feeder contact information to rescue members.
 - Require human confirmation for cat-record merges and adopted or missing status changes.
