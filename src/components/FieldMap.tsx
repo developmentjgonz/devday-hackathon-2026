@@ -63,6 +63,8 @@ function loadGoogleMaps(key: string) {
 
 export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }: FieldMapProps) {
   const mapHost = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<GoogleMapInstance | null>(null);
+  const overlays = useRef<{ setMap: (map: GoogleMapInstance | null) => void }[]>([]);
   const [googleReady, setGoogleReady] = useState(false);
   const [mapsFailed, setMapsFailed] = useState(false);
   const [trackerTick, setTrackerTick] = useState(0);
@@ -96,8 +98,9 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
   }, []);
 
   useEffect(() => {
-    if (!googleReady || !mapHost.current || !window.google?.maps) return;
-    const map = new window.google.maps.Map(mapHost.current, {
+    if (!googleReady || !mapHost.current || !window.google?.maps || mapInstance.current) return;
+    const Maps = window.google.maps as any;
+    mapInstance.current = new Maps.Map(mapHost.current, {
       center: { lat: 25.83, lng: -80.23 },
       zoom: 10,
       minZoom: 8,
@@ -108,9 +111,21 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
       restriction: { latLngBounds: { north: 26.45, south: 25.1, east: -79.85, west: -80.9 }, strictBounds: false },
       styles: [{ featureType: "poi", stylers: [{ visibility: "off" }] }],
     });
+    return () => {
+      overlays.current.forEach((overlay) => overlay.setMap(null));
+      overlays.current = [];
+      mapInstance.current = null;
+    };
+  }, [googleReady]);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map || !window.google?.maps) return;
+    overlays.current.forEach((overlay) => overlay.setMap(null));
+    const nextOverlays: { setMap: (map: GoogleMapInstance | null) => void }[] = [];
     renderedRecords.forEach((record) => {
       const Maps = window.google!.maps as any;
-      new Maps.Circle({
+      const circle = new Maps.Circle({
         map,
         center: record.position,
         radius: visibleRadiusMeters(record, scope),
@@ -121,15 +136,17 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
         strokeWeight: 1.25,
         clickable: false,
       });
-      const marker = new window.google!.maps!.Marker({
+      const marker = new Maps.Marker({
         map,
         position: record.position,
         title: `${record.title} · synthetic demo`,
         icon: { path: 0, fillColor: colors[record.layer], fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2, scale: record.layer === "urgent" ? 9 : 7 },
       });
       marker.addListener("click", () => onSelect(record));
+      nextOverlays.push(circle, marker);
     });
-  }, [googleReady, onSelect, scope, renderedRecords]);
+    overlays.current = nextOverlays;
+  }, [onSelect, scope, renderedRecords]);
 
   return <div className="field-map" aria-label="Interactive South Florida field map">
     <div ref={mapHost} className={googleReady ? "google-map active" : "google-map"} aria-hidden={!googleReady} />
