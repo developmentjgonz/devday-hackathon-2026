@@ -6,7 +6,9 @@ Product-specific folders still reserve responsibilities. Product features, API e
 
 ## System
 
-The frontend uses Vite, React, TypeScript, Tailwind CSS v4, and shadcn/ui. The installed shadcn components use Base UI primitives. A Cloudflare Worker serves `dist/` and `/api/health`, with a dedicated D1 binding. R2 remains a future storage direction; no bucket is provisioned.
+The frontend uses Vite, React, TypeScript, React Router in Data Mode, Tailwind CSS v4, and shadcn/ui. The installed shadcn components use Base UI primitives. A Cloudflare Worker serves `dist/` and `/api/health`, with a dedicated D1 binding. R2 remains a future storage direction; no bucket is provisioned.
+
+`src/router.tsx` defines frontend routes with `createBrowserRouter`. `src/main.tsx` renders its `RouterProvider`. The only configured route is `/`, which renders the existing Hello page. The shell, product routes, and navigation are not designed yet. See [the routing decision](decisions/0001-react-router.md).
 
 Browser requests go through the Worker for protected application operations. Worker instances must not be relied on for persistent state. API secrets stay on the server.
 

@@ -74,6 +74,6 @@ npm run preview     # Serve the production build on port 4197
 npm run build-storybook # Build the separate component workspace
 ```
 
-The frontend uses React, TypeScript, Vite, Tailwind CSS v4, and shadcn/ui with Base UI primitives. Theme values are stock neutral defaults in `src/styles/tokens.css`; the custom product theme is undecided. Fonts and icons are bundled dependencies.
+The frontend uses React, TypeScript, Vite, React Router in Data Mode, Tailwind CSS v4, and shadcn/ui with Base UI primitives. The router currently serves only the Hello page at `/`; product routes and navigation remain undecided. Theme values are stock neutral defaults in `src/styles/tokens.css`; the custom product theme is undecided. Fonts and icons are bundled dependencies.
 
 Use fictional data for this hackathon. Uploaded colony photos belong in private R2 storage once configured; they must not be placed in `public/`.

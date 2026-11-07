@@ -10,6 +10,7 @@ This file records completed setup. A checked item means it has been completed lo
 - [x] Add and check a component gallery using neutral defaults.
 - [x] Move component examples into a separate Storybook workspace and reduce the main app to Hello.
 - [x] Create dedicated Cloudflare Worker and D1 resources; deploy and verify the app/API/database shell.
+- [x] Choose React Router in Data Mode and connect the existing Hello page to the router.
 
 ## Open planning
 
