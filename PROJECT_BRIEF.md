@@ -2,6 +2,7 @@
 
 ## Confirmed
 
+- Project direction: a cat colony tracking app for rescue coordinators and volunteers, based on the Mangrove Mews challenge
 - Team: JS
 - Event: DevDay Exchange Community Hackathon
 - Challenge: Mangrove Mews cat colony tracking
@@ -26,7 +27,9 @@ Her stated goal:
 - Duplicate sightings do not inflate the census.
 - Pregnancy, injury, kittens, and feeder gaps receive prompt attention.
 
-## Decisions to make
+## Remaining product decisions
+
+The project direction is confirmed. The questions below concern its scope and implementation.
 
 - **Name:** Mews is the scaffold's working label; a final project name has not been chosen.
 - **MVP:** Agree on the first user flow and its exact success criteria.

@@ -1,6 +1,8 @@
 # Mews — Team JS
 
-Working project for the [DevDay Exchange Community Hackathon](https://deepstation.ai/hackathons/vtl7ctbeihnikitvjwl3941h), focused on the Mangrove Mews cat rescue challenge.
+Mews is Team JS's project for the [DevDay Exchange Community Hackathon](https://deepstation.ai/hackathons/vtl7ctbeihnikitvjwl3941h). We have chosen the **Mangrove Mews cat colony tracking challenge**.
+
+The project aims to help cat rescue coordinators and volunteers track colonies, cats, feeding visits, and care needs in one place. The project direction is confirmed; the first user flow and MVP scope still need to be agreed. Mews remains the working name.
 
 **Status:** The main app is a minimal Hello shell. Storybook provides the separate component workspace. The deployed Cloudflare Worker serves the shell and a health API connected to an empty D1 database. No rescue workflows are implemented.
 
