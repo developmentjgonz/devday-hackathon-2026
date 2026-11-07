@@ -1,3 +1,5 @@
+import { triageReport } from "./triage-agent.js";
+
 const service = "devday-js-2026";
 
 function json(body, status = 200, headers = {}) {
@@ -10,6 +12,23 @@ function json(body, status = 200, headers = {}) {
 export default {
   async fetch(request, env) {
     const { pathname } = new URL(request.url);
+
+    if (pathname === "/api/config") {
+      if (request.method !== "GET") return json({ error: "Method not allowed" }, 405, { Allow: "GET" });
+      // This browser key must be restricted by HTTP referrer and to Maps JavaScript API.
+      return json({ googleMapsBrowserKey: env.GOOGLE_MAPS_BROWSER_KEY ?? null });
+    }
+
+    if (pathname === "/api/triage") {
+      if (request.method !== "POST") return json({ error: "Method not allowed" }, 405, { Allow: "POST" });
+      const contentType = request.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/json")) return json({ error: "Expected application/json" }, 415);
+      try {
+        const report = await request.json();
+        if (!report || typeof report !== "object" || typeof report.message !== "string" || report.message.length > 4_000) return json({ error: "Invalid report" }, 400);
+        return json(await triageReport(report, env));
+      } catch { return json({ error: "Unable to triage this report" }, 400); }
+    }
 
     if (pathname === "/api/health") {
       if (request.method !== "GET") {

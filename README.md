@@ -2,9 +2,20 @@
 
 Mews is Team JS's project for the [DevDay Exchange Community Hackathon](https://deepstation.ai/hackathons/vtl7ctbeihnikitvjwl3941h). We have chosen the **Mangrove Mews cat colony tracking challenge**.
 
-The project aims to help cat rescue coordinators and volunteers track colonies, cats, feeding visits, and care needs in one place. The project direction is confirmed; the first user flow and MVP scope still need to be agreed. Mews remains the working name.
+Mangrove Mews helps a small rescue turn intentional field reports, exported chat history, photos, and approximate locations into an operating picture that a coordinator can act on the same day.
 
-**Status:** The main app is a minimal Hello shell. Storybook provides the separate component workspace. The deployed Cloudflare Worker serves the shell and a health API connected to an empty D1 database. No rescue workflows are implemented.
+**Status:** The feature branch now contains the responsive end-to-end demo: report intake, chat/SMS demo history, private map layers, urgent review, cat/colony records, missing-cat search tasks, and bounded OpenAI Agents SDK triage. It uses fictional cats, messages, photos, and deliberately approximate locations only.
+
+## What is implemented
+
+- Responsive coordinator, volunteer, and mobile-ready report experience (the three requested roles remain simple: Founder/Admin, Coordinator, Volunteer).
+- Web, intentional SMS relay, and WhatsApp **Export chat** intake paths. The app never automates a live WhatsApp chat.
+- A private Miami-Dade/Broward field map with Google Maps support, layer toggles, missing-search tasks, hazard records, and safety modes.
+- A fallback map preview when a browser-restricted Google Maps key is not present.
+- A review queue which treats duplicate matching as evidence-scored suggestions; a person must approve any merge or sensitive status change.
+- An OpenAI Agents SDK triage agent that can recommend urgency, a colony candidate, clarification, and coordinator tasks. It is not allowed to reveal precise locations or take irreversible action.
+- Offline-safe web intake: if the API is unavailable, the report is stored in browser local storage for later retry.
+- Synthetic WhatsApp and SMS fixture files plus fictional cat images for the live demo.
 
 ## Cloudflare deployment
 
@@ -20,7 +31,7 @@ Cloudflare dashboard links require an account with access to these resources. Th
 
 Pushes to `main` run checks. Pushes to `release` run checks and deploy to the live URL. Pull requests to either branch run checks only. See the [workflow](.github/workflows/cloudflare.yml), [Cloudflare configuration](wrangler.jsonc), and [infrastructure guide](docs/infrastructure.md) for setup and deployment details.
 
-Storybook runs locally and is not deployed. Product tables, migrations, and uploads remain unimplemented.
+Storybook runs locally and is not deployed. D1 persistence, sign-in, verified membership, R2 uploads, and production ingestion webhooks are the next implementation phase.
 
 ## Project guide
 
@@ -32,6 +43,7 @@ Storybook runs locally and is not deployed. Product tables, migrations, and uplo
 - [Infrastructure](docs/infrastructure.md): dedicated Cloudflare resources, deployment, and health checks.
 - [Local skills](.agents/skills/README.md): installed guidance and source revisions.
 - [Feature map](.agents/skills/verify-mews/references/features/README.md): implemented user-visible behavior and verification notes.
+- [Demo runbook](docs/demo-runbook.md): a guided judge-ready walkthrough with the synthetic chats and SMS relays.
 
 ## Directory boundaries
 
@@ -57,7 +69,7 @@ npm ci
 npm run dev
 ```
 
-Open [the local app](http://127.0.0.1:5197/). It displays only Hello.
+Open [the local app](http://127.0.0.1:5197/).
 
 Start the component workspace separately:
 
@@ -74,6 +86,16 @@ npm run preview     # Serve the production build on port 4197
 npm run build-storybook # Build the separate component workspace
 ```
 
-The frontend uses React, TypeScript, Vite, Tailwind CSS v4, and shadcn/ui with Base UI primitives. Theme values are stock neutral defaults in `src/styles/tokens.css`; the custom product theme is undecided. Fonts and icons are bundled dependencies.
+## Configuration
 
-Use fictional data for this hackathon. Uploaded colony photos belong in private R2 storage once configured; they must not be placed in `public/`.
+Copy `.dev.vars.example` to `.dev.vars` for local Worker development. Do not commit `.dev.vars`.
+
+```sh
+cp .dev.vars.example .dev.vars
+```
+
+`OPENAI_API_KEY` enables the server-side triage agent. Without it, the triage route remains available in a safe, deterministic demo mode.
+
+`GOOGLE_MAPS_BROWSER_KEY` enables the Google Maps basemap. It is a browser key (not a secret), but must be limited by HTTP referrer and enabled only for the Maps JavaScript API. Exact rescue data must never be embedded in public JavaScript.
+
+The frontend uses React, TypeScript, Vite, Tailwind CSS v4, shadcn/ui with Base UI primitives, and the OpenAI Agents SDK. The fictional demo images are public assets only for the hackathon. In production, volunteer uploads belong in access-controlled R2 storage.
