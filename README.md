@@ -6,10 +6,19 @@ The project aims to help cat rescue coordinators and volunteers track colonies, 
 
 **Status:** The main app is a minimal Hello shell. Storybook provides the separate component workspace. The deployed Cloudflare Worker serves the shell and a health API connected to an empty D1 database. No rescue workflows are implemented.
 
-## Deployed sites
+## Cloudflare deployment
 
-- [App](https://devday-js-2026.deal-finder.workers.dev/): the Hello shell.
-- [API health](https://devday-js-2026.deal-finder.workers.dev/api/health): checks the D1 connection with a read-only query.
+| Service | URL or resource | Purpose |
+| --- | --- | --- |
+| Live app | [devday-js-2026.deal-finder.workers.dev](https://devday-js-2026.deal-finder.workers.dev/) | Cloudflare Worker serves the Hello shell and built frontend assets. |
+| API health | [/api/health](https://devday-js-2026.deal-finder.workers.dev/api/health) | Checks the D1 connection with a read-only query. |
+| Worker dashboard | [devday-js-2026](https://dash.cloudflare.com/d4501cb4c3a0ec6b4b67b051d83d3a30/workers/services/view/devday-js-2026/production) | Manage the Worker deployment. |
+| D1 dashboard | [devday-js-2026-db](https://dash.cloudflare.com/d4501cb4c3a0ec6b4b67b051d83d3a30/workers/d1/databases/5e49e8ba-625a-4954-9ebc-10d7f3100b90) | Manage the database, bound to the Worker as `DB`. |
+| Build and deployment runs | [GitHub Actions](https://github.com/developmentjgonz/devday-hackathon-2026/actions/workflows/cloudflare.yml) | View build checks and release deployment results. |
+
+Cloudflare dashboard links require an account with access to these resources. The app and health URLs are public.
+
+Pushes to `main` run checks. Pushes to `release` run checks and deploy to the live URL. Pull requests to either branch run checks only. See the [workflow](.github/workflows/cloudflare.yml), [Cloudflare configuration](wrangler.jsonc), and [infrastructure guide](docs/infrastructure.md) for setup and deployment details.
 
 Storybook runs locally and is not deployed. Product tables, migrations, and uploads remain unimplemented.
 
