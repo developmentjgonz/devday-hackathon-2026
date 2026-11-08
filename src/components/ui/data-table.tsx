@@ -61,6 +61,7 @@ type DataTableProps<T extends RowData> = {
 
 export function DataTable<T extends RowData>({ table, label, itemName = 'record', emptyState, request, activeRowId, onOpenRow, renderMobileCard, selection, columnClassName, scrollMode = 'contained', ref, toolbar }: DataTableProps<T>) {
   const viewport = useRef<HTMLDivElement>(null)
+  const mobileViewport = useRef<HTMLDivElement>(null)
   const rows = table.getRowModel().rows
   const selected = table.getSelectedRowModel().rows
   const busy = request?.status === 'loading' || request?.status === 'refreshing'
@@ -131,7 +132,7 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
       </div>
       <DataTablePagination table={table} label={label} itemName={itemName} request={request} onPageChange={() => viewport.current?.scrollTo({ top: 0 })} />
       </Card>
-      {mobileCards ? <div className="space-y-3 md:hidden" aria-busy={busy || undefined}>
+      {mobileCards ? <div ref={mobileViewport} className="space-y-3 md:hidden" aria-busy={busy || undefined}>
         {request?.status === 'error' ? <EmptyState
           icon={<CircleAlert />} tone="danger" title={`Could not load ${label.toLowerCase()}`}
           description={request.message} action={<Button variant="outline" onClick={request.onRetry}>Try again</Button>}
@@ -151,7 +152,7 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
             <LoadingIndicator label={`Updating ${label.toLowerCase()}`} />
           </div> : null}
         </div>}
-        <DataTablePagination table={table} label={label} itemName={itemName} request={request} presentation="cards" onPageChange={() => (typeof ref === 'object' ? ref?.current : null)?.scrollIntoView({ block: 'start' })} />
+        <DataTablePagination table={table} label={label} itemName={itemName} request={request} presentation="cards" onPageChange={() => mobileViewport.current?.scrollIntoView({ block: 'start' })} />
       </div> : null}
       </div>
     </div>

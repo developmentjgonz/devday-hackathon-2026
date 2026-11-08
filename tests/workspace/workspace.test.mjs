@@ -74,6 +74,7 @@ test('reports, attachments, and review status are shared across members', async 
   assert.equal(created.status, 201);
   const { report } = await created.json();
   assert.equal(report.title, 'Water check');
+  assert.equal('unread' in report, false);
   assert.equal(report.attachments.length, 1);
   const fileUrl = report.attachments[0].url;
   assert.equal((await request(fileUrl)).status, 401);
