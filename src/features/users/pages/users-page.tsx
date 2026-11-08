@@ -151,7 +151,8 @@ function UsersScreen({ currentUser, store }: { currentUser: SessionUser; store: 
       <DataTableToolbar label="Team controls"
         search={{ label: 'Search team accounts', placeholder: 'Search by name or email…', value: search, onValueChange: (value) => { setSearch(value); table.firstPage() } }}
         filters={[{ id: 'status', label: 'Filter accounts by access', value: filter, options: statusOptions, onValueChange: (value) => { setFilter(value as StatusFilter); table.firstPage() } }]}
-        onReset={query || (filter !== 'all' && !(showRequestCard && viewingRequests)) ? () => { setSearch(''); setFilter('all'); table.firstPage() } : undefined} />
+        onReset={() => { setSearch(''); setFilter('all'); table.firstPage() }}
+        resetActive={Boolean(query || (filter !== 'all' && !(showRequestCard && viewingRequests)))} />
       <DataTable ref={tableRef} table={table} label="Team accounts" itemName="account" request={request} columnClassName={columnClassName} scrollMode="page"
         emptyState={<EmptyState icon={query ? <Search /> : <UsersRound />} title={emptyTitle} description={query ? 'Try another name, email, or phone number.' : filter === 'pending' ? 'New requests will appear here.' : undefined} />} />
     </section>
