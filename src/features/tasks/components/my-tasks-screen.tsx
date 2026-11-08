@@ -88,7 +88,7 @@ export function MyTasksScreen({ currentUser, initialStatus = 'open', scope = 'mi
       actions={<TaskEditor currentUser={currentUser} onCreated={() => { clearRequestedTask(); setSearch(''); setAssignee(''); setStatus('open'); table.firstPage() }} />}
     />
     {requestedTask ? <div className="flex flex-wrap items-center gap-2"><Text size="small" tone="muted">Showing selected task.</Text><Button variant="ghost" size="sm" onClick={clearRequestedTask}>{team ? 'View all team tasks' : 'View all my tasks'}</Button></div> : null}
-    <TaskTableActions value={{ currentUser, showAssignee: team, pendingTaskIds, onStatusChange: changeTaskStatus }}><DataTable ref={contentRef} table={table} label={team ? 'Team tasks' : 'My tasks'} itemName="task" columnClassName={taskColumnClassName} emptyState={emptyState}
+    <TaskTableActions value={{ currentUser, showAssignee: team, pendingTaskIds, onStatusChange: changeTaskStatus }}><DataTable ref={contentRef} table={table} label={team ? 'Team tasks' : 'My tasks'} itemName="task" columnClassName={taskColumnClassName} emptyState={emptyState} scrollMode="contained"
       mobileListKey={`${query}:${status}:${requestedTask}:${assignee}`}
       renderMobileRow={(task) => <RecordListItem render={<Link {...taskLink(task.id, `my-task:${task.id}`)} />}
         aria-label={`View task: ${task.title}`} title={task.title}

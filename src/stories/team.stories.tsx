@@ -75,7 +75,7 @@ function TeamStory({ data = people, mode = 'ready', member = false }: { data?: M
 const meta = {
   title: 'Pages/Team',
   component: TeamStory,
-  parameters: { layout: 'fullscreen', docs: { description: { component: 'The production team page and workspace layout. Story records are fictional and changes remain in an isolated in-memory store. In the application, active administrators read and update D1 accounts. Approval, roles, and account status are checked by the server. The page covers requests, search and status filtering, responsive details, loading, and errors.' } } },
+  parameters: { layout: 'fullscreen', docs: { description: { component: 'The production team page and workspace layout. Story records are fictional and changes remain in an isolated in-memory store. In the application, active administrators read and update D1 accounts. Approval, roles, and account status are checked by the server. The desktop table keeps its column headers and pagination visible while account rows scroll within the available window height. The phone list uses normal page scroll. The page covers requests, search and status filtering, responsive details, loading, and errors.' } } },
 } satisfies Meta<typeof TeamStory>
 export default meta
 type Story = StoryObj<typeof meta>

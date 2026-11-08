@@ -139,6 +139,7 @@ export function InboxScreen({ initialStatus = 'pending' }: {
         <DataTable
           ref={listRef} table={table} label="Reports" itemName="report"
           columnClassName={inboxColumnClassName}
+          scrollMode="contained"
           activeRowId={drawerOpen ? selected?.id : undefined}
           onOpenRow={openReport} emptyState={emptyState}
           mobileListKey={`${query}:${statusFilter}:${colonyFilter}`}

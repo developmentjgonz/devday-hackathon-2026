@@ -159,7 +159,7 @@ function UsersScreen({ currentUser, store }: { currentUser: SessionUser; store: 
         filters={[{ id: 'status', label: 'Filter accounts by access', value: filter, options: statusOptions, onValueChange: (value) => { setFilter(value as StatusFilter); table.firstPage() } }]}
         onReset={() => { setSearch(''); setFilter('all'); table.firstPage() }}
         resetActive={Boolean(query || (filter !== 'all' && !(showRequestCard && viewingRequests)))} />
-      <DataTable ref={tableRef} table={table} label="Team accounts" itemName="account" request={request} columnClassName={columnClassName} scrollMode="page"
+      <DataTable ref={tableRef} table={table} label="Team accounts" itemName="account" request={request} columnClassName={columnClassName} scrollMode="contained"
         mobileListKey={`${query}:${filter}`}
         renderMobileRow={(user) => <RecordListItem title={`${user.name}${user.id === currentUser.id ? ' (you)' : ''}`}
           aria-label={`${user.status === 'pending' ? 'Review' : 'Manage'} account: ${user.name}`} aria-haspopup="dialog"
