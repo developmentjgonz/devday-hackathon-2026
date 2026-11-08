@@ -11,7 +11,7 @@ test('overview keeps progress separate from the directory and its result count',
   await expect(page.getByText('3 colonies', { exact: true })).toHaveCount(1)
   await nav.getByRole('link', { name: 'Overview', exact: true }).click()
   await expect(page.getByRole('progressbar')).toHaveCount(3)
-  await expect(page.getByRole('list', { name: 'Colony summary' }).getByRole('listitem')).toHaveCount(4)
+  await expect(page.getByRole('list', { name: 'Colony summary' })).toHaveCount(0)
   await nav.getByRole('link', { name: 'Colonies', exact: true }).click()
   await page.getByRole('searchbox', { name: 'Search colonies' }).fill('Canal')
   await expect(page.getByText('1 colony found', { exact: true })).toHaveCount(1)

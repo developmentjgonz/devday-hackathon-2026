@@ -55,6 +55,16 @@ function fixture(t) {
   return { sqlite, objects, request, signIn, reportForm };
 }
 
+test('local completed task examples survive re-seeding without overwriting changes', (t) => {
+  const { sqlite } = fixture(t);
+  const rows = sqlite.prepare("SELECT owner_id, COUNT(*) AS count FROM tasks WHERE id LIKE 'sample-complete-%' AND status = 'completed' GROUP BY owner_id ORDER BY owner_id").all();
+  assert.deepEqual(rows.map((row) => [row.owner_id, row.count]), [['local-admin', 5], ['local-member', 3]]);
+  sqlite.prepare("UPDATE tasks SET status = 'open' WHERE id = 'sample-complete-water'").run();
+  sqlite.exec(readFileSync(new URL('../../seeds/workspace.sql', import.meta.url), 'utf8'));
+  assert.equal(sqlite.prepare("SELECT status FROM tasks WHERE id = 'sample-complete-water'").get().status, 'open');
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM tasks WHERE id LIKE 'sample-complete-%'").get().count, 8);
+});
+
 test('reports, attachments, review, and read state persist per member', async (t) => {
   const { request, signIn, reportForm } = fixture(t);
   const admin = await signIn('local-admin');

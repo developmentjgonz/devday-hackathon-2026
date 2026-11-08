@@ -7,7 +7,7 @@ import worker from '../../worker/index.ts';
 function fixture(t) {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec('PRAGMA foreign_keys = ON');
-  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0013_colony_addresses.sql', '../../seeds/local.sql']) {
+  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0012_user_photos.sql', '../../migrations/0013_colony_addresses.sql', '../../seeds/local.sql']) {
     sqlite.exec(readFileSync(new URL(file, import.meta.url), 'utf8'));
   }
   t.after(() => sqlite.close());
@@ -125,7 +125,6 @@ test('colony location changes validate coordinates and require active, same-orig
   assert.equal((await request('/api/directory/colonies/missing/location', { method: 'PATCH', cookie, body: { coordinates: [-80, 25] } })).status, 404);
 });
 
-
 test('a colony address is saved with its location and can be updated or cleared', async (t) => {
   const { request, signIn } = fixture(t);
   const cookie = await signIn('local-admin');
@@ -145,7 +144,6 @@ test('a colony address is saved with its location and can be updated or cleared'
   assert.equal((await request(path, { method: 'PATCH', cookie, body: { coordinates: null, address: 'No pin' } })).status, 400);
   assert.equal((await request(path, { method: 'PATCH', cookie, body: { coordinates: [-80, 25], address: 'x'.repeat(501) } })).status, 400);
 });
-
 
 
 test('cat details and photos can be created, edited, read and removed', async (t) => {

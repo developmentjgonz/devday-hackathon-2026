@@ -133,8 +133,8 @@ export function ReportTaskStage() {
                   </div>
                 </div>
                 <div className="mews-stage-content">
-                  <Heading level={2} size="card"><Roll>{scene.tasksView ? 'My Tasks' : 'Reports'}</Roll></Heading>
-                  <Text size="caption" tone="muted"><Roll>{scene.tasksView ? 'Open tasks' : 'All reports'}</Roll></Text>
+                  <Heading level={2} size="card"><Roll variant="fade">{scene.tasksView ? 'My Tasks' : 'Reports'}</Roll></Heading>
+                  <Text size="caption" tone="muted"><Roll variant="fade">{scene.tasksView ? 'Open tasks' : 'All reports'}</Roll></Text>
                   <div className="mews-stage-views">
                     <div className="mews-stage-view" data-active={!scene.tasksView || undefined}>
                       <Row pad={12} selected={scene.review} data-target="report" data-cursor="pointer" title={<StageText>Possible injury near the feeding station</StageText>} subtitle={<span>Riverside · <Roll>{scene.finished ? 'Processed' : 'Pending'}</Roll></span>} />

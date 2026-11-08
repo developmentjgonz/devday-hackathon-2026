@@ -35,7 +35,7 @@ export function UserAccessDrawer({ user, currentUserId, role, status, busy, erro
       {user ? <>
         <DrawerBody>
           <div className="flex min-w-0 items-start gap-4">
-            <UserAvatar name={user.name} />
+            <UserAvatar name={user.name} src={user.avatarUrl} />
             <div className="min-w-0 space-y-1">
               <Heading level={2} size="card" className="wrap-anywhere">{user.name}{ownAccount ? ' (you)' : ''}</Heading>
               <Text size="small" tone="muted" className="wrap-anywhere">{user.email}</Text>

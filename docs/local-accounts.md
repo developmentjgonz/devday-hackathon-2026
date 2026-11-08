@@ -21,6 +21,8 @@ Select **Create a test user** to try signup. Name and email are required; phone 
 
 New users persist and appear on the sign-in page after sign-out. Re-running the seed adds missing fictional accounts, colonies, and cats without changing existing records.
 
+Active users can open **Profile** from the account menu. They can update their name, email, phone, and profile photo. Changes belong to their account and are loaded with the session on later visits. The account menu and team list show the photo; initials appear when there is no photo. Photos can be removed. The server accepts JPEG, PNG, and WebP images up to 1 MB after resizing; the form accepts source files up to 10 MB.
+
 The administrator role includes management of workspace accounts. Additional roles and rescue permissions remain open.
 
 ## Test approval
@@ -39,6 +41,7 @@ Keep `--local` on this command. See [Team management](team-management.md) for th
 
 - `migrations/0001_accounts.sql`: users, provider identities, and sessions.
 - `migrations/0002_colonies_and_cats.sql`: persistent workspace colonies and cats.
+- `migrations/0012_user_photos.sql`: account profile photos.
 - `seeds/local.sql`: fictional fixtures, outside production migrations.
 - `worker/routes/auth.ts`: Hono routes for local sign-in, signup, session lookup, and sign-out.
 - `worker/routes/users.ts`: administrator-only team account reads and access changes.

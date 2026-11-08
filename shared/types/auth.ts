@@ -6,6 +6,7 @@ export interface SessionUser {
   name: string
   email: string
   phone: string | null
+  avatarUrl?: string
   role: UserRole
   status: AccountStatus
 }
@@ -25,5 +26,5 @@ export interface UserAccessChange {
 export interface SignInOptions {
   localSignInEnabled: boolean
   googleSignInEnabled: boolean
-  users: Omit<SessionUser, 'phone'>[]
+  users: Omit<SessionUser, 'phone' | 'avatarUrl'>[]
 }

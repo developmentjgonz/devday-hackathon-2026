@@ -21,10 +21,22 @@
 .mews-stage .ss-stage {
   overflow: hidden;
   background: var(--background);
+  color: var(--foreground);
   --ss-font: 'Geist Variable', sans-serif;
   --ss-accent: var(--primary);
   --ss-surface: var(--card);
+  --ss-chrome: var(--card);
   --ss-raised: var(--popover);
+  --ss-text: var(--muted-foreground);
+  --ss-text-strong: var(--foreground);
+  --ss-text-faint: var(--muted-foreground);
+  --ss-ink-1: color-mix(in oklch, var(--foreground) 4%, transparent);
+  --ss-ink-2: color-mix(in oklch, var(--foreground) 6%, transparent);
+  --ss-ink-3: color-mix(in oklch, var(--foreground) 8%, transparent);
+  --ss-ink-4: color-mix(in oklch, var(--foreground) 10%, transparent);
+  --ss-ink-5: color-mix(in oklch, var(--foreground) 15%, transparent);
+  --ss-line: var(--border);
+  --ss-line-faint: var(--border);
   --ss-radius-lg: var(--surface-radius);
 }
 
@@ -69,16 +81,13 @@
   inset: 0;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(6px);
-  transition: opacity 120ms var(--ease-out), transform 120ms var(--ease-out), visibility 0s 120ms;
-  will-change: transform;
+  transition: opacity 120ms var(--ease-out), visibility 0s 120ms;
 }
 
 .mews-stage-view[data-active] {
   opacity: 1;
   visibility: visible;
-  transform: translateY(0);
-  transition: opacity 160ms var(--ease-out) 100ms, transform 160ms var(--ease-out) 100ms, visibility 0s;
+  transition: opacity 160ms var(--ease-out) 100ms, visibility 0s;
 }
 
 .mews-stage-panel {
@@ -162,8 +171,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mews-stage-view {
-    transform: none;
+  .mews-stage-view,
+  .mews-stage-panel-view {
     transition: none;
   }
 }

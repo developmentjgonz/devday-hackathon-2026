@@ -1,22 +1,26 @@
 import type { ManagedUser, UserAccessChange } from '../../shared/types/auth.ts'
+import { userFromRow, type UserRow } from './user-profile.ts'
 
-const fields = 'id, name, email, phone, role, status, created_at AS createdAt'
+const fields = 'id, name, email, phone, role, status, created_at AS createdAt, (SELECT revision FROM user_photos WHERE user_id = users.id) AS photoRevision'
+const select = `SELECT u.id, u.name, u.email, u.phone, u.role, u.status, u.created_at AS createdAt, p.revision AS photoRevision FROM users u LEFT JOIN user_photos p ON p.user_id = u.id`
+type ManagedUserRow = UserRow & { createdAt: number }
 
 export async function listUsers(db: D1Database): Promise<ManagedUser[]> {
   const { results } = await db.prepare(`
-    SELECT ${fields} FROM users
-    ORDER BY CASE status WHEN 'pending' THEN 0 WHEN 'active' THEN 1 ELSE 2 END, name COLLATE NOCASE, id
-  `).all<ManagedUser>()
-  return results
+    ${select}
+    ORDER BY CASE u.status WHEN 'pending' THEN 0 WHEN 'active' THEN 1 ELSE 2 END, u.name COLLATE NOCASE, u.id
+  `).all<ManagedUserRow>()
+  return results.map(userFromRow)
 }
 
-export function findUser(db: D1Database, id: string): Promise<ManagedUser | null> {
-  return db.prepare(`SELECT ${fields} FROM users WHERE id = ?`).bind(id).first<ManagedUser>()
+export async function findUser(db: D1Database, id: string): Promise<ManagedUser | null> {
+  const row = await db.prepare(`${select} WHERE u.id = ?`).bind(id).first<ManagedUserRow>()
+  return row ? userFromRow(row) : null
 }
 
 /** Check the actor, previous values, and last administrator in the same atomic update. */
-export function changeUserAccess(db: D1Database, id: string, actorId: string, change: UserAccessChange): Promise<ManagedUser | null> {
-  return db.prepare(`
+export async function changeUserAccess(db: D1Database, id: string, actorId: string, change: UserAccessChange): Promise<ManagedUser | null> {
+  const changed = await db.prepare(`
     UPDATE users
     SET role = ?, status = ?,
       approved_by = CASE WHEN status = 'pending' AND ? = 'active' THEN ? ELSE approved_by END,
@@ -29,5 +33,6 @@ export function changeUserAccess(db: D1Database, id: string, actorId: string, ch
   `).bind(
     change.role, change.status, change.status, actorId, change.status,
     id, actorId, change.expectedRole, change.expectedStatus, actorId, change.role, change.status,
-  ).first<ManagedUser>()
+  ).first<ManagedUserRow>()
+  return changed ? userFromRow(changed) : null
 }

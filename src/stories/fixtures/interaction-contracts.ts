@@ -7,7 +7,7 @@ type CompleteVariants<All, Cases extends readonly string[]> =
     ? Cases[number] extends NonNullable<All> ? Cases : never
     : never
 
-const buttonCases = ['default', 'outline', 'secondary', 'ghost', 'destructive', 'link', 'selection', 'media', 'account', 'table-header', 'view-switcher'] as const
+const buttonCases = ['default', 'outline', 'secondary', 'ghost', 'destructive', 'link', 'selection', 'media', 'account', 'table-header', 'view-switcher', 'navigation'] as const
 const badgeCases = ['default', 'secondary', 'outline', 'destructive', 'success', 'warning', 'ghost', 'link'] as const
 
 // New or removed production variants must update the browser fixtures too.
@@ -17,6 +17,8 @@ export const badgeStateVariants: CompleteVariants<ComponentProps<typeof Badge>['
 // Each shared source must have browser coverage or a reason it has no own states.
 // The coverage test compares this list with the source directory.
 export const sharedStateCoverage = {
+  'bar-chart.tsx': 'Read-only comparison and long labels in Display/Bar chart; overview-progress.spec.ts checks live task updates and the empty state.',
+  'user-avatar.tsx': 'Decorative photo and initials in three sizes; profile.spec.ts checks photo fallback.',
   'progress-ring.tsx': 'Determinate, completed, zero, and empty totals in Feedback/Progress ring; task and report counts update in overview-progress.spec.ts.',
   'record-avatar.tsx': 'Passive photo with cat and colony fallback; photo failure is checked in record-avatar.spec.ts.',
   'view-switcher.tsx': 'Selection, hover, and keyboard focus are checked in view-switcher.spec.ts; task filters and selection are covered in my-tasks.spec.ts.',

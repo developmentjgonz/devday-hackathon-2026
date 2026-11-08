@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { expectFocusRing, fill, leavePointer } from './state-helpers'
+import { expectFocusRing, fill, leavePointer, openWorkspaceNavigation } from './state-helpers'
 
 const story = '/iframe.html?id=pages-colonies-and-cats--colonies&viewMode=story'
 
@@ -43,7 +43,7 @@ for (const width of [390, 1440]) {
     await expect(page.getByRole('heading', { name: 'Miso', level: 1 })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Canal', exact: true })).toBeVisible()
 
-    const nav = page.getByRole('navigation', { name: 'Workspace navigation' })
+    const nav = await openWorkspaceNavigation(page)
     await nav.getByRole('link', { name: 'Cats', exact: true }).click()
     await page.getByLabel('Colony', { exact: true }).selectOption('riverside')
     await expect(page.getByRole('link', { name: 'Pepper', exact: true })).toBeVisible()

@@ -170,6 +170,17 @@ INSERT OR IGNORE INTO tasks (id,title,owner_id,report_id,due,status,created_by,c
 INSERT OR IGNORE INTO tasks (id,title,owner_id,report_id,due,status,created_by,created_at) VALUES ('visit-task-78','Clean the feeding area','local-admin','report-visit-78','','open','local-admin','2026-11-07T12:00:00.000Z');
 INSERT OR IGNORE INTO tasks (id,title,owner_id,report_id,due,status,created_by,created_at) VALUES ('visit-task-89','Arrange a follow-up care check','local-member','report-visit-89','2026-11-08','open','local-admin','2026-11-07T12:00:00.000Z');
 
+-- Fictional completed work for the local team. Re-seeding keeps later edits.
+INSERT OR IGNORE INTO tasks (id,title,owner_id,due,status,created_by,created_at) VALUES
+  ('sample-complete-water','Refresh water at Riverside','local-admin','','completed','local-admin','2026-11-01T12:00:00.000Z'),
+  ('sample-complete-bowls','Clean feeding bowls at Canal','local-admin','','completed','local-admin','2026-11-02T12:00:00.000Z'),
+  ('sample-complete-shelter','Check shelter bedding at Grove','local-admin','','completed','local-admin','2026-11-03T12:00:00.000Z'),
+  ('sample-complete-supplies','Sort donated food supplies','local-admin','','completed','local-admin','2026-11-04T12:00:00.000Z'),
+  ('sample-complete-clinic','Confirm a clinic visit for Pepper','local-admin','','completed','local-admin','2026-11-05T12:00:00.000Z'),
+  ('sample-complete-feeding','Complete the morning feeding at Canal','local-member','','completed','local-admin','2026-11-01T12:00:00.000Z'),
+  ('sample-complete-cover','Arrange evening feeding cover','local-member','','completed','local-admin','2026-11-03T12:00:00.000Z'),
+  ('sample-complete-station','Tidy the feeding station at Grove','local-member','','completed','local-admin','2026-11-05T12:00:00.000Z');
+
 -- Fictional public summaries; these do not expose private colony locations.
 INSERT OR IGNORE INTO public_areas (id, name, boundary, activity, colony_count_band, published, position) VALUES ('north-area', 'North service area', '{"type":"Polygon","coordinates":[[[-80.26,25.84],[-80.23,25.855],[-80.2,25.84],[-80.2,25.805],[-80.23,25.79],[-80.26,25.805],[-80.26,25.84]]]}', 'high', '6–10', 1, 0);
 INSERT OR IGNORE INTO public_areas (id, name, boundary, activity, colony_count_band, published, position) VALUES ('central-area', 'Central service area', '{"type":"Polygon","coordinates":[[[-80.26,25.775],[-80.23,25.79],[-80.2,25.775],[-80.2,25.74],[-80.23,25.725],[-80.26,25.74],[-80.26,25.775]]]}', 'medium', '3–5', 1, 1);

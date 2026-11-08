@@ -9,6 +9,7 @@ import type { TaskResult, WorkspaceStore } from './workspace-api'
 
 type InboxStore = {
   data: InboxData; reports: InboxReport[]; tasks: Task[]; members: WorkspaceMember[]
+  refreshWorkspace: () => Promise<void>; refreshingWorkspace: boolean; workspaceRefreshFailed: boolean
   addColony: (name: string, coordinates?: Coordinates, address?: string) => Promise<InboxColony>; updateColonyLocation: (colony: InboxColony, coordinates: Coordinates | null, address: string) => Promise<InboxColony>; addCat: (input: CatInput) => Promise<InboxCat>; updateCat: (cat: InboxCat, input: CatInput) => Promise<InboxCat>
   createAttachment: (file: File) => ReportAttachment; discardAttachment: (attachment: ReportAttachment) => void
   createReport: (input: CreateReportInput, attachments: ReportAttachment[]) => Promise<InboxReport>
@@ -22,10 +23,81 @@ const InboxContext = createContext<InboxStore | null>(null)
 export function InboxProvider({ data, workspace, directoryStore, workspaceStore, children }: { data: InboxData; workspace: WorkspaceSnapshot; directoryStore: DirectoryStore; workspaceStore: WorkspaceStore; children: ReactNode }) {
   const [reports, setReports] = useState(() => structuredClone(workspace.reports))
   const [tasks, setTasks] = useState(() => structuredClone(workspace.tasks))
+  const [members, setMembers] = useState(() => structuredClone(workspace.members))
   const [directory, setDirectory] = useState(() => ({ colonies: structuredClone(data.colonies), cats: structuredClone(data.cats) }))
   const workspaceData = useMemo(() => ({ ...data, ...directory }), [data, directory])
   const objectUrls = useRef(new Set<string>())
   const attachmentFiles = useRef(new Map<string, File>())
+  const mutationRevision = useRef(0)
+  const activeMutations = useRef(0)
+  const refreshRequest = useRef<Promise<void> | null>(null)
+  const refreshController = useRef<AbortController | null>(null)
+  const refreshNeeded = useRef(false)
+  const refreshCallback = useRef<(() => Promise<void>) | null>(null)
+  const [refreshingWorkspace, setRefreshingWorkspace] = useState(false)
+  const [workspaceRefreshFailed, setWorkspaceRefreshFailed] = useState(false)
+
+  // Ignore a snapshot if a local write started or finished while it was in flight.
+  const mutateWorkspace = useCallback(async <T,>(action: () => Promise<T>): Promise<T> => {
+    mutationRevision.current += 1
+    activeMutations.current += 1
+    try { return await action() }
+    finally {
+      activeMutations.current -= 1
+      mutationRevision.current += 1
+      if (!activeMutations.current && refreshNeeded.current) void refreshCallback.current?.()
+    }
+  }, [])
+  const refreshWorkspace = useCallback(async function refreshNow() {
+    if (activeMutations.current) { refreshNeeded.current = true; return }
+    if (refreshRequest.current) return refreshRequest.current
+    refreshNeeded.current = false
+    const revision = mutationRevision.current
+    const controller = new AbortController()
+    refreshController.current = controller
+    setRefreshingWorkspace(true)
+    const request = (async () => {
+      try {
+        const snapshot = await workspaceStore.getSnapshot(controller.signal)
+        if (controller.signal.aborted) return
+        if (revision !== mutationRevision.current || activeMutations.current) { refreshNeeded.current = true; return }
+        setReports(snapshot.reports)
+        setTasks(snapshot.tasks)
+        setMembers(snapshot.members)
+        setWorkspaceRefreshFailed(false)
+      } catch {
+        if (!controller.signal.aborted) {
+          if (revision !== mutationRevision.current) refreshNeeded.current = true
+          else setWorkspaceRefreshFailed(true)
+        }
+      } finally {
+        if (!controller.signal.aborted) setRefreshingWorkspace(false)
+      }
+    })()
+    refreshRequest.current = request
+    try { await request }
+    finally {
+      if (refreshRequest.current === request) refreshRequest.current = null
+      if (refreshController.current === controller) refreshController.current = null
+      if (!controller.signal.aborted && refreshNeeded.current && !activeMutations.current) void refreshNow()
+    }
+  }, [workspaceStore])
+  useEffect(() => {
+    refreshCallback.current = refreshWorkspace
+    const refreshWhenVisible = () => { if (document.visibilityState === 'visible') void refreshWorkspace() }
+    const interval = window.setInterval(refreshWhenVisible, 60_000)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    window.addEventListener('focus', refreshWhenVisible)
+    return () => {
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+      window.removeEventListener('focus', refreshWhenVisible)
+      refreshController.current?.abort()
+      refreshRequest.current = null
+      refreshCallback.current = null
+      refreshNeeded.current = false
+    }
+  }, [refreshWorkspace])
   useEffect(() => {
     const urls = objectUrls.current
     return () => { for (const url of urls) URL.revokeObjectURL(url) }
@@ -69,32 +141,34 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
     return task
   }, [applyReport])
   async function createReport(input: CreateReportInput, attachments: ReportAttachment[]) {
-    const files = attachments.map((attachment) => {
-      const file = attachmentFiles.current.get(attachment.id)
-      if (!file) throw new Error('An attachment is unavailable. Remove it and try again.')
-      return { attachment, file }
+    return mutateWorkspace(async () => {
+      const files = attachments.map((attachment) => {
+        const file = attachmentFiles.current.get(attachment.id)
+        if (!file) throw new Error('An attachment is unavailable. Remove it and try again.')
+        return { attachment, file }
+      })
+      const report = await workspaceStore.createReport(input, files)
+      setReports((items) => [report, ...items])
+      for (const attachment of attachments) {
+        attachmentFiles.current.delete(attachment.id)
+        if (!report.attachments.some((item) => item.url === attachment.url)) discardAttachment(attachment)
+      }
+      return report
     })
-    const report = await workspaceStore.createReport(input, files)
-    setReports((items) => [report, ...items])
-    for (const attachment of attachments) {
-      attachmentFiles.current.delete(attachment.id)
-      if (!report.attachments.some((item) => item.url === attachment.url)) discardAttachment(attachment)
-    }
-    return report
   }
-  const finishReport = useCallback(async (id: string, input: FinishReportInput) => applyReport(await workspaceStore.finishReport(id, input)), [workspaceStore, applyReport])
-  const reopenReport = useCallback(async (id: string) => applyReport(await workspaceStore.reopenReport(id)), [workspaceStore, applyReport])
-  const askQuestion = useCallback(async (id: string, text: string) => applyReport(await workspaceStore.askQuestion(id, text)), [workspaceStore, applyReport])
-  const linkDuplicate = useCallback(async (id: string, targetId: string) => applyReport(await workspaceStore.linkDuplicate(id, targetId)), [workspaceStore, applyReport])
-  const markReports = useCallback(async (ids: string[], unread: boolean) => {
+  const finishReport = useCallback((id: string, input: FinishReportInput) => mutateWorkspace(async () => applyReport(await workspaceStore.finishReport(id, input))), [workspaceStore, applyReport, mutateWorkspace])
+  const reopenReport = useCallback((id: string) => mutateWorkspace(async () => applyReport(await workspaceStore.reopenReport(id))), [workspaceStore, applyReport, mutateWorkspace])
+  const askQuestion = useCallback((id: string, text: string) => mutateWorkspace(async () => applyReport(await workspaceStore.askQuestion(id, text))), [workspaceStore, applyReport, mutateWorkspace])
+  const linkDuplicate = useCallback((id: string, targetId: string) => mutateWorkspace(async () => applyReport(await workspaceStore.linkDuplicate(id, targetId))), [workspaceStore, applyReport, mutateWorkspace])
+  const markReports = useCallback((ids: string[], unread: boolean) => mutateWorkspace(async () => {
     await workspaceStore.markReports(ids, unread)
     const selected = new Set(ids)
     setReports((items) => items.map((item) => selected.has(item.id) ? { ...item, unread } : item))
-  }, [workspaceStore])
-  const createTask = useCallback(async (input: TaskInput) => applyTask(await workspaceStore.createTask(input)), [workspaceStore, applyTask])
-  const editTask = useCallback(async (id: string, input: TaskInput) => applyTask(await workspaceStore.editTask(id, input)), [workspaceStore, applyTask])
-  const changeTaskStatus = useCallback(async (id: string, status: TaskStatus) => applyTask(await workspaceStore.changeTaskStatus(id, status)), [workspaceStore, applyTask])
-  return <InboxContext value={{ data: workspaceData, reports, tasks, members: workspace.members, addColony, updateColonyLocation, addCat, updateCat, createAttachment, discardAttachment, createReport, finishReport, reopenReport, askQuestion, linkDuplicate, markReports, createTask, editTask, changeTaskStatus }}>{children}</InboxContext>
+  }), [workspaceStore, mutateWorkspace])
+  const createTask = useCallback((input: TaskInput) => mutateWorkspace(async () => applyTask(await workspaceStore.createTask(input))), [workspaceStore, applyTask, mutateWorkspace])
+  const editTask = useCallback((id: string, input: TaskInput) => mutateWorkspace(async () => applyTask(await workspaceStore.editTask(id, input))), [workspaceStore, applyTask, mutateWorkspace])
+  const changeTaskStatus = useCallback((id: string, status: TaskStatus) => mutateWorkspace(async () => applyTask(await workspaceStore.changeTaskStatus(id, status))), [workspaceStore, applyTask, mutateWorkspace])
+  return <InboxContext value={{ data: workspaceData, reports, tasks, members, refreshWorkspace, refreshingWorkspace, workspaceRefreshFailed, addColony, updateColonyLocation, addCat, updateCat, createAttachment, discardAttachment, createReport, finishReport, reopenReport, askQuestion, linkDuplicate, markReports, createTask, editTask, changeTaskStatus }}>{children}</InboxContext>
 }
 export function useInbox() {
   const store = useContext(InboxContext)

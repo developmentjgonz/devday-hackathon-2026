@@ -65,7 +65,7 @@ Orange action backgrounds use dark text. `primary-text` supplies a darker orange
 - `Card`: owns surface color, border, corners, and focus ring. Use `tone="note"` for a warm note surface, and `padding="none"` for maps, tables, or lists that fill the surface. `CardHeader`, `CardContent`, `CardFooter`, and `CardList` own the standard content spacing, footer surface, and list separators. Use `render` to preserve semantic containers such as a map's `section`.
 - `ViewSwitcher`: a labelled, controlled set of buttons for switching between presentations of the same content. The selected view is exposed with `aria-pressed`.
 - `EmptyState`: owns icon or illustration treatment, heading, description, and optional `action`. Use `illustration` in place of `icon` for a larger decorative image, `tone="danger"` for failures, and `size="page"` with `headingLevel={1}` for full recovery pages. Maps, no-results views, and recovery pages reuse this component.
-- `TextLink`: use `variant="navigation"` for sidebar routes and `variant="skip"` for the keyboard skip link. Active, hover, and focus states live in the shared component.
+- `TextLink`: use `variant="navigation"` for workspace routes and `variant="skip"` for the keyboard skip link. `Button variant="navigation"` uses the same row treatment for actions such as sign out. Active, hover, press, and focus states live in the shared components.
 - `AccountButton`, `RecordButton`, `Popover`, and `Disclosure`: shared account triggers, record selection, overlay surfaces, and expandable history. Each has a focused Storybook example. Product code supplies content and behavior; it does not reproduce their appearance.
 - `Button` media and selection variants support photo controls and selectable records. Anchor rendering automatically uses link semantics. `MewsWordmark` uses its `size` API (`sm`, `default`, or `lg`) rather than page-level text classes.
 - `Button loading`: disables the action, sets `aria-busy`, and centers the shared compact cat-print loader at full contrast. The original content stays in the layout and accessible name but is visually hidden, so loading does not change the button size. Keep useful button text such as “Saving update”.
@@ -125,18 +125,19 @@ The normal test command starts or reuses Storybook on port 6006. For a built Sto
 
 ## Navigation state checks
 
-`WorkspaceNavigation` is shared by the app sidebar and **Actions → Workspace navigation**. Its stories use an in-memory router, so links change the current item without account requests. The gallery also includes these stories.
+`WorkspaceNavigation` is shared by the desktop sidebar, phone menu, and **Actions → Workspace navigation**. Its stories use an in-memory router. On phones, **Navigation → Workspace menu** shows the shared navigation drawer with the signed-in account, Profile, and Sign out. The menu closes after navigation, returns focus on dismissal, and closes if the desktop layout appears. The menu bar and page title remain visible while the page scrolls.
 
 | State | Expected appearance and behavior |
 | --- | --- |
 | Current route | Pink fill, medium text weight, `aria-current="page"`. |
 | Hover another link | Gray fill. The current link stays pink; the route does not change. |
 | Hover the current link | The current appearance stays the same. |
+| Press | An unselected link or action shows a temporary fill; the current link stays pink. |
 | Keyboard focus | A visible inset ring appears on either link. Focus does not change the route. |
-| Click or Enter | The destination becomes current. Exactly one of these two workspace links is current. Clicking the current link keeps it current. |
+| Click or Enter | The destination becomes current. Exactly one workspace link is current. Clicking the current link keeps it current. |
 | Pointer leaves | Hover fill clears. The current-page fill stays. |
 
-Run `npm run test:ui`. Playwright starts Storybook when needed, or uses the running server on port 6006. Checks cover both themes, 390 px and 1440 px widths, hover on current and other items, click, keyboard focus and Enter, and simulated touch. These assertions compare rendered colors as well as route semantics, so a hover fill that matches the current-page fill fails the check. Touch simulation does not replace a physical-device check.
+Run `npm run test:ui`. Playwright starts Storybook when needed, or uses the running server on port 6006. Checks cover both themes, phone and desktop widths, hover, press, keyboard focus, menu dismissal, account actions, and simulated touch. These assertions compare rendered colors as well as route semantics, so a hover fill that matches the current-page fill fails the check. Touch simulation does not replace a physical-device check.
 
 The browser config uses `/Users/admin/.local/bin/eday-secure-chrome` with `chromiumSandbox: true`. On another machine, configure a matching approved launcher before running the checks. Failure screenshots and traces are saved in the ignored `test-results/` directory. Inspect a specific story at `/iframe.html?id=actions-workspace-navigation--overview-current&viewMode=story`.
 
@@ -181,7 +182,7 @@ Default buttons, inputs, and preview selects use `--control-height` (44 px). Sma
 
 The shared Button `table-header` variant supplies sorting controls with body typography and standard button hover and focus behavior. Unread `TableOpenButton` titles have stronger weight and a dot; read titles keep the same marker space so text does not shift.
 
-**Actions → View tabs** documents controlled Base UI tabs with optional counts and arrow-key activation. Pass selected content as children so the tab and panel stay associated. **Forms → Select field** provides a native select with shared control tokens and disabled/invalid states. **Display → Table** provides semantic, compact record rows with native title buttons for keyboard access. **Overlays → Drawer** provides a right-side panel whose body scrolls while its header and footer stay visible. It fills phone screens. **Actions → Notification button** uses the standard Lucide bell at 20 px with a small attention dot and an accessible count.
+**Actions → View tabs** documents controlled Base UI tabs with optional counts and arrow-key activation. Pass selected content as children so the tab and panel stay associated. **Forms → Select field** provides a native select with shared control tokens and disabled/invalid states. **Display → Table** provides semantic, compact record rows with native title buttons for keyboard access. **Overlays → Drawer** provides a right-side panel whose body scrolls while its header and footer stay visible. It fills phone screens. **Actions → Notification button** uses the standard Lucide bell at 20 px with a small attention dot and an accessible count. **Pages → Notifications** demonstrates the workspace drawer, its report and task links, read actions, empty state, and request failures.
 
 **Pages → Reports** renders the real table, drawer, and workspace toolbar. Review, Report drawer, Busy inbox, Waiting for details, Processed, and Empty stories use fictional local data. Search, filtering, matching, questions, tasks, duplicate links, finish/reopen, and photo viewing work locally. The toolbar bell opens urgent reports. **New report** accepts photos, audio, PDF, text, Word, and CSV attachments, with previews, removal, and downloads. Nothing is uploaded, sent, or written to D1. Refresh resets the workspace provider. The example cat photo is a stock image. See [inbox scope and verification](inbox.md).
 
@@ -206,5 +207,7 @@ Reports use the status field with pending, waiting, and processed values. `repor
 `Input` and `Textarea` use `--placeholder-foreground` for empty hints. The light and dark themes keep hints less prominent than entered values. Hints do not replace visible labels. **Forms → Input → Entered value** and **Forms → Textarea → Entered value** show the difference. The shared field browser checks verify distinct colors and readable contrast.
 
 `ProgressRing` shows a determinate count against a known total. Primary and success tones use the shared palette; zero totals display a dash. Size and stroke width come from the shared progress tokens. **Feedback → Progress ring** covers partial, complete, not started, and no items. It adds no animation or loading state.
+
+`BarChart` shows labelled read-only counts with bars scaled to the largest value. An optional unit supplies singular and plural labels. The bars are decorative; visible text supplies each label and count. **Display → Bar chart** covers comparisons and long labels. Use `EmptyState` when there are no items.
 
 Long forms use `DialogContent layout="scroll"`, a form with a flex column layout, `DialogHeader`, `DialogBody`, and `DialogFooter`. The outer shell clips its rounded corners. Only the body scrolls, with the shared inset scroll track; title, close control, and footer actions remain fixed. **Overlays → Dialog → Scrolling form** documents this structure. Task creation and editing use it. `tests/ui/dialog-scroll.spec.ts` checks body scrolling, fixed header/footer positions, focus return, and narrow viewports in both themes.

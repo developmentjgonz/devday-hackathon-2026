@@ -1,10 +1,11 @@
 import { authRequest } from '@/features/auth/auth'
 import type { CreateReportInput, FinishReportInput, TaskInput } from '../../../shared/schemas/workspace'
-import type { Report, ReportAttachment, Task, TaskStatus } from '../../../shared/types/workspace'
+import type { Report, ReportAttachment, Task, TaskStatus, WorkspaceSnapshot } from '../../../shared/types/workspace'
 
 export type DraftFile = { attachment: ReportAttachment; file: File }
 export type TaskResult = { task: Task; report: Report | null }
 export type WorkspaceStore = {
+  getSnapshot: (signal?: AbortSignal) => Promise<WorkspaceSnapshot>
   createReport: (input: CreateReportInput, files: DraftFile[]) => Promise<Report>
   finishReport: (id: string, input: FinishReportInput) => Promise<Report>
   reopenReport: (id: string) => Promise<Report>
@@ -22,6 +23,7 @@ async function post<T>(path: string, data?: unknown): Promise<T> {
 const pathId = (id: string) => encodeURIComponent(id)
 
 export const databaseWorkspace: WorkspaceStore = {
+  getSnapshot(signal) { return authRequest<WorkspaceSnapshot>('/api/workspace-data', { signal }) },
   async createReport(input, files) {
     const form = new FormData()
     form.set('data', JSON.stringify(input))

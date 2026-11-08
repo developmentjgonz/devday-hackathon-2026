@@ -26,6 +26,7 @@ export function storyWorkspaceStore(user: SessionUser, initial: WorkspaceSnapsho
     return member.name
   }
   return {
+    async getSnapshot() { return structuredClone(data) },
     async createReport(input, files) {
       const item: Report = { ...input, id: crypto.randomUUID(), reporter: user.name, submittedAt: new Date().toISOString(), category: 'Field report', careNote: '', unread: true, status: 'pending', attachments: files.map(({ attachment }) => attachment), thread: [], history: [] }
       data.reports.unshift(item)
@@ -35,7 +36,10 @@ export function storyWorkspaceStore(user: SessionUser, initial: WorkspaceSnapsho
     async reopenReport(id) { const item = report(id); item.status = 'pending'; delete item.duplicateOf; item.history.push(`${user.name} reopened the report for review.`); return structuredClone(item) },
     async askQuestion(id, text) { const item = report(id); item.status = 'waiting'; item.thread.push({ id: crypto.randomUUID(), author: user.name, text }); item.history.push(`${user.name} requested more details.`); return structuredClone(item) },
     async linkDuplicate(id, targetId) { const item = report(id); item.status = 'processed'; item.duplicateOf = targetId; item.history.push(`${user.name} linked this duplicate to an existing report.`); return structuredClone(item) },
-    async markReports(ids, unread) { for (const id of ids) report(id).unread = unread },
+    async markReports(ids, unread) {
+      if (!ids.length || ids.length > 100) throw new Error('Select up to 100 reports.')
+      for (const id of ids) report(id).unread = unread
+    },
     async createTask(input) { const item: Task = { ...input, id: crypto.randomUUID(), owner: owner(input.ownerId), status: 'open' }; data.tasks.push(item); return taskResult(item, `created a task: ${item.title}.`) },
     async editTask(id, input) { const item = task(id); Object.assign(item, input, { owner: owner(input.ownerId) }); return taskResult(item, `updated a task: ${item.title}.`) },
     async changeTaskStatus(id, status) { const item = task(id); item.status = status; return taskResult(item, `${status === 'completed' ? 'completed' : 'reopened'} task: ${item.title}.`) },

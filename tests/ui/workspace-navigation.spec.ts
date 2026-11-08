@@ -83,7 +83,8 @@ test('touch changes the route without a stuck hover on the previous item', async
     expect(await background(inbox)).toBe(selectedFill)
     await overview.tap()
     await expect(overview).toHaveAttribute('aria-current', 'page')
-    expect(await background(inbox)).toBe(idleFill)
+    // Touch browsers can retain :active briefly after release; it must clear.
+    await expect.poll(() => background(inbox)).toBe(idleFill)
   } finally {
     await context.close()
   }

@@ -51,3 +51,9 @@ export async function expectFocusRing(page: Page, target: Locator) {
 export async function leavePointer(page: Page) {
   await page.mouse.move(0, 0)
 }
+
+export async function openWorkspaceNavigation(page: Page) {
+  const menu = page.getByRole('button', { name: 'Open menu', exact: true })
+  if (await menu.isVisible()) await menu.click()
+  return page.getByRole('navigation', { name: 'Workspace navigation', exact: true })
+}

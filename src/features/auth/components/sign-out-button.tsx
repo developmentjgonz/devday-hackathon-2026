@@ -26,7 +26,7 @@ export function SignOutButton({ variant = 'outline', className }: Pick<Component
   return (
     <div className="flex flex-col items-end gap-2">
       <Button variant={variant} className={className} loading={busy} onClick={signOut}>
-        {variant === 'ghost' ? <LogOut aria-hidden="true" /> : null}
+        {variant === 'ghost' || variant === 'navigation' ? <LogOut aria-hidden="true" /> : null}
         Sign out
       </Button>
       {error ? <Alert>{error}</Alert> : null}

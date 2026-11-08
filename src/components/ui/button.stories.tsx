@@ -9,7 +9,7 @@ const meta = {
   component: Button,
   args: { children: 'Log visit', variant: 'default', size: 'default', disabled: false, loading: false },
   argTypes: {
-    variant: { control: 'select', options: ['default', 'secondary', 'outline', 'ghost', 'destructive', 'link', 'selection', 'media', 'account', 'table-header', 'view-switcher'] },
+    variant: { control: 'select', options: ['default', 'secondary', 'outline', 'ghost', 'destructive', 'link', 'selection', 'media', 'account', 'table-header', 'view-switcher', 'navigation'] },
     size: { control: 'select', options: ['xs', 'sm', 'segment', 'default', 'lg', 'icon', 'icon-xs', 'icon-sm', 'icon-lg', 'icon-group', 'dialog-close', 'content', 'media', 'account'] },
     children: { control: 'text' },
   },
@@ -22,6 +22,7 @@ export const Primary: Story = {}
 export const Secondary: Story = { args: { children: 'Add care note', variant: 'secondary' } }
 export const Outline: Story = { args: { children: 'View care history', variant: 'outline' } }
 export const Ghost: Story = { args: { children: 'Edit visit', variant: 'ghost' } }
+export const NavigationAction: Story = { args: { children: 'Sign out', variant: 'navigation' }, parameters: { docs: { description: { story: 'Use for actions beside navigation links. It shares their size, typography, spacing, and press feedback.' } } } }
 export const TableHeader: Story = { args: { children: 'Received', variant: 'table-header', size: 'sm' } }
 export const Destructive: Story = { args: { children: 'Delete care note', variant: 'destructive' } }
 export const Link: Story = { args: { children: 'View colony', variant: 'link' } }

@@ -6,47 +6,11 @@ import { Label } from '@/components/ui/label'
 import { RecordAvatar } from '@/components/ui/record-avatar'
 import { Textarea } from '@/components/ui/textarea'
 import { Text } from '@/components/ui/typography'
-import { catPhotoMaxBytes, type CatInput } from '../../../../shared/schemas/directory'
+import type { CatInput } from '../../../../shared/schemas/directory'
+import { maxSourcePhotoBytes, preparePhoto } from '@/lib/photo'
 
 export type CatDetailsDraft = { birthDate: string; birthDateEstimated: boolean; description: string; photo: CatInput['photo']; photoError: string; photoReading: boolean }
 export function emptyCatDetails(): CatDetailsDraft { return { birthDate: '', birthDateEstimated: false, description: '', photo: undefined, photoError: '', photoReading: false } }
-
-const maxSourceBytes = 10 * 1024 * 1024
-async function preparePhoto(file: File): Promise<{ mimeType: 'image/jpeg' | 'image/png' | 'image/webp'; data: string }> {
-  let image: Blob = file
-  if (file.size > catPhotoMaxBytes) {
-    const url = URL.createObjectURL(file)
-    try {
-      const source = new Image()
-      source.src = url
-      await source.decode()
-      let scale = Math.min(1, 1600 / Math.max(source.naturalWidth, source.naturalHeight))
-      const canvas = document.createElement('canvas')
-      const context = canvas.getContext('2d')
-      if (!context) throw new Error('Could not process photo')
-      for (let attempt = 0; attempt < 5; attempt++) {
-        canvas.width = Math.max(1, Math.round(source.naturalWidth * scale))
-        canvas.height = Math.max(1, Math.round(source.naturalHeight * scale))
-        context.fillStyle = '#ffffff'
-        context.fillRect(0, 0, canvas.width, canvas.height)
-        context.drawImage(source, 0, 0, canvas.width, canvas.height)
-        const resized = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.82))
-        if (!resized) throw new Error('Could not process photo')
-        image = resized
-        if (image.size <= catPhotoMaxBytes) break
-        scale *= 0.75
-      }
-      if (image.size > catPhotoMaxBytes) throw new Error('Could not make photo small enough')
-    } finally { URL.revokeObjectURL(url) }
-  }
-  const result = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Could not read photo'))
-    reader.onerror = () => reject(new Error('Could not read photo'))
-    reader.readAsDataURL(image)
-  })
-  return { mimeType: image.type as 'image/jpeg' | 'image/png' | 'image/webp', data: result.slice(result.indexOf(',') + 1) }
-}
 
 export function CatDetailsFields({ value, onChange, name, existingPhoto, disabled }: { value: CatDetailsDraft; onChange: (next: CatDetailsDraft) => void; name: string; existingPhoto?: string; disabled?: boolean }) {
   const dateId = useId()
@@ -56,7 +20,7 @@ export function CatDetailsFields({ value, onChange, name, existingPhoto, disable
   const photoUrl = value.photo === undefined ? existingPhoto : value.photo ? `data:${value.photo.mimeType};base64,${value.photo.data}` : undefined
   async function selectPhoto(file: File | undefined) {
     if (!file) return
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > maxSourceBytes || !file.size) {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > maxSourcePhotoBytes || !file.size) {
       onChange({ ...value, photoError: 'Choose a JPEG, PNG, or WebP image of 10 MB or less.', photoReading: false })
       return
     }
