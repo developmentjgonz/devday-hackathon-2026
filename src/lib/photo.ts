@@ -36,4 +36,3 @@ export async function preparePhoto(file: File): Promise<{ mimeType: 'image/jpeg'
   })
   return { mimeType: image.type as 'image/jpeg' | 'image/png' | 'image/webp', data: result.slice(result.indexOf(',') + 1) }
 }
-

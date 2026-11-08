@@ -14,4 +14,3 @@ export const photoSchema = z.object({
     return bytes.startsWith('RIFF') && bytes.slice(8, 12) === 'WEBP'
   } catch { return false }
 }, 'Choose a valid JPEG, PNG, or WebP image of 1 MB or less')
-

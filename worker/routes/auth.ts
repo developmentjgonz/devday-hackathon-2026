@@ -9,6 +9,8 @@ import { localSignInEnabled, requireActiveUser, requireLocalSignIn, requireSameO
 import { limitFormBody, limitProfileBody, requireJson, validateJson } from '../middleware/validation.ts'
 import { signInLocalUser, signUpLocalUser } from '../services/accounts.ts'
 import { createSession, endSession, getSessionUser } from '../services/session.ts'
+import { signInGoogleUser } from '../db/google-identities.ts'
+import { clearGoogleCookie, googleConfig, startGoogleSignIn, verifyGoogleCallback } from '../services/google-auth.ts'
 
 export const authRoutes = new Hono<AppEnv>()
 
@@ -40,8 +42,32 @@ authRoutes.get('/photos/:id', requireActiveUser, async (c) => {
 
 authRoutes.get('/options', async (c) => {
   const enabled = localSignInEnabled(c.req.raw, c.env)
-  const options: SignInOptions = { localSignInEnabled: enabled, users: enabled ? await listLocalUsers(c.env.DB) : [] }
+  const options: SignInOptions = { localSignInEnabled: enabled, googleSignInEnabled: Boolean(googleConfig(c.env)), users: enabled ? await listLocalUsers(c.env.DB) : [] }
   return c.json(options)
+})
+
+authRoutes.get('/google/start', async (c) => {
+  const config = googleConfig(c.env)
+  if (!config) return c.redirect('/sign-in?google=unavailable', 302)
+  const result = await startGoogleSignIn(c.req.raw, config)
+  c.header('Set-Cookie', result.cookie)
+  c.header('Referrer-Policy', 'no-referrer')
+  return c.redirect(result.url, 302)
+})
+
+authRoutes.get('/google/callback', async (c) => {
+  const config = googleConfig(c.env)
+  c.header('Set-Cookie', clearGoogleCookie(c.req.raw), { append: true })
+  c.header('Referrer-Policy', 'no-referrer')
+  if (!config) return c.redirect('/sign-in?google=unavailable', 302)
+  try {
+    const identity = await verifyGoogleCallback(c.req.raw, config)
+    const user = await signInGoogleUser(c.env.DB, identity, config.adminEmail)
+    c.header('Set-Cookie', await createSession(c.req.raw, c.env.DB, user.id), { append: true })
+    return c.redirect(user.status === 'active' ? '/app' : '/account-status', 302)
+  } catch {
+    return c.redirect('/sign-in?google=error', 302)
+  }
 })
 
 authRoutes.use('/local/*', requireLocalSignIn)

@@ -96,7 +96,7 @@ test('local options list fictional accounts and send no cacheable response', asy
 
 test('local sign-in and signup are unavailable without the explicit flag', async (t) => {
   const { request } = fixture(t, { LOCAL_TEST_SIGN_IN: undefined });
-  assert.deepEqual(await (await request('/api/auth/options')).json(), { localSignInEnabled: false, users: [] });
+  assert.deepEqual(await (await request('/api/auth/options')).json(), { localSignInEnabled: false, googleSignInEnabled: false, users: [] });
   for (const path of ['/api/auth/local/sign-in', '/api/auth/local/sign-up']) {
     assert.equal((await request(path, { method: 'POST', body: { userId: 'local-admin' } })).status, 404);
   }
@@ -106,7 +106,7 @@ test('a public hostname cannot enable local sign-in, even with the flag', async 
   const { request } = fixture(t);
   for (const base of ['https://mews.example', 'http://mews.example', 'https://localhost']) {
     const options = await request('/api/auth/options', { base });
-    assert.deepEqual(await options.json(), { localSignInEnabled: false, users: [] });
+    assert.deepEqual(await options.json(), { localSignInEnabled: false, googleSignInEnabled: false, users: [] });
     for (const path of ['/api/auth/local/sign-in', '/api/auth/local/sign-up']) {
       assert.equal((await request(path, { base, method: 'POST', body: { userId: 'local-admin' } })).status, 404);
     }
@@ -217,6 +217,20 @@ test('the configured app origin supports the Vite proxy without trusting forward
     headers: { 'X-Forwarded-Host': 'other.example' }, body: { userId: 'local-admin' },
   });
   assert.equal(denied.status, 403);
+});
+
+test('local Vite proxy accepts loopback aliases only at the configured port', async (t) => {
+  const { request } = fixture(t, { APP_ORIGIN: 'http://127.0.0.1:5197' });
+  const body = { userId: 'local-admin' };
+  const options = { base: 'http://127.0.0.1:8797', method: 'POST', body };
+  assert.equal((await request('/api/auth/local/sign-in', { ...options, origin: 'http://localhost:5197' })).status, 200);
+  for (const origin of ['http://localhost:5198', 'https://localhost:5197', 'http://localhost.evil:5197', 'null']) {
+    assert.equal((await request('/api/auth/local/sign-in', { ...options, origin })).status, 403);
+  }
+
+  const reverse = fixture(t, { APP_ORIGIN: 'http://localhost:5197' });
+  assert.equal((await reverse.request('/api/auth/local/sign-in', { ...options, origin: 'http://127.0.0.1:5197' })).status, 200);
+  assert.equal((await request('/api/auth/sign-out', { base: 'https://mews.example', method: 'POST', origin: 'http://localhost:5197' })).status, 403);
 });
 
 test('expired sessions and signed-out sessions cannot be reused', async (t) => {

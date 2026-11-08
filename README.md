@@ -4,7 +4,7 @@ Mews is Team JS's project for the [DevDay Exchange Community Hackathon](https://
 
 The project aims to help cat rescue coordinators and volunteers track colonies, cats, feeding visits, and care needs in one place. The project direction is confirmed; the first user flow and MVP scope still need to be agreed. Mews remains the working name.
 
-**Status:** The local app uses D1 for accounts, colonies, cats, reports, tasks, and published public content. Report attachments use private R2 storage. Local development includes fictional seed data and test sign-in. Storybook runs separately with isolated examples. These changes have not been deployed; Google sign-in and outbound messaging remain unimplemented.
+**Status:** The live and local apps use separate D1 databases for accounts, colonies, cats, reports, tasks, and published public content. Report attachments use private R2 storage. Google sign-in is enabled for the live workspace; local development uses fictional seed data and test sign-in. Storybook runs separately with isolated examples. Outbound messaging remains unimplemented.
 
 ## Cloudflare deployment
 
@@ -20,7 +20,7 @@ Cloudflare dashboard links require an account with access to these resources. Th
 
 Pushes to `main` run checks. Pushes to `release` run checks and deploy to the live URL. Pull requests to either branch run checks only. See the [workflow](.github/workflows/cloudflare.yml), [Cloudflare configuration](wrangler.jsonc), and [infrastructure guide](docs/infrastructure.md) for setup and deployment details.
 
-Storybook runs locally and is not deployed. Migrations and fictional seed data are available for local development. The remote database and R2 bucket must be prepared before deployment.
+Storybook runs locally and is not deployed. The live database has the current migrations and the private R2 bucket is provisioned. Future schema changes must be applied to remote D1 separately; the release workflow deploys code but does not run migrations. Do not apply fictional local seeds to the live database.
 
 ## Project guide
 
@@ -32,6 +32,7 @@ Storybook runs locally and is not deployed. Migrations and fictional seed data a
 - [Map motion](docs/map-motion.md): how map selection handles pointer, keyboard, and reduced-motion input.
 - [Infrastructure](docs/infrastructure.md): dedicated Cloudflare resources, deployment, and health checks.
 - [Local accounts](docs/local-accounts.md): seeded users, signup, sessions, and approval checks.
+- [Google sign-in](docs/google-sign-in.md): live identity, Cloudflare secrets, and deployment setup.
 - [Local skills](.agents/skills/README.md): installed guidance and source revisions.
 - [Feature map](.agents/skills/verify-mews/references/features/README.md): implemented user-visible behavior and verification notes.
 

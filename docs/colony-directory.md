@@ -21,3 +21,7 @@ Each cat and colony has an authenticated timeline backed by D1. It records profi
 When adding a cat, the member can add a colony without leaving the cat draft. The new colony is selected automatically. The small search, view switcher, and add action use matching control heights.
 
 The cat profile checks are `tests/directory/directory.test.mjs` and `tests/ui/cat-profiles.spec.ts`.
+
+Profiles list open and completed related tasks. An assignee or an administrator can edit, complete, or reopen a task from either profile; other members can view it. Direct associations and associations through a linked report are included.
+
+Each cat and colony has an authenticated timeline backed by D1. It records profile and location changes, cat additions and moves, task creation and changes, and report submission and review activity. Entries keep the actor’s name and time. Profile, task, and report-review entries include changed values where available. Cat photos are recorded as changes, not copied into the history. New events are saved in the same database batch as the action. The migration adds creation entries using the existing creation metadata; earlier edits cannot be reconstructed. Storybook keeps its activity in memory for each example.
