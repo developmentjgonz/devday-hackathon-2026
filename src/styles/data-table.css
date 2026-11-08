@@ -1,4 +1,8 @@
 /* Keep the scroll track clear of the table surface's rounded corners. */
+.mews-table-scroll {
+  overflow-anchor: none;
+}
+
 .mews-table-scroll::-webkit-scrollbar {
   width: 0.625rem;
   height: 0.625rem;
