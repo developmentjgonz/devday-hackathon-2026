@@ -9,7 +9,7 @@ import type { TaskResult, WorkspaceStore } from './workspace-api'
 
 type InboxStore = {
   data: InboxData; reports: InboxReport[]; tasks: Task[]; members: WorkspaceMember[]
-  addColony: (name: string, coordinates?: Coordinates) => Promise<InboxColony>; updateColonyLocation: (colony: InboxColony, coordinates: Coordinates | null) => Promise<InboxColony>; addCat: (input: CatInput) => Promise<InboxCat>; updateCat: (cat: InboxCat, input: CatInput) => Promise<InboxCat>
+  addColony: (name: string, coordinates?: Coordinates, address?: string) => Promise<InboxColony>; updateColonyLocation: (colony: InboxColony, coordinates: Coordinates | null, address: string) => Promise<InboxColony>; addCat: (input: CatInput) => Promise<InboxCat>; updateCat: (cat: InboxCat, input: CatInput) => Promise<InboxCat>
   createAttachment: (file: File) => ReportAttachment; discardAttachment: (attachment: ReportAttachment) => void
   createReport: (input: CreateReportInput, attachments: ReportAttachment[]) => Promise<InboxReport>
   finishReport: (id: string, input: FinishReportInput) => Promise<InboxReport>; reopenReport: (id: string) => Promise<InboxReport>
@@ -42,13 +42,13 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
     objectUrls.current.delete(attachment.url)
     attachmentFiles.current.delete(attachment.id)
   }
-  async function addColony(name: string, coordinates?: Coordinates): Promise<InboxColony> {
-    const colony = await directoryStore.addColony(name, coordinates)
+  async function addColony(name: string, coordinates?: Coordinates, address?: string): Promise<InboxColony> {
+    const colony = await directoryStore.addColony(name, coordinates, address)
     setDirectory((current) => ({ ...current, colonies: [...current.colonies, colony] }))
     return colony
   }
-  async function updateColonyLocation(existing: InboxColony, coordinates: Coordinates | null): Promise<InboxColony> {
-    const colony = await directoryStore.updateColonyLocation(existing, coordinates)
+  async function updateColonyLocation(existing: InboxColony, coordinates: Coordinates | null, address: string): Promise<InboxColony> {
+    const colony = await directoryStore.updateColonyLocation(existing, coordinates, address)
     setDirectory((current) => ({ ...current, colonies: current.colonies.map((item) => item.id === colony.id ? colony : item) }))
     return colony
   }

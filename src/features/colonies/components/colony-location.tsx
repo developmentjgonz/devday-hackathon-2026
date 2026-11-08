@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader } from '@/components/ui/drawer'
 import { LocationPicker, locationCoordinates, locationDraft, locationIsEmpty } from '@/components/ui/location-picker'
+import { TextLink } from '@/components/ui/text-link'
 import { toast } from '@/components/ui/toaster'
 import { Heading, Text } from '@/components/ui/typography'
 import { useInbox } from '@/features/inbox/inbox-context'
@@ -14,23 +15,23 @@ import type { InboxColony } from '@/features/inbox/types'
 export function ColonyLocation({ colony }: { colony: InboxColony }) {
   const { data, updateColonyLocation } = useInbox()
   const [open, setOpen] = useState(false)
-  const [draft, setDraft] = useState(() => locationDraft(colony.coordinates))
+  const [draft, setDraft] = useState(() => locationDraft(colony.coordinates, colony.address))
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
   const [locating, setLocating] = useState(false)
   const trigger = useRef<HTMLButtonElement>(null)
   const selected = locationCoordinates(draft)
   const clear = locationIsEmpty(draft)
-  const changed = clear ? Boolean(colony.coordinates) : Boolean(selected && (selected[0] !== colony.coordinates?.[0] || selected[1] !== colony.coordinates?.[1]))
+  const changed = clear ? Boolean(colony.coordinates) : Boolean(selected && (selected[0] !== colony.coordinates?.[0] || selected[1] !== colony.coordinates?.[1] || draft.address.trim() !== (colony.address ?? '')))
   const initialCenter = colony.coordinates ?? data.colonies.find((item) => item.coordinates)?.coordinates ?? [-80.1918, 25.7617]
 
-  function begin() { setDraft(locationDraft(colony.coordinates)); setError(''); setOpen(true) }
+  function begin() { setDraft(locationDraft(colony.coordinates, colony.address)); setError(''); setOpen(true) }
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!changed || (!selected && !clear) || saving || locating) return
     setSaving(true); setError('')
     try {
-      await updateColonyLocation(colony, selected)
+      await updateColonyLocation(colony, selected, selected ? draft.address.trim() : '')
       setOpen(false)
       toast.success(selected ? 'Location saved' : 'Location removed', { description: colony.name })
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not save the location. Try again.') }
@@ -42,7 +43,10 @@ export function ColonyLocation({ colony }: { colony: InboxColony }) {
       <Heading id="colony-location" level={2} size="card">Location</Heading>
       <Button ref={trigger} variant="outline" size="sm" onClick={begin}>{colony.coordinates ? <Pencil aria-hidden="true" /> : <MapPin aria-hidden="true" />}{colony.coordinates ? 'Edit location' : 'Set location'}</Button>
     </div>
-    <Card size="sm"><CardContent><Text size="small" tone={colony.coordinates ? 'default' : 'muted'}>{colony.coordinates ? `${colony.coordinates[1].toFixed(5)}, ${colony.coordinates[0].toFixed(5)}` : 'No location set'}</Text></CardContent></Card>
+    <Card size="sm"><CardContent>
+      <Text size="small" tone={colony.coordinates ? 'default' : 'muted'}>{colony.address || (colony.coordinates ? `${colony.coordinates[1].toFixed(5)}, ${colony.coordinates[0].toFixed(5)}` : 'No location set')}</Text>
+      {colony.address ? <TextLink size="sm" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</TextLink> : null}
+    </CardContent></Card>
     <Drawer open={open} onOpenChange={(next) => { if (!saving) setOpen(next) }}>
       <DrawerContent render={<form onSubmit={save} />} closeLabel="Close location editor" closeDisabled={saving} finalFocus={() => trigger.current}>
         <DrawerHeader><DialogTitle>{colony.coordinates ? 'Edit location' : 'Set location'}</DialogTitle><DialogDescription>Choose where {colony.name} is located.</DialogDescription></DrawerHeader>

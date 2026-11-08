@@ -37,11 +37,13 @@ test('searching and choosing an address places a pin that can be adjusted before
   await results.getByRole('button', { name: /701 Brickell Avenue/ }).click()
   await expect(add.getByLabel('Latitude')).toHaveValue('25.767088')
   await expect(add.getByLabel('Longitude')).toHaveValue('-80.189696')
+  await expect(add.getByLabel('Address or landmark (optional)')).toHaveValue('701 Brickell Avenue, Miami, Florida, United States')
   await expect(results).toHaveCount(0)
   const map = add.locator('[data-location-map-status="ready"] canvas')
   await expect(map).toBeVisible()
   await map.click({ position: { x: 100, y: 90 } })
   await expect(add.getByLabel('Latitude')).not.toHaveValue('25.767088')
+  await expect(add.getByLabel('Address or landmark (optional)')).toHaveValue('')
   await add.getByRole('button', { name: 'Add colony', exact: true }).click()
   await page.getByRole('link', { name: 'Garden', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Edit location' })).toBeVisible()
@@ -61,7 +63,7 @@ test('address search works when editing a colony and preserves the existing pin 
   await expect(edit.getByLabel('Latitude')).toHaveValue('25.767392')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await edit.getByRole('button', { name: 'Save location' }).click()
-  await expect(page.getByRole('region', { name: 'Location' }).getByText('25.76739, -80.19291')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Location' }).getByText('Brickell City Centre, Miami, Florida, United States')).toBeVisible()
 })
 
 test('no matches and service errors leave the map and coordinate fields usable', async ({ page }) => {

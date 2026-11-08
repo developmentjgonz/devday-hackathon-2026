@@ -2,6 +2,10 @@ import type { Coordinates } from '../../shared/types/directory'
 
 export type AddressResult = { label: string; detail: string; coordinates: Coordinates }
 
+export function addressLabel(result: AddressResult): string {
+  return [result.label, result.detail].filter(Boolean).join(', ').slice(0, 500)
+}
+
 function object(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
 }

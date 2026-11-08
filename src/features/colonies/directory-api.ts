@@ -3,19 +3,19 @@ import type { CatInput } from '../../../shared/schemas/directory'
 import { authRequest } from '@/features/auth/auth'
 
 export type DirectoryStore = {
-  addColony: (name: string, coordinates?: Coordinates) => Promise<Colony>
-  updateColonyLocation: (colony: Colony, coordinates: Coordinates | null) => Promise<Colony>
+  addColony: (name: string, coordinates?: Coordinates, address?: string) => Promise<Colony>
+  updateColonyLocation: (colony: Colony, coordinates: Coordinates | null, address: string) => Promise<Colony>
   addCat: (input: CatInput) => Promise<Cat>
   updateCat: (cat: Cat, input: CatInput) => Promise<Cat>
 }
 
 export const databaseDirectory: DirectoryStore = {
-  async addColony(name, coordinates) {
-    const { colony } = await authRequest<{ colony: Colony }>('/api/directory/colonies', { method: 'POST', body: JSON.stringify({ name, coordinates }) })
+  async addColony(name, coordinates, address) {
+    const { colony } = await authRequest<{ colony: Colony }>('/api/directory/colonies', { method: 'POST', body: JSON.stringify({ name, coordinates, address }) })
     return colony
   },
-  async updateColonyLocation(existing, coordinates) {
-    const { colony } = await authRequest<{ colony: Colony }>(`/api/directory/colonies/${encodeURIComponent(existing.id)}/location`, { method: 'PATCH', body: JSON.stringify({ coordinates }) })
+  async updateColonyLocation(existing, coordinates, address) {
+    const { colony } = await authRequest<{ colony: Colony }>(`/api/directory/colonies/${encodeURIComponent(existing.id)}/location`, { method: 'PATCH', body: JSON.stringify({ coordinates, address }) })
     return colony
   },
   async addCat(input) {
