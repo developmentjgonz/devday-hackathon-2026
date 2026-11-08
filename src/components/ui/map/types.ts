@@ -13,7 +13,7 @@ export type TeamMapColony = {
   id: string
   name: string
   coordinates: [longitude: number, latitude: number]
-  status: 'routine' | 'needs-visit' | 'urgent'
+  status: 'routine' | 'needs-visit' | 'urgent' | 'urgent-report' | 'unknown'
   catCount: number
 }
 

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useId, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { CircleAlert, Layers } from 'lucide-react'
 import { cn } from 'cn'
 import { Button } from './button'
@@ -21,6 +21,8 @@ const statusLabels = {
   routine: 'Routine care',
   'needs-visit': 'Needs a visit',
   urgent: 'Urgent care',
+  'urgent-report': 'Urgent report to review',
+  unknown: 'Care status not recorded',
 }
 
 export type ColonyMapProps = {
@@ -33,6 +35,9 @@ export type ColonyMapProps = {
   onRetry?: () => void
   /** The default OpenFreeMap basemap needs network access but no API key. */
   mapStyleUrl?: string
+  /** Actions or details for the currently selected map entry. */
+  renderSelection?: (id: string) => ReactNode
+  subtitle?: string
   className?: string
 }
 
@@ -57,6 +62,8 @@ export function ColonyMap({
   snapshotLabel,
   onRetry,
   mapStyleUrl = 'https://tiles.openfreemap.org/styles/positron',
+  renderSelection,
+  subtitle,
   className,
 }: ColonyMapProps) {
   const id = useId()
@@ -101,9 +108,9 @@ export function ColonyMap({
             {title}
           </Heading>
           <Text size="caption" tone="muted" className="mt-1">
-            {publicView
+            {subtitle ?? (publicView
               ? 'Area activity · Approximate locations'
-              : 'Colony locations'}
+              : 'Colony locations')}
           </Text>
         </div>
       </CardHeader>
@@ -125,9 +132,9 @@ export function ColonyMap({
               </Button>
             ) : undefined} />
         ) : empty ? (
-          <EmptyState role="status" className="h-full" icon={<Layers />} title={publicView ? 'No public areas to show' : 'No colonies to show'} description={publicView
+          <EmptyState role="status" className="h-full" icon={<Layers />} title={publicView ? 'No public areas to show' : 'No locations to show'} description={publicView
                 ? 'Areas will appear when an approved summary is available.'
-                : 'Colony markers will appear when records are available.'} />
+                : 'Colony locations will appear here when available.'} />
         ) : visible ? (
           <Suspense fallback={<LoadingMap />}>
             <MapCanvas
@@ -163,19 +170,19 @@ export function ColonyMap({
           ) : (
             <div
               className="flex flex-wrap items-center gap-x-4 gap-y-2"
-              aria-label="Care status legend"
+              aria-label="Map status legend"
             >
-              {(['routine', 'needs-visit', 'urgent'] as const).map((status) => (
+              {(['routine', 'needs-visit', 'urgent', 'urgent-report', 'unknown'] as const).filter((status) => data.audience === 'team' && data.colonies.some((colony) => colony.status === status)).map((status) => (
                 <Text render={<span />} size="caption" tone="muted" key={status} className="inline-flex items-center gap-1.5">
                   <span
                     aria-hidden="true"
                     className={cn(
                       'size-2 shrink-0 rounded-full',
-                      status === 'urgent'
+                      status === 'urgent' || status === 'urgent-report'
                         ? 'bg-destructive'
                         : status === 'needs-visit'
                           ? 'bg-primary'
-                          : 'bg-success-foreground',
+                          : status === 'unknown' ? 'bg-muted-foreground' : 'bg-success-foreground',
                     )}
                   />
                   {statusLabels[status]}
@@ -200,7 +207,7 @@ export function ColonyMap({
                     title={entry.name}
                     description={'colonyCountBand' in entry
                           ? `${entry.colonyCountBand} colonies · ${entry.activity} activity`
-                          : `${entry.catCount} cats · ${statusLabels[entry.status]}`}
+                          : `${entry.catCount} ${entry.catCount === 1 ? 'cat' : 'cats'} · ${statusLabels[entry.status]}`}
                     icon={'boundary' in entry ? (
                       <Layers
                         className="size-4 shrink-0 text-muted-foreground"
@@ -213,6 +220,7 @@ export function ColonyMap({
             </ul>
           </div>
         ) : null}
+        {selected && renderSelection ? <div>{renderSelection(selected.id)}</div> : null}
         <Text
           role="status"
           aria-live="polite"

@@ -26,6 +26,7 @@ function applyTheme(map: MapLibreMap, element: HTMLElement) {
   const ink = styles.getPropertyValue('--foreground').trim()
   const success = styles.getPropertyValue('--success-foreground').trim()
   const error = styles.getPropertyValue('--destructive').trim()
+  const muted = styles.getPropertyValue('--muted-foreground').trim()
   map.setPaintProperty('area-fill', 'fill-color', [
     'match',
     ['get', 'activity'],
@@ -52,8 +53,12 @@ function applyTheme(map: MapLibreMap, element: HTMLElement) {
     ['get', 'status'],
     'urgent',
     error,
+    'urgent-report',
+    error,
     'needs-visit',
     primary,
+    'unknown',
+    muted,
     success,
   ])
   map.setPaintProperty(
