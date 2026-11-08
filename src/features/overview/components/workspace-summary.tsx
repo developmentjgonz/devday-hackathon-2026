@@ -25,7 +25,7 @@ export function WorkspaceSummary({ summary }: { summary: ReturnType<typeof overv
       </CardContent></Card>
       <Card size="sm" render={<section aria-labelledby="report-reviews-summary" />}><CardContent className="flex h-full flex-col gap-4">
         <Heading id="report-reviews-summary" level={2} size="compact">Report reviews</Heading>
-        <div className="space-y-1"><Text size="metric" weight="semibold">{reports.pending} need review</Text><Text size="caption" tone="muted">{reports.waiting} waiting for details</Text></div>
+        <div className="space-y-1"><Text size="metric" weight="semibold">{reports.pending} {reports.pending === 1 ? 'needs' : 'need'} review</Text><Text size="caption" tone="muted">{reports.waiting} waiting for details</Text></div>
         <div className="mt-auto"><TextLink size="sm" render={<Link to="/app/reports" />}>View reports</TextLink></div>
       </CardContent></Card>
     </div>
