@@ -25,7 +25,12 @@ const birthDate = z.string().refine((value) => {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value && value <= new Date().toISOString().slice(0, 10)
 }, 'Enter a valid birth date that is not in the future').default('')
 
-export const createColonySchema = z.object({ name })
+const coordinates = z.tuple([
+  z.number().finite().min(-180).max(180),
+  z.number().finite().min(-90).max(90),
+])
+export const createColonySchema = z.object({ name, coordinates: coordinates.optional() })
+export const colonyLocationSchema = z.object({ coordinates: coordinates.nullable() })
 export const createCatSchema = z.object({
   name,
   colonyId: z.string('Choose a colony').trim().min(1, 'Choose a colony').max(120, 'Choose a colony'),

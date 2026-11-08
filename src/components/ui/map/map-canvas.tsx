@@ -313,8 +313,8 @@ export default function MapCanvas({
       <div ref={container} className="h-full w-full" />
       {status === 'ready' ? (
         <Card padding="none" role="group" aria-label="Map zoom" className="absolute top-3 right-3 w-fit">
-          <Button variant="ghost" size="icon" aria-label="Zoom in" disabled={zoom >= (data.audience === 'public' ? 11 : 18)} onClick={() => mapRef.current?.zoomIn({ duration: 0 })}><Plus aria-hidden="true" /></Button>
-          <Button variant="ghost" size="icon" aria-label="Zoom out" disabled={zoom <= 0} onClick={() => mapRef.current?.zoomOut({ duration: 0 })}><Minus aria-hidden="true" /></Button>
+          <Button variant="ghost" size="icon-group" aria-label="Zoom in" disabled={zoom >= (data.audience === 'public' ? 11 : 18)} onClick={() => mapRef.current?.zoomIn({ duration: 0 })}><Plus aria-hidden="true" /></Button>
+          <Button variant="ghost" size="icon-group" aria-label="Zoom out" disabled={zoom <= 0} onClick={() => mapRef.current?.zoomOut({ duration: 0 })}><Minus aria-hidden="true" /></Button>
         </Card>
       ) : null}
       {status === 'loading' ? (

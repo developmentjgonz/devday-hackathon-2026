@@ -92,6 +92,39 @@ test('directory rejects invalid names and cats with missing colonies', async (t)
   assert.throws(() => sqlite.prepare('INSERT INTO cats (id, name, colony_id) VALUES (?, ?, ?)').run('orphan', 'Cat', 'missing'));
 });
 
+test('colony locations can be set, moved, cleared, and read across requests', async (t) => {
+  const { request, signIn } = fixture(t);
+  const cookie = await signIn('local-member');
+  const created = await request('/api/directory/colonies', { method: 'POST', cookie, body: { name: 'Garden', coordinates: [-80.25, 25.8] } });
+  assert.equal(created.status, 201);
+  const { colony } = await created.json();
+  assert.deepEqual(colony.coordinates, [-80.25, 25.8]);
+  const path = `/api/directory/colonies/${colony.id}/location`;
+  const moved = await request(path, { method: 'PATCH', cookie, body: { coordinates: [-80.3, 25.9] } });
+  assert.equal(moved.status, 200);
+  assert.equal((await moved.json()).colony.name, 'Garden');
+  let directory = await (await request('/api/directory', { cookie })).json();
+  assert.deepEqual(directory.colonies.find((item) => item.id === colony.id).coordinates, [-80.3, 25.9]);
+  const cleared = await request(path, { method: 'PATCH', cookie, body: { coordinates: null } });
+  assert.equal(cleared.status, 200);
+  directory = await (await request('/api/directory', { cookie })).json();
+  assert.equal(directory.colonies.find((item) => item.id === colony.id).coordinates, undefined);
+});
+
+test('colony location changes validate coordinates and require active, same-origin access', async (t) => {
+  const { request, signIn } = fixture(t);
+  const cookie = await signIn('local-admin');
+  const path = '/api/directory/colonies/canal/location';
+  for (const coordinates of [[181, 25], [-80, -91], [-80], ['-80', 25], [null, 25]]) {
+    assert.equal((await request(path, { method: 'PATCH', cookie, body: { coordinates } })).status, 400);
+    assert.equal((await request('/api/directory/colonies', { method: 'POST', cookie, body: { name: 'Garden', coordinates } })).status, 400);
+  }
+  assert.equal((await request(path, { method: 'PATCH', cookie, body: {} })).status, 400);
+  assert.equal((await request(path, { method: 'PATCH', body: { coordinates: [-80, 25] } })).status, 401);
+  assert.equal((await request(path, { method: 'PATCH', cookie, origin: 'https://other.example', body: { coordinates: [-80, 25] } })).status, 403);
+  assert.equal((await request('/api/directory/colonies/missing/location', { method: 'PATCH', cookie, body: { coordinates: [-80, 25] } })).status, 404);
+});
+
 
 test('cat details and photos can be created, edited, read and removed', async (t) => {
   const { request, signIn } = fixture(t);

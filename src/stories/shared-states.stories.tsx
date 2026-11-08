@@ -58,6 +58,16 @@ export const Fields: Story = {
   ))}</div>,
 }
 
+export const ControlCorners: Story = {
+  render: () => <div className="grid w-80 max-w-full gap-3">
+    <Label htmlFor="corner-name">Cat name</Label><Input id="corner-name" />
+    <Label htmlFor="corner-colony">Colony</Label><SelectField id="corner-colony"><option>Canal colony</option></SelectField>
+    <Label htmlFor="corner-notes">Care notes</Label><Textarea id="corner-notes" />
+    <Button>Save care note</Button>
+  </div>,
+  parameters: { docs: { description: { story: 'Buttons and form controls use the same shared corner radius.' } } },
+}
+
 function SelectionStates() {
   const [record, setRecord] = useState('Canal')
   const [report, setReport] = useState('Morning feeding')

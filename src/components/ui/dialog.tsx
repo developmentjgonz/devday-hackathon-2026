@@ -80,8 +80,8 @@ function DialogContent({
             render={
               <Button
                 variant="ghost"
-                className="absolute top-3 right-3"
-                size="icon-sm"
+                className="absolute top-(--dialog-close-inset) right-(--dialog-close-inset)"
+                size="dialog-close"
               />
             }
           >
