@@ -13,6 +13,7 @@ import { reportStatusLabels } from '@/features/inbox/types'
 import { OpenTasks, ReportActivity } from '../components/record-activity'
 import { NewRecordButton } from '../components/new-record-button'
 import { RecordActions } from '../components/record-actions'
+import { ColonyLocation } from '../components/colony-location'
 import { colonySummary, formatReportTime, recentReports, reportsForColony } from '../directory-data'
 
 export function ColonyPage() {
@@ -34,6 +35,7 @@ export function ColonyPage() {
     <title>{colony.name} · Mews</title>
     <div className="space-y-8">
       <RecordActions colonyId={colony.id} />
+      <ColonyLocation colony={colony} />
       {urgentReports.length ? <section aria-labelledby="colony-urgent-reports" className="space-y-3">
         <Heading id="colony-urgent-reports" level={2} size="card">Urgent reports to review</Heading>
         <ReportActivity reports={urgentReports} />

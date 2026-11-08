@@ -39,7 +39,7 @@ function DirectoryStory({ initialPath, data = localInboxData, failSaves = false 
 const meta = {
   title: 'Pages/Colonies and cats',
   component: DirectoryStory,
-  parameters: { layout: 'fullscreen', docs: { description: { component: 'The workspace directories and profiles share fictional, in-memory records with Reports. Add colony and Add cat update workspace state; records and reviews reset on refresh. List, cards, and maps use the same filters. Map coordinates are fictional and cat markers show colony locations. Cat profiles support optional birth dates, estimated ages, details, and photos. Storybook stores profile changes in memory. Real location editing and feeding schedules are not implemented.' } } },
+  parameters: { layout: 'fullscreen', docs: { description: { component: 'The workspace directories and profiles share fictional, in-memory records with Reports. Add colony and Add cat update workspace state; records and reviews reset on refresh. List, cards, and maps use the same filters. Map coordinates are fictional and cat markers show colony locations. Colony locations can be chosen and edited. Cat profiles support optional birth dates, estimated ages, details, and photos. Storybook stores changes in memory. Feeding schedules are not implemented.' } } },
   args: { initialPath: '/app/colonies' },
 } satisfies Meta<typeof DirectoryStory>
 export default meta

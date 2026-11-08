@@ -1,16 +1,21 @@
-import type { Cat, Colony } from '../../../shared/types/directory'
+import type { Cat, Colony, Coordinates } from '../../../shared/types/directory'
 import type { CatInput } from '../../../shared/schemas/directory'
 import { authRequest } from '@/features/auth/auth'
 
 export type DirectoryStore = {
-  addColony: (name: string) => Promise<Colony>
+  addColony: (name: string, coordinates?: Coordinates) => Promise<Colony>
+  updateColonyLocation: (colony: Colony, coordinates: Coordinates | null) => Promise<Colony>
   addCat: (input: CatInput) => Promise<Cat>
   updateCat: (cat: Cat, input: CatInput) => Promise<Cat>
 }
 
 export const databaseDirectory: DirectoryStore = {
-  async addColony(name) {
-    const { colony } = await authRequest<{ colony: Colony }>('/api/directory/colonies', { method: 'POST', body: JSON.stringify({ name }) })
+  async addColony(name, coordinates) {
+    const { colony } = await authRequest<{ colony: Colony }>('/api/directory/colonies', { method: 'POST', body: JSON.stringify({ name, coordinates }) })
+    return colony
+  },
+  async updateColonyLocation(existing, coordinates) {
+    const { colony } = await authRequest<{ colony: Colony }>(`/api/directory/colonies/${encodeURIComponent(existing.id)}/location`, { method: 'PATCH', body: JSON.stringify({ coordinates }) })
     return colony
   },
   async addCat(input) {

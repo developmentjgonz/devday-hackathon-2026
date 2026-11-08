@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { InboxCat, InboxColony, InboxData, InboxReport, ReportAttachment, Task } from './types'
 import type { CatInput } from '../../../shared/schemas/directory'
+import type { Coordinates } from '../../../shared/types/directory'
 import type { DirectoryStore } from '@/features/colonies/directory-api'
 import type { CreateReportInput, FinishReportInput, TaskInput } from '../../../shared/schemas/workspace'
 import type { TaskStatus, WorkspaceMember, WorkspaceSnapshot } from '../../../shared/types/workspace'
@@ -8,7 +9,7 @@ import type { TaskResult, WorkspaceStore } from './workspace-api'
 
 type InboxStore = {
   data: InboxData; reports: InboxReport[]; tasks: Task[]; members: WorkspaceMember[]
-  addColony: (name: string) => Promise<InboxColony>; addCat: (input: CatInput) => Promise<InboxCat>; updateCat: (cat: InboxCat, input: CatInput) => Promise<InboxCat>
+  addColony: (name: string, coordinates?: Coordinates) => Promise<InboxColony>; updateColonyLocation: (colony: InboxColony, coordinates: Coordinates | null) => Promise<InboxColony>; addCat: (input: CatInput) => Promise<InboxCat>; updateCat: (cat: InboxCat, input: CatInput) => Promise<InboxCat>
   createAttachment: (file: File) => ReportAttachment; discardAttachment: (attachment: ReportAttachment) => void
   createReport: (input: CreateReportInput, attachments: ReportAttachment[]) => Promise<InboxReport>
   finishReport: (id: string, input: FinishReportInput) => Promise<InboxReport>; reopenReport: (id: string) => Promise<InboxReport>
@@ -41,9 +42,14 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
     objectUrls.current.delete(attachment.url)
     attachmentFiles.current.delete(attachment.id)
   }
-  async function addColony(name: string): Promise<InboxColony> {
-    const colony = await directoryStore.addColony(name)
+  async function addColony(name: string, coordinates?: Coordinates): Promise<InboxColony> {
+    const colony = await directoryStore.addColony(name, coordinates)
     setDirectory((current) => ({ ...current, colonies: [...current.colonies, colony] }))
+    return colony
+  }
+  async function updateColonyLocation(existing: InboxColony, coordinates: Coordinates | null): Promise<InboxColony> {
+    const colony = await directoryStore.updateColonyLocation(existing, coordinates)
+    setDirectory((current) => ({ ...current, colonies: current.colonies.map((item) => item.id === colony.id ? colony : item) }))
     return colony
   }
   async function addCat(input: CatInput): Promise<InboxCat> {
@@ -88,7 +94,7 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
   const createTask = useCallback(async (input: TaskInput) => applyTask(await workspaceStore.createTask(input)), [workspaceStore, applyTask])
   const editTask = useCallback(async (id: string, input: TaskInput) => applyTask(await workspaceStore.editTask(id, input)), [workspaceStore, applyTask])
   const changeTaskStatus = useCallback(async (id: string, status: TaskStatus) => applyTask(await workspaceStore.changeTaskStatus(id, status)), [workspaceStore, applyTask])
-  return <InboxContext value={{ data: workspaceData, reports, tasks, members: workspace.members, addColony, addCat, updateCat, createAttachment, discardAttachment, createReport, finishReport, reopenReport, askQuestion, linkDuplicate, markReports, createTask, editTask, changeTaskStatus }}>{children}</InboxContext>
+  return <InboxContext value={{ data: workspaceData, reports, tasks, members: workspace.members, addColony, updateColonyLocation, addCat, updateCat, createAttachment, discardAttachment, createReport, finishReport, reopenReport, askQuestion, linkDuplicate, markReports, createTask, editTask, changeTaskStatus }}>{children}</InboxContext>
 }
 export function useInbox() {
   const store = useContext(InboxContext)
