@@ -49,6 +49,7 @@ Model urgency is separate from original source flags. It can escalate a care rev
 | Unit/integration suite | **50 tests passed**, including real SQLite persistence, cross-mode replay in both directions, mixed imports, source conflicts, concurrent/expired claims, source/agent separation, timestamp validation, area consistency, role navigation, and notification ownership. |
 | Production frontend | `npm run build` passed TypeScript and Vite bundling. |
 | Worker packaging | Pinned Wrangler 4.158.0 `deploy --dry-run` passed. This checks packaging, not hosted storage. |
+| GitHub Actions retry | [Run 42513883485](https://github.com/developmentjgonz/devday-hackathon-2026/actions/runs/42513883485) repeated the build, all 50 tests, Storybook, and Worker packaging successfully on Node 24.22.2. Dedicated deployment then failed at D1 listing with `10000: Authentication error`; no demo resources were created. |
 | Existing local data replay | A 72-report bulk repeat and a one-record chat repeat imported zero new sources. Counts remained **124 source messages, 73 review rows, and 40 feeder-log rows**. These are local historical row counts, not counts of urgent cats. |
 | Browser chat replay | Paused after **37 sources checked: 0 new, 37 retained**. Images appeared in the chat history. |
 | Mobile workday | Volunteer saw one relevant personal notification instead of the manager's review backlog. Mark-read persisted after reload. |
@@ -57,6 +58,8 @@ Model urgency is separate from original source flags. It can escalate a care rev
 | Layout/access | Narrow mobile navigation and restricted deep-link return were checked; a 1280 px DOM layout had no horizontal overflow. Physical-device coverage remains incomplete. |
 
 The prepared local census contains **38 active/unmerged cats across 18 fictional colonies**. The reusable fixture packs contain 112 sources, including the 72-report weekend scenario. Existing local rehearsal reports explain the larger local history.
+
+The local server was restarted after the interrupted session. The browser was refreshed and the real Google Maps basemap, weather layer, and Follow Skipper control were verified again. The local site remains available at [127.0.0.1:5197](http://127.0.0.1:5197/).
 
 ## Five-minute core demo
 

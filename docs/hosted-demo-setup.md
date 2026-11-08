@@ -4,6 +4,8 @@ Status: deployment attempted November 8, 2026, blocked by D1 authorization. The 
 
 After the user approved and configured both API secrets, the [deployment retry](https://github.com/developmentjgonz/devday-hackathon-2026/actions/runs/42492341290) reached the dedicated deploy step with all four encrypted configuration secrets available. Cloudflare again rejected D1 listing with `10000: Authentication error`. No dedicated D1, R2, or Worker resource was created. Key-sharing approval is resolved; Cloudflare account authorization remains the blocker.
 
+**Latest retry, pass 8:** [Run 42513883485](https://github.com/developmentjgonz/devday-hackathon-2026/actions/runs/42513883485), against code commit `bf67da6`, passed the frontend build, all 50 tests, Storybook build, and Worker bundle check on Node 24.22.2. It authenticated to the configured Cloudflare account, then failed at `/d1/database?name=mews-synthetic-demo-db&per_page=100` with the same `10000: Authentication error`. It did not reach database creation, R2 setup, migrations, seed import, Worker publication, or hosted checks. Recent successful release deployments do not establish D1/R2 management access for this separate demo.
+
 ## Required account access
 
 The current GitHub Actions credential authenticates to Workers, but Cloudflare rejected D1 listing with error `10000`. The Cloudflare account owner must check that the token targets the account in `wrangler.jsonc` and can manage D1 databases, Workers R2 storage, and Worker scripts, with any account-read permission Wrangler requires. An account token that can deploy the original Hello Worker is not sufficient evidence of D1/R2 management access.
