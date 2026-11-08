@@ -36,6 +36,14 @@ Optional local configuration:
 - `GOOGLE_MAPS_BROWSER_KEY` enables the real Google Maps basemap. Restrict it by HTTP referrer and enable only the Maps JavaScript API; Google billing and quota requirements still apply. Never place a server/API secret in the client. A local synthetic map preview remains functional without the key.
 - `OPENAI_API_KEY` enables the server-side Agents SDK paths only when local OpenAI is explicitly enabled by the runtime. `dev:full` defaults to deterministic synthetic triage, even if a local key file exists. Without agent mode, the same bounded, clearly labeled fallback workflow remains available.
 
+The current local server was started with live OpenAI enabled and a fictional phone report was verified end to end with a persisted `agent` assessment. To enable this again after stopping the server, keep the key only in ignored `.dev.vars` or `.env.local`, then run:
+
+```sh
+MEWS_ENABLE_OPENAI=1 npm run dev:full
+```
+
+New authenticated reports can use the model. Stored source replays retain their original assessments and skip repeated model calls. Historical fixture rows marked `demo` remain honestly labelled.
+
 Do not use real messages, photos, people, or locations in the demo.
 
 ## Six-minute judge flow

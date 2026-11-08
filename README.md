@@ -81,16 +81,18 @@ npm run build-storybook # Build the separate component workspace
 Copy `.dev.vars.example` to `.dev.vars` for local Worker development. Do not commit `.dev.vars`.
 
 ```sh
-cp .dev.vars.example .dev.vars
+cp -n .dev.vars.example .dev.vars
 ```
 
 For `npm run dev`, copy `.env.example` to `.env.local` and add the same browser-restricted Maps key. The Vite server supplies it through the local `/api/config` endpoint; it is not added to the static bundle.
 
 ```sh
-cp .env.example .env.local
+cp -n .env.example .env.local
 ```
 
 `OPENAI_API_KEY` is only consulted when `MEWS_ENABLE_OPENAI=1` enables the server-side triage path. Without both, the triage route remains available in deterministic demo mode.
+
+With the key configured in the ignored local file, start live agent mode with `MEWS_ENABLE_OPENAI=1 npm run dev:full`. An authenticated synthetic phone submission was verified with a persisted `agent` assessment. Existing imports keep their original mode; duplicate replays do not call the model again.
 
 `GOOGLE_MAPS_BROWSER_KEY` enables the Google Maps basemap. It is a browser key (not a secret), but must be limited by HTTP referrer and enabled only for the Maps JavaScript API. Exact rescue data must never be embedded in public JavaScript.
 

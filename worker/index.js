@@ -136,7 +136,10 @@ export default {
       if (!auth.ok) return auth.response;
       if (!(request.headers.get("content-type") ?? "").includes("application/json") || Number(request.headers.get("content-length") || 0) > 250000) return json({ error: "Invalid fixture" }, 400);
       try {
-        const assessed = await assessFixture(await readLimitedJson(request, 250000), env);
+        const fixture = validateSyntheticFixtureBatch(await readLimitedJson(request, 250000));
+        const stored = await env.DB.prepare("SELECT id FROM intake_import_batches WHERE id=?").bind(fixture.batchId).first();
+        if (stored) return json({ error: "This fixture batch is already imported; existing reviews were preserved.", batchId: stored.id }, 409);
+        const assessed = await assessFixture(fixture, env);
         const result = await importSyntheticFixture({ db: env.DB, ...assessed });
         await seedCanonicalCatsFromObservations(env.DB);
         await materializeCanonicalCensus(env.DB);

@@ -7,12 +7,14 @@ type Cat = { cat_key: string; name: string; status: string; colonies: string[]; 
 const positions: Record<string, string> = { "COL-02": "col-lr", "COL-04": "col-fy", "COL-07": "col-cc", "COL-11": "col-rw", "COL-MB-DEMO": "col-mb", "COL-HL-DEMO": "col-hl", "COL-HM-DEMO": "col-hm" };
 export function ConnectedFieldMap() {
   const [records, setRecords] = useState<MapRecord[]>([]);
+  const [revision, setRevision] = useState(0);
   const [scope, setScope] = useState<"internal" | "sponsor" | "public">("public");
   const [access, setAccess] = useState<"internal" | "sponsor" | "public">("public");
   const [notice, setNotice] = useState("Loading stored colony census…");
   const [selected, setSelected] = useState<MapRecord | null>(null);
   const [layers, setLayers] = useState(new Set<MapLayer>(["colonies", "urgent", "sightings", "weather"]));
   const select = useCallback((record: MapRecord) => setSelected(record), []);
+  useEffect(() => { const timer = setInterval(() => setRevision((value) => value + 1), 30000); const refresh = () => setRevision((value) => value + 1); addEventListener("mews-data-changed", refresh); return () => { clearInterval(timer); removeEventListener("mews-data-changed", refresh); }; }, []);
   useEffect(() => {
     let active = true;
     void (async () => {
@@ -34,11 +36,11 @@ export function ConnectedFieldMap() {
         });
         const care = next.filter((record) => record.status === "Care review").map((record) => ({ ...record, id: "care:" + record.id, title: record.title + " care review", layer: "urgent" as const }));
         const feeding = census.colonies.filter((colony) => colony.last_fed_at).flatMap((colony) => { const home = next.find((record) => record.id === colony.colony_key); return home ? [{ ...home, id: "feed:" + colony.colony_key, layer: "feeding" as const, title: home.title + " last feed", detail: "Last confirmed feed " + new Date(colony.last_fed_at!).toLocaleString(), observedAt: colony.last_fed_at! }] : []; });
-        if (active) { const roleScope = session ? session.user.role === "sponsor" ? "sponsor" : "internal" : "public"; setAccess(roleScope); setScope(roleScope); setRecords([...next, ...cats, ...care, ...feeding]); setNotice(next.length ? "Stored census and observations, placed at deliberately fictional broad-area anchors. Public view uses broad activity zones; radii are search-planning heuristics, not measured probabilities." : "Import a fictional chat in Care workspace to populate this map."); }
+        if (active) { const roleScope = session ? session.user.role === "sponsor" ? "sponsor" : "internal" : "public"; setAccess(roleScope); setScope((current) => access === roleScope ? current : roleScope); setRecords([...next, ...cats, ...care, ...feeding]); setNotice(next.length ? "Stored census and observations refresh every 30 seconds. Anchors are fictional; public view uses broad activity zones. Radii are planning heuristics, not measured probabilities." : "Import a fictional chat in Care workspace to populate this map."); }
       } catch { if (active) setNotice("Unable to load colony census. Refresh after the backend is available."); }
     })();
     return () => { active = false; };
-  }, []);
+  }, [revision]);
   const tracker = scope !== "public" && access !== "public" ? mapRecords.filter((record) => record.id === "live-scout") : [];
   const hazards = access !== "public" ? mapRecords.filter((record) => record.layer === "hazards") : [];
   function toggle(layer: MapLayer) { setLayers((current) => { const next = new Set(current); if (next.has(layer)) next.delete(layer); else next.add(layer); return next; }); }

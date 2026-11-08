@@ -13,8 +13,11 @@ The following was observed locally on November 8, 2026 by the implementation own
 | Intake/census/dedupe | The original 12-message shift was delivered; one human duplicate merge reduced the active count from 4 to 3 before the live shift added further fixture records. | This proves only local synthetic persistence and human review, not real chat ingestion or identity evidence. |
 | Private photo | A fictional JPEG was uploaded and approved in the local protected photo flow. | No real photos, vision match, malware scanning, retention enforcement, or production storage were verified. |
 | Lost-cat/task path | A Miami Beach query found Tux in the local data, returned three heuristic zones, and prepared/dispatched a synthetic task to the volunteer. | Zones are suggestions, not tracked movement or a located animal. |
+| Expanded replay | All 28 follow-up messages completed in the browser, in addition to the original 12-message scenario. | Scripted fictional delivery, not a live messaging service. |
+| Delivery recovery | A phone submission remained queued while the backend was stopped, then cleared after delivery when the backend returned. | Browser-local retry while the app is open; no service-worker background sync. |
+| Live OpenAI pipeline | An authenticated fictional phone report passed through the running app, persisted its source trace and assessment with mode `agent`, and was classified urgent. A separate direct SDK check also returned agent mode. | This verifies live triage for synthetic data. It does not validate visual identity, movement prediction, real animal outcomes, or every agent path. |
 
-Not verified: a remote Worker/D1/R2 deployment, any real OpenAI API/agent execution, live WhatsApp/SMS/Facebook integration, real vision matching, or production privacy/security controls.
+Not verified: a remote Worker/D1/R2 deployment, live WhatsApp/SMS/Facebook integration, real vision matching, or production privacy/security controls. The running local server has OpenAI explicitly enabled; a plain future `npm run dev:full` remains deterministic unless the enable flag is set.
 
 ## Executive summary
 
@@ -25,7 +28,7 @@ The repository now has a credible local, persisted demonstration path rather tha
 - The Care workspace can sign in to the local Worker routes, parse the shipped synthetic WhatsApp text export or SMS NDJSON relay, persist source traces/observations/review candidates, materialize a canonical census, and record a human dedupe decision.
 - The map, weather context, tracker animation, lost-cat planner, sponsor-safe public census, schedules, photo review, field-search tasks, outcomes CSV, Community Signals reviews, Cat profiles & visits, and Photo match review all retain explicit fictional/safety boundaries.
 
-This is still a hackathon/local-demo implementation. It is not a Cloudflare production deployment, a real rescue-data system, a live WhatsApp/SMS integration, a medical tool, or proof that OpenAI agent mode is enabled.
+This is still a hackathon/local-demo implementation. It is not a Cloudflare production deployment, a real rescue-data system, a live WhatsApp/SMS integration, or a medical tool. The formal record above distinguishes verified live triage from unverified agent capabilities.
 
 ## Local runtime, exactly
 
