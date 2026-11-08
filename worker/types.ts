@@ -8,7 +8,6 @@ export type Bindings = WorkerBindings & {
   GOOGLE_CLIENT_SECRET?: string
   GOOGLE_ADMIN_EMAIL?: string
   GOOGLE_REDIRECT_URI?: string
-  DEMO_ADMIN_CODE?: string
 }
 
 export type AppEnv = {

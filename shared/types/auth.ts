@@ -29,7 +29,6 @@ export interface UserAccessChange {
 export interface SignInOptions {
   localSignInEnabled: boolean
   demoSignInEnabled: boolean
-  demoAdminSignInEnabled: boolean
   googleSignInEnabled: boolean
   users: Omit<SessionUser, 'phone' | 'avatarUrl'>[]
 }

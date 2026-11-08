@@ -275,7 +275,7 @@ test('deployed demo sessions cannot spend the workspace OpenAI key', async (t) =
   assert.match((await response.json()).error, /demo accounts/);
 });
 
-test('a code-protected production administrator can use AI analysis', async (t) => {
+test('a demo production administrator can use AI analysis', async (t) => {
   const { sqlite, env, signIn, saveKey } = fixture(t);
   await saveKey(await signIn('local-admin'));
   sqlite.exec(readFileSync(new URL('../../seeds/demo-administrator.sql', import.meta.url), 'utf8'));

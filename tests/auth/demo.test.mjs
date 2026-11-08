@@ -35,8 +35,7 @@ function fixture(t) {
       catch (error) { sqlite.exec('ROLLBACK'); throw error }
     },
   }
-  const limiter = { allowed: true, calls: 0, async limit() { this.calls++; return { success: this.allowed } } }
-  const env = { DB, APP_ORIGIN: base, DEMO_ADMIN_CODE: 'a'.repeat(32), DEMO_ADMIN_RATE_LIMITER: limiter, ASSETS: { fetch: () => new Response('app') } }
+  const env = { DB, APP_ORIGIN: base, ASSETS: { fetch: () => new Response('app') } }
   async function request(path, { method = 'GET', body, cookie, origin = base, host = base } = {}) {
     return worker.fetch(new Request(`${host}${path}`, {
       method,
@@ -47,7 +46,7 @@ function fixture(t) {
   async function adminSession() {
     return (await createSession(new Request(`${base}/`), DB, 'real-admin')).split(';')[0]
   }
-  return { sqlite, DB, env, limiter, request, adminSession }
+  return { sqlite, DB, env, request, adminSession }
 }
 
 test('demo access is opt-in, limited to designated members, and separate from Google', async (t) => {
@@ -109,31 +108,27 @@ test('demo users cannot obtain administrator access or a real Google identity', 
   assert.equal((await request('/api/auth/demo/sign-in', { method: 'POST', body: { userId: 'local-member' } })).status, 404)
 })
 
-test('the demo administrator requires a code and a working rate limiter', async (t) => {
-  const { env, limiter, request, adminSession } = fixture(t)
+test('the demo administrator signs in with its account ID when demo access is enabled', async (t) => {
+  const { request, adminSession } = fixture(t)
   const admin = await adminSession()
-  const login = (code, extra = {}) => request('/api/auth/demo-admin/sign-in', { method: 'POST', body: { code }, ...extra })
-  assert.equal((await login('a'.repeat(32))).status, 404)
+  const login = (extra = {}) => request('/api/auth/demo/sign-in', { method: 'POST', body: { userId: 'demo-administrator' }, ...extra })
+  assert.equal((await login()).status, 404)
   await request('/api/configuration/demo-access', { method: 'POST', cookie: admin, body: { enabled: true } })
-  assert.equal((await (await request('/api/auth/options')).json()).demoAdminSignInEnabled, true)
-  assert.equal((await login('not-the-code')).status, 401)
-  assert.equal((await login('a'.repeat(32), { origin: 'https://other.example' })).status, 403)
-  limiter.allowed = false
-  assert.equal((await login('a'.repeat(32))).status, 429)
-  limiter.allowed = true
-  env.DEMO_ADMIN_CODE = 'weak'
-  assert.equal((await login('weak')).status, 404)
-  env.DEMO_ADMIN_CODE = 'a'.repeat(32)
-  env.DEMO_ADMIN_RATE_LIMITER = undefined
-  assert.equal((await login('a'.repeat(32))).status, 404)
-  assert.equal((await (await request('/api/auth/options')).json()).demoAdminSignInEnabled, false)
+  const options = await (await request('/api/auth/options')).json()
+  assert.equal(options.users.find((user) => user.id === 'demo-administrator').role, 'administrator')
+  assert.equal((await login({ origin: 'https://other.example' })).status, 403)
+  assert.equal((await login({ host: 'http://mews.example' })).status, 404)
+  const response = await login()
+  assert.equal(response.status, 200)
+  assert.equal((await response.json()).user.role, 'administrator')
+  assert.match(response.headers.get('set-cookie'), /HttpOnly; SameSite=Lax; Max-Age=43200; Secure/)
 })
 
-test('the code-protected administrator can manage real accounts while keeping the last Google administrator', async (t) => {
+test('the demo administrator can manage real accounts while keeping the last Google administrator', async (t) => {
   const { sqlite, request, adminSession } = fixture(t)
   const admin = await adminSession()
   await request('/api/configuration/demo-access', { method: 'POST', cookie: admin, body: { enabled: true } })
-  const response = await request('/api/auth/demo-admin/sign-in', { method: 'POST', body: { code: 'a'.repeat(32) } })
+  const response = await request('/api/auth/demo/sign-in', { method: 'POST', body: { userId: 'demo-administrator' } })
   assert.equal(response.status, 200)
   const user = (await response.json()).user
   assert.equal(user.id, 'demo-administrator')
@@ -162,7 +157,7 @@ test('a demo administrator session cannot become a real session if its identity 
   const { sqlite, request, adminSession } = fixture(t)
   const admin = await adminSession()
   await request('/api/configuration/demo-access', { method: 'POST', cookie: admin, body: { enabled: true } })
-  const response = await request('/api/auth/demo-admin/sign-in', { method: 'POST', body: { code: 'a'.repeat(32) } })
+  const response = await request('/api/auth/demo/sign-in', { method: 'POST', body: { userId: 'demo-administrator' } })
   const cookie = response.headers.get('set-cookie').split(';')[0]
   sqlite.exec("DELETE FROM sign_in_identities WHERE provider = 'demo-admin'")
   assert.equal((await request('/api/users', { cookie })).status, 401)

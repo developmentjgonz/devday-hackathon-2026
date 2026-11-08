@@ -1,4 +1,4 @@
--- Create only the fictional administrator used by protected demo sign-in.
+-- Create only the fictional administrator used by one-click demo sign-in.
 INSERT OR IGNORE INTO users (id, name, email, role, status)
 VALUES ('demo-administrator', 'Demo administrator', 'demo.admin@mews.test', 'administrator', 'active');
 

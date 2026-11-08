@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { demoAdminSignInSchema, localSignInSchema, profileSchema, signUpSchema } from '../../shared/schemas/auth.ts'
+import { localSignInSchema, profileSchema, signUpSchema } from '../../shared/schemas/auth.ts'
 import type { SignInOptions } from '../../shared/types/auth.ts'
 import type { AppEnv } from '../types.ts'
 import { findDemoAdministrator, findDemoUser, findUserByEmail, listDemoUsers, listLocalUsers } from '../db/accounts.ts'
@@ -12,7 +12,6 @@ import { signInLocalUser, signUpLocalUser } from '../services/accounts.ts'
 import { createDemoSession, createSession, endSession, getSessionUser } from '../services/session.ts'
 import { signInGoogleUser } from '../db/google-identities.ts'
 import { clearGoogleCookie, googleConfig, startGoogleSignIn, verifyGoogleCallback } from '../services/google-auth.ts'
-import { demoAdminCodeConfigured, verifyDemoAdminCode } from '../services/demo-admin-code.ts'
 
 export const authRoutes = new Hono<AppEnv>()
 
@@ -45,16 +44,15 @@ authRoutes.get('/photos/:id', requireActiveUser, async (c) => {
 authRoutes.get('/options', async (c) => {
   const enabled = localSignInEnabled(c.req.raw, c.env)
   const demo = new URL(c.req.url).protocol === 'https:' && await demoAccessEnabled(c.env.DB)
-  const adminEnabled = demo && demoAdminCodeConfigured(c.env.DEMO_ADMIN_CODE) && Boolean(c.env.DEMO_ADMIN_RATE_LIMITER)
   const [users, administrator] = await Promise.all([
     enabled ? listLocalUsers(c.env.DB) : demo ? listDemoUsers(c.env.DB) : Promise.resolve([]),
-    adminEnabled && !enabled ? findDemoAdministrator(c.env.DB) : Promise.resolve(null),
+    demo && !enabled ? findDemoAdministrator(c.env.DB) : Promise.resolve(null),
   ])
   if (administrator) {
     const { id, name, email, role, status } = administrator
     users.unshift({ id, name, email, role, status })
   }
-  const options: SignInOptions = { localSignInEnabled: enabled, demoSignInEnabled: demo, demoAdminSignInEnabled: Boolean(administrator), googleSignInEnabled: Boolean(googleConfig(c.env)), users }
+  const options: SignInOptions = { localSignInEnabled: enabled, demoSignInEnabled: demo, googleSignInEnabled: Boolean(googleConfig(c.env)), users }
   return c.json(options)
 })
 
@@ -100,21 +98,12 @@ authRoutes.post('/local/sign-up', requireSameOrigin, requireJson, limitFormBody,
 
 authRoutes.post('/demo/sign-in', requireSameOrigin, requireJson, limitFormBody, validateJson(localSignInSchema), async (c) => {
   if (new URL(c.req.url).protocol !== 'https:' || !await demoAccessEnabled(c.env.DB)) throw new HTTPException(404, { message: 'Not found' })
-  const user = await findDemoUser(c.env.DB, c.req.valid('json').userId)
+  const { userId } = c.req.valid('json')
+  const member = await findDemoUser(c.env.DB, userId)
+  const administrator = member ? null : await findDemoAdministrator(c.env.DB)
+  const user = member ?? (administrator?.id === userId ? administrator : null)
   if (!user) throw new HTTPException(404, { message: 'Demo account was not found.' })
-  c.header('Set-Cookie', await createDemoSession(c.req.raw, c.env.DB, user.id))
-  return c.json({ user })
-})
-
-authRoutes.post('/demo-admin/sign-in', requireSameOrigin, requireJson, limitFormBody, validateJson(demoAdminSignInSchema), async (c) => {
-  const secret = c.env.DEMO_ADMIN_CODE
-  if (new URL(c.req.url).protocol !== 'https:' || !demoAdminCodeConfigured(secret) || !c.env.DEMO_ADMIN_RATE_LIMITER || !await demoAccessEnabled(c.env.DB)) throw new HTTPException(404, { message: 'Not found' })
-  const { success } = await c.env.DEMO_ADMIN_RATE_LIMITER.limit({ key: 'demo-administrator' })
-  if (!success) throw new HTTPException(429, { message: 'Too many attempts. Try again in a minute.' })
-  if (!await verifyDemoAdminCode(c.req.valid('json').code, secret)) throw new HTTPException(401, { message: 'The administrator code is not valid.' })
-  const user = await findDemoAdministrator(c.env.DB)
-  if (!user) throw new HTTPException(401, { message: 'The administrator code is not valid.' })
-  c.header('Set-Cookie', await createDemoSession(c.req.raw, c.env.DB, user.id, 'demo-admin'))
+  c.header('Set-Cookie', await createDemoSession(c.req.raw, c.env.DB, user.id, user.role === 'administrator' ? 'demo-admin' : 'demo'))
   return c.json({ user })
 })
 

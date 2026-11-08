@@ -1,12 +1,9 @@
 import { ArrowRight, ShieldCheck, UserRound } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert } from '@/components/ui/alert'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Heading, Text } from '@/components/ui/typography'
 import type { SignInOptions } from '../../../../shared/types/auth'
 
@@ -15,19 +12,11 @@ export type SignInScreenProps = SignInOptions & {
   error: string
   googleSignInHref?: string
   onSignIn: (userId: string) => void
-  onDemoAdminSignIn: (code: string) => void
 }
 
 const statusLabels = { active: 'Approved', pending: 'Pending approval', suspended: 'Suspended' }
 
-export function SignInScreen({ localSignInEnabled, demoSignInEnabled, demoAdminSignInEnabled, googleSignInEnabled, googleSignInHref = '/api/auth/google/start', users, selected, error, onSignIn, onDemoAdminSignIn }: SignInScreenProps) {
-  const [adminCode, setAdminCode] = useState('')
-  function submitAdmin(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!adminCode || selected !== null) return
-    onDemoAdminSignIn(adminCode)
-    setAdminCode('')
-  }
+export function SignInScreen({ localSignInEnabled, demoSignInEnabled, googleSignInEnabled, googleSignInHref = '/api/auth/google/start', users, selected, error, onSignIn }: SignInScreenProps) {
   return (
     <div className="mx-auto w-full max-w-2xl px-6 py-12 sm:py-16">
       <title>Sign in · Mews</title>
@@ -45,7 +34,6 @@ export function SignInScreen({ localSignInEnabled, demoSignInEnabled, demoAdminS
           <ul className="mt-8 space-y-3" aria-label="Accounts">
             {users.map((user) => {
               const Icon = user.role === 'administrator' ? ShieldCheck : UserRound
-              const protectedAdministrator = !localSignInEnabled && demoAdminSignInEnabled && user.role === 'administrator'
               return (
                 <li key={user.id}>
                   <Card><CardContent className="flex flex-wrap items-center justify-between gap-4">
@@ -60,15 +48,9 @@ export function SignInScreen({ localSignInEnabled, demoSignInEnabled, demoAdminS
                       </div>
                     </div>
                   </div>
-                  {protectedAdministrator ? <form className="grid w-full gap-3" onSubmit={submitAdmin}>
-                    <div className="grid gap-2">
-                      <Label htmlFor="demo-admin-code">Administrator code</Label>
-                      <Input id="demo-admin-code" type="password" autoComplete="off" maxLength={128} value={adminCode} onChange={(event) => setAdminCode(event.target.value)} disabled={selected !== null} required />
-                    </div>
-                    <Button type="submit" variant="outline" loading={selected === 'demo-admin'} disabled={selected !== null || !adminCode} aria-label={`Sign in as ${user.name}`}>Sign in <ArrowRight aria-hidden="true" /></Button>
-                  </form> : <Button variant="outline" disabled={selected !== null} loading={selected === user.id} onClick={() => onSignIn(user.id)} aria-label={`Sign in as ${user.name}`}>
+                  <Button variant="outline" disabled={selected !== null} loading={selected === user.id} onClick={() => onSignIn(user.id)} aria-label={`Sign in as ${user.name}`}>
                     Sign in <ArrowRight aria-hidden="true" />
-                  </Button>}
+                  </Button>
                   </CardContent></Card>
                 </li>
               )
