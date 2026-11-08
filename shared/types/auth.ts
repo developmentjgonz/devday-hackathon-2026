@@ -24,5 +24,6 @@ export interface UserAccessChange {
 
 export interface SignInOptions {
   localSignInEnabled: boolean
+  googleSignInEnabled: boolean
   users: Omit<SessionUser, 'phone'>[]
 }

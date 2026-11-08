@@ -53,7 +53,7 @@ Sessions expire after 12 hours. D1 stores token hashes; the browser receives an 
 
 Test sign-in requires `LOCAL_TEST_SIGN_IN=true` and an HTTP localhost request. The development command supplies the flag; deployment configuration does not. Public hostnames cannot expose local sign-in even if the flag is set by mistake. Mutations must come from `APP_ORIGIN`.
 
-Google sign-in, public production signup, invitations, and production administrator setup are deferred. A future Google provider can connect through `sign_in_identities` while retaining the same users and approval checks.
+Google sign-in uses the existing identity and approval model. The first administrator and live credentials must be configured before release; see [Google sign-in](google-sign-in.md). Invitations and public production signup flows remain open.
 
 ## Other commands
 

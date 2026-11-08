@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { useLoaderData, useNavigate } from 'react-router'
+import { useLoaderData, useNavigate, useSearchParams } from 'react-router'
 import type { SessionUser, SignInOptions } from '../../../../shared/types/auth'
 import { accountPath, authRequest } from '../auth'
 import { SignInScreen } from '../components/sign-in-screen'
 
 export function SignInPage() {
-  const { localSignInEnabled, users } = useLoaderData() as SignInOptions
+  const { localSignInEnabled, googleSignInEnabled, users } = useLoaderData() as SignInOptions
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [selected, setSelected] = useState<string | null>(null)
   const [error, setError] = useState('')
 
@@ -25,5 +26,6 @@ export function SignInPage() {
     }
   }
 
-  return <SignInScreen localSignInEnabled={localSignInEnabled} users={users} selected={selected} error={error} onSignIn={signIn} />
+  const googleError = searchParams.has('google') ? 'Google sign-in could not be completed. Please try again.' : ''
+  return <SignInScreen localSignInEnabled={localSignInEnabled} googleSignInEnabled={googleSignInEnabled} users={users} selected={selected} error={error || googleError} onSignIn={signIn} />
 }

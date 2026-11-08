@@ -15,7 +15,7 @@ export type SignInScreenProps = SignInOptions & {
 
 const statusLabels = { active: 'Approved', pending: 'Pending approval', suspended: 'Suspended' }
 
-export function SignInScreen({ localSignInEnabled, users, selected, error, onSignIn }: SignInScreenProps) {
+export function SignInScreen({ localSignInEnabled, googleSignInEnabled, users, selected, error, onSignIn }: SignInScreenProps) {
   return (
     <div className="mx-auto w-full max-w-2xl px-6 py-12 sm:py-16">
       <title>Sign in · Mews</title>
@@ -23,9 +23,10 @@ export function SignInScreen({ localSignInEnabled, users, selected, error, onSig
       <Text size="small" tone="muted" className="mt-3 max-w-lg">
         {localSignInEnabled
           ? 'Choose your account to continue.'
-          : 'Contact your rescue administrator for account access.'}
+          : googleSignInEnabled ? 'Sign in with your Google account to join your rescue team.' : 'Contact your rescue administrator for account access.'}
       </Text>
       {error ? <div className="mt-6"><Alert>{error}</Alert></div> : null}
+      {googleSignInEnabled ? <div className="mt-8"><Button render={<a href="/api/auth/google/start" />}>Continue with Google <ArrowRight aria-hidden="true" /></Button></div> : null}
       {localSignInEnabled ? (
         <>
           <ul className="mt-8 space-y-3" aria-label="Accounts">

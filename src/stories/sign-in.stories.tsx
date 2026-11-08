@@ -14,6 +14,7 @@ const meta = {
   },
   args: {
     localSignInEnabled: true,
+    googleSignInEnabled: false,
     users: [
       { id: 'story-admin', name: 'Alex Morgan', email: 'admin@mews.test', role: 'administrator', status: 'active' },
       { id: 'story-member', name: 'Sam Rivera', email: 'member@mews.test', role: 'member', status: 'active' },
@@ -35,3 +36,4 @@ export const Default: Story = {}
 export const SigningIn: Story = { args: { selected: 'story-member' } }
 export const Error: Story = { args: { error: 'We could not sign in. Try again.' } }
 export const ContactAdministrator: Story = { args: { localSignInEnabled: false } }
+export const GoogleSignIn: Story = { args: { localSignInEnabled: false, googleSignInEnabled: true } }

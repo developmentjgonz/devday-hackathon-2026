@@ -94,7 +94,7 @@ test('local options list fictional accounts and send no cacheable response', asy
 
 test('local sign-in and signup are unavailable without the explicit flag', async (t) => {
   const { request } = fixture(t, { LOCAL_TEST_SIGN_IN: undefined });
-  assert.deepEqual(await (await request('/api/auth/options')).json(), { localSignInEnabled: false, users: [] });
+  assert.deepEqual(await (await request('/api/auth/options')).json(), { localSignInEnabled: false, googleSignInEnabled: false, users: [] });
   for (const path of ['/api/auth/local/sign-in', '/api/auth/local/sign-up']) {
     assert.equal((await request(path, { method: 'POST', body: { userId: 'local-admin' } })).status, 404);
   }
@@ -104,7 +104,7 @@ test('a public hostname cannot enable local sign-in, even with the flag', async 
   const { request } = fixture(t);
   for (const base of ['https://mews.example', 'http://mews.example', 'https://localhost']) {
     const options = await request('/api/auth/options', { base });
-    assert.deepEqual(await options.json(), { localSignInEnabled: false, users: [] });
+    assert.deepEqual(await options.json(), { localSignInEnabled: false, googleSignInEnabled: false, users: [] });
     for (const path of ['/api/auth/local/sign-in', '/api/auth/local/sign-up']) {
       assert.equal((await request(path, { base, method: 'POST', body: { userId: 'local-admin' } })).status, 404);
     }

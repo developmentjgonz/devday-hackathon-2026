@@ -32,6 +32,7 @@ Storybook runs locally and is not deployed. Migrations and fictional seed data a
 - [Map motion](docs/map-motion.md): how map selection handles pointer, keyboard, and reduced-motion input.
 - [Infrastructure](docs/infrastructure.md): dedicated Cloudflare resources, deployment, and health checks.
 - [Local accounts](docs/local-accounts.md): seeded users, signup, sessions, and approval checks.
+- [Google sign-in](docs/google-sign-in.md): live identity, Cloudflare secrets, and deployment setup.
 - [Local skills](.agents/skills/README.md): installed guidance and source revisions.
 - [Feature map](.agents/skills/verify-mews/references/features/README.md): implemented user-visible behavior and verification notes.
 
