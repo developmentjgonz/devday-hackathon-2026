@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { openWorkspaceNavigation } from './state-helpers'
 
 for (const width of [320, 1440]) {
-  test(`workspace title follows navigation and actions stay available at ${width}px`, async ({ page }, info) => {
+  test(`workspace title follows navigation without a notification button at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 900 })
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/iframe.html?id=pages-dashboard--overview&viewMode=story', { waitUntil: 'domcontentloaded' })
@@ -10,6 +10,7 @@ for (const width of [320, 1440]) {
     const header = page.getByRole('banner', { name: 'Workspace header' })
     const navigate = async (name: string) => (await openWorkspaceNavigation(page)).getByRole('link', { name, exact: true }).click()
     await expect(header.getByRole('heading', { level: 1, name: 'Overview', exact: true })).toBeVisible()
+    await expect(header.getByRole('button', { name: /notifications/i })).toHaveCount(0)
     await navigate('Reports')
     await expect(header.getByRole('heading', { level: 1, name: 'Reports', exact: true })).toBeVisible()
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1)
@@ -37,9 +38,7 @@ for (const width of [320, 1440]) {
     await expect(page.getByRole('dialog', { name: 'Morning feeding complete' })).not.toContainText('Report added.')
     await page.getByRole('button', { name: 'Close report', exact: true }).click()
     await expect(header.getByRole('heading', { level: 1, name: 'Reports', exact: true })).toBeVisible()
-    await header.getByRole('button', { name: /Notifications:/ }).click()
-    await expect(page.getByRole('dialog', { name: 'Notifications' })).toBeVisible()
-    await page.keyboard.press('Escape')
+    await expect(header.getByRole('button', { name: /notifications/i })).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   })
 
@@ -61,7 +60,7 @@ for (const width of [320, 1440]) {
     await expect.poll(async () => (await header.boundingBox())?.y).toBe(expectedTop)
     if (width < 768) await expect(page.getByRole('button', { name: 'Open menu' })).toBeInViewport()
     await expect(header.getByRole('button', { name: 'New report', exact: true })).toHaveCount(0)
-    await expect(header.getByRole('button', { name: /Notifications:/ })).toBeInViewport()
+    await expect(header.getByRole('button', { name: /notifications/i })).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   })
 }

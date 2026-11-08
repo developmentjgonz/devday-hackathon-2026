@@ -1,17 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { appearance, expectFocusRing, fill, leavePointer, openStateStory } from './state-helpers'
-
-test('notification icon has hover feedback, keyboard focus, and an accessible count', async ({ page }, info) => {
-  await page.goto('/iframe.html?id=actions-notification-button--with-notifications&viewMode=story')
-  await page.evaluate((dark) => document.documentElement.classList.toggle('dark', dark), info.project.name === 'dark')
-  const button = page.getByRole('button', { name: 'Notifications: 3', exact: true })
-  await expect(button).toBeVisible()
-  const idle = await appearance(button)
-  await button.hover()
-  await expect.poll(() => appearance(button)).not.toEqual(idle)
-  await leavePointer(page)
-  await expectFocusRing(page, button)
-})
+import { expectFocusRing, fill, leavePointer, openStateStory } from './state-helpers'
 
 for (const overlay of [
   { id: 'overlays-dialog--default', trigger: 'View last visit', close: 'Close visit', modal: true },

@@ -55,7 +55,7 @@ export function InboxScreen({ initialStatus = 'pending' }: {
   })
   const selected = reports.find((report) => report.id === selectedId) ?? null
   const requestedUnread = reports.find((report) => report.id === requestedId)?.unread
-  // The global bell and report composer can open a report from any route.
+  // The report composer and record links can open a report from another route.
   useEffect(() => {
     if (!requestedId) return
     setSelectedId(requestedId)

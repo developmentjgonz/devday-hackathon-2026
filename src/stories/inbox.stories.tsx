@@ -12,18 +12,33 @@ import { storyDirectoryStore, storyWorkspace } from './fixtures/directory-store'
 import { storyWorkspaceStore } from './fixtures/workspace-store'
 
 const user: SessionUser = { id: 'storybook-member', name: 'Alex Morgan', email: 'alex@mews.test', phone: null, role: 'administrator', status: 'active' }
-function InboxStory({ data = localInboxData, initialStatus = 'pending', initialReportId }: { data?: InboxData; initialStatus?: ReportStatus | 'all'; initialReportId?: string }) {
-  const [router] = useState(() => createMemoryRouter([{ id: 'workspace', path: '/app', loader: () => storyWorkspace(user, data), element: <AppLayout directoryStore={storyDirectoryStore} workspaceStore={storyWorkspaceStore(user, storyWorkspace(user, data).workspace)} />, children: [
-    { index: true, Component: OverviewPage, handle: { breadcrumb: 'Overview' } },
-    { path: 'tasks', Component: MyTasksPage, handle: { breadcrumb: 'My Tasks' } },
-    { path: 'reports', element: <InboxScreen initialStatus={initialStatus} />, handle: { breadcrumb: 'Reports' } },
-  ] }], { initialEntries: [initialReportId ? `/app/reports?report=${initialReportId}` : '/app/reports'] }))
+function InboxStory({ data = localInboxData, initialStatus = 'pending', initialReportId, refreshScenario }: { data?: InboxData; initialStatus?: ReportStatus | 'all'; initialReportId?: string; refreshScenario?: 'incoming' | 'stale' }) {
+  const [router] = useState(() => {
+    const workspace = storyWorkspace(user, data)
+    const store = storyWorkspaceStore(user, workspace.workspace)
+    const getSnapshot = store.getSnapshot
+    let receivedReport = false
+    if (refreshScenario) store.getSnapshot = async (signal) => {
+      if (refreshScenario === 'incoming' && !receivedReport) {
+        receivedReport = true
+        await store.createReport({ title: 'New feeding update', message: 'Fresh water is available.', colonyId: 'canal', catId: '', urgent: false }, [])
+      }
+      const snapshot = await getSnapshot(signal)
+      if (refreshScenario === 'stale') await new Promise((resolve) => setTimeout(resolve, 800))
+      return snapshot
+    }
+    return createMemoryRouter([{ id: 'workspace', path: '/app', loader: () => workspace, element: <AppLayout directoryStore={storyDirectoryStore} workspaceStore={store} />, children: [
+      { index: true, Component: OverviewPage, handle: { breadcrumb: 'Overview' } },
+      { path: 'tasks', Component: MyTasksPage, handle: { breadcrumb: 'My Tasks' } },
+      { path: 'reports', element: <InboxScreen initialStatus={initialStatus} />, handle: { breadcrumb: 'Reports' } },
+    ] }], { initialEntries: [initialReportId ? `/app/reports?report=${initialReportId}` : '/app/reports'] })
+  })
   return <RouterProvider router={router} />
 }
 const meta = {
   title: 'Pages/Reports',
   component: InboxStory,
-  parameters: { layout: 'fullscreen', docs: { description: { component: 'The actual inbox table, review drawer, and workspace toolbar, with 100 fictional local reports across review, waiting, and processed states. Focused inbox supplies the seven detailed interaction scenarios. The bell opens the notification drawer for urgent and unread reports and due tasks. New report uses the same shared right-side drawer as review, with a scrolling form body and fixed header and submit actions. It accepts photos, audio, PDF, text, Word, and CSV attachments; up to five files of 10 MB each. Browser object URLs support local previews and downloads. No files or messages are uploaded or sent. Storybook keeps reports, tasks, and review state in an isolated in-memory store; the application saves them through its API. Review drafts and unfinished question/task forms stay by report while the inbox screen is mounted. Photos have large inline previews and open in a wide dialog. Processed reports show saved read-only details. Review and follow-up actions remain separate; the finish and ask-for-details actions stay in the footer. Duplicate comparison shows the target message before linking. The example cat photo is a stock Unsplash image. Exercise table search and filtering, report matching, question/waiting, tasks, duplicate links, finish/reopen, keyboard access, attachment removal, close-button placement, and phone-width drawers. The Busy inbox story supplies thirty fictional reports to inspect table density.' } } },
+  parameters: { layout: 'fullscreen', docs: { description: { component: 'The actual inbox table, review drawer, and workspace header, with 100 fictional local reports across review, waiting, and processed states. Focused inbox supplies the seven detailed interaction scenarios. New report uses the same shared right-side drawer as review, with a scrolling form body and fixed header and submit actions. It accepts photos, audio, PDF, text, Word, and CSV attachments; up to five files of 10 MB each. Browser object URLs support local previews and downloads. No files or messages are uploaded or sent. Storybook keeps reports, tasks, and review state in an isolated in-memory store; the application saves them through its API. Review drafts and unfinished question/task forms stay by report while the inbox screen is mounted. Photos have large inline previews and open in a wide dialog. Processed reports show saved read-only details. Review and follow-up actions remain separate; the finish and ask-for-details actions stay in the footer. Duplicate comparison shows the target message before linking. The example cat photo is a stock Unsplash image. Exercise table search and filtering, report matching, question/waiting, tasks, duplicate links, finish/reopen, keyboard access, attachment removal, close-button placement, and phone-width drawers. The Busy inbox story supplies thirty fictional reports to inspect table density.' } } },
 } satisfies Meta<typeof InboxStory>
 export default meta
 type Story = StoryObj<typeof meta>
@@ -42,3 +57,6 @@ export const UnknownColonyDrawer: Story = { args: { initialReportId: 'report-loc
 export const ReportWithCareTask: Story = { args: { initialReportId: 'report-injury', data: { ...localInboxData, tasks: [...localInboxData.tasks, { id: 'care-check', reportId: 'report-injury', title: 'Arrange a care check', owner: 'Sam Chen', ownerId: 'story:Sam Chen', due: '2026-11-08', status: 'open', associations: [] }] } } }
 
 export const AllReports: Story = { args: { initialStatus: 'all' } }
+
+export const IncomingReport: Story = { args: { data: { ...inboxScenarioData, reports: [] }, refreshScenario: 'incoming' } }
+export const StaleRefresh: Story = { args: { data: inboxScenarioData, refreshScenario: 'stale' } }

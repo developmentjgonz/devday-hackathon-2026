@@ -9,7 +9,7 @@ import type { TaskResult, WorkspaceStore } from './workspace-api'
 
 type InboxStore = {
   data: InboxData; reports: InboxReport[]; tasks: Task[]; members: WorkspaceMember[]
-  refreshWorkspace: () => Promise<void>; refreshingWorkspace: boolean; workspaceRefreshFailed: boolean
+  refreshWorkspace: () => Promise<void>
   addColony: (name: string, coordinates?: Coordinates, address?: string) => Promise<InboxColony>; updateColonyLocation: (colony: InboxColony, coordinates: Coordinates | null, address: string) => Promise<InboxColony>; addCat: (input: CatInput) => Promise<InboxCat>; updateCat: (cat: InboxCat, input: CatInput) => Promise<InboxCat>
   createAttachment: (file: File) => ReportAttachment; discardAttachment: (attachment: ReportAttachment) => void
   createReport: (input: CreateReportInput, attachments: ReportAttachment[]) => Promise<InboxReport>
@@ -34,8 +34,6 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
   const refreshController = useRef<AbortController | null>(null)
   const refreshNeeded = useRef(false)
   const refreshCallback = useRef<(() => Promise<void>) | null>(null)
-  const [refreshingWorkspace, setRefreshingWorkspace] = useState(false)
-  const [workspaceRefreshFailed, setWorkspaceRefreshFailed] = useState(false)
 
   // Ignore a snapshot if a local write started or finished while it was in flight.
   const mutateWorkspace = useCallback(async <T,>(action: () => Promise<T>): Promise<T> => {
@@ -55,7 +53,6 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
     const revision = mutationRevision.current
     const controller = new AbortController()
     refreshController.current = controller
-    setRefreshingWorkspace(true)
     const request = (async () => {
       try {
         const snapshot = await workspaceStore.getSnapshot(controller.signal)
@@ -64,14 +61,8 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
         setReports(snapshot.reports)
         setTasks(snapshot.tasks)
         setMembers(snapshot.members)
-        setWorkspaceRefreshFailed(false)
       } catch {
-        if (!controller.signal.aborted) {
-          if (revision !== mutationRevision.current) refreshNeeded.current = true
-          else setWorkspaceRefreshFailed(true)
-        }
-      } finally {
-        if (!controller.signal.aborted) setRefreshingWorkspace(false)
+        if (!controller.signal.aborted && revision !== mutationRevision.current) refreshNeeded.current = true
       }
     })()
     refreshRequest.current = request
@@ -168,7 +159,7 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
   const createTask = useCallback((input: TaskInput) => mutateWorkspace(async () => applyTask(await workspaceStore.createTask(input))), [workspaceStore, applyTask, mutateWorkspace])
   const editTask = useCallback((id: string, input: TaskInput) => mutateWorkspace(async () => applyTask(await workspaceStore.editTask(id, input))), [workspaceStore, applyTask, mutateWorkspace])
   const changeTaskStatus = useCallback((id: string, status: TaskStatus) => mutateWorkspace(async () => applyTask(await workspaceStore.changeTaskStatus(id, status))), [workspaceStore, applyTask, mutateWorkspace])
-  return <InboxContext value={{ data: workspaceData, reports, tasks, members, refreshWorkspace, refreshingWorkspace, workspaceRefreshFailed, addColony, updateColonyLocation, addCat, updateCat, createAttachment, discardAttachment, createReport, finishReport, reopenReport, askQuestion, linkDuplicate, markReports, createTask, editTask, changeTaskStatus }}>{children}</InboxContext>
+  return <InboxContext value={{ data: workspaceData, reports, tasks, members, refreshWorkspace, addColony, updateColonyLocation, addCat, updateCat, createAttachment, discardAttachment, createReport, finishReport, reopenReport, askQuestion, linkDuplicate, markReports, createTask, editTask, changeTaskStatus }}>{children}</InboxContext>
 }
 export function useInbox() {
   const store = useContext(InboxContext)
