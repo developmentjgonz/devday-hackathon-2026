@@ -1,4 +1,4 @@
-import { Outlet, useLoaderData } from 'react-router'
+import { Outlet, useLoaderData, useMatches } from 'react-router'
 import { AppSidebar } from './app-sidebar'
 import type { SessionUser } from '../../../shared/types/auth'
 import { InboxProvider } from '@/features/inbox/inbox-context'
@@ -8,17 +8,22 @@ import type { InboxData } from '@/features/inbox/types'
 
 export function AppLayout({ inboxData = localInboxData }: { inboxData?: InboxData }) {
   const user = useLoaderData() as SessionUser
+  const breadcrumbs = useMatches().flatMap((match) => {
+    const handle = match.handle as { breadcrumb?: string } | undefined
+    return handle?.breadcrumb ? [{ label: handle.breadcrumb, to: match.pathname }] : []
+  })
+  const title = breadcrumbs.at(-1)?.label ?? 'Page not found'
   return (
     <InboxProvider data={inboxData}>
-    <div className="min-h-svh bg-background text-foreground md:grid md:grid-cols-[248px_minmax(0,1fr)]">
-      <AppSidebar user={user} />
-      <div className="min-w-0">
-        <WorkspaceToolbar currentUser={user.name} />
-        <main id="main-content" tabIndex={-1} className="mx-auto max-w-[1240px] px-6 py-6 outline-none sm:px-10 lg:px-12">
-          <Outlet />
-        </main>
+      <div className="min-h-svh bg-background text-foreground md:grid md:grid-cols-[248px_minmax(0,1fr)]">
+        <AppSidebar user={user} />
+        <div className="min-w-0">
+          <WorkspaceToolbar currentUser={user.name} title={title} breadcrumbs={breadcrumbs.slice(0, -1)} />
+          <main id="main-content" aria-labelledby="workspace-page-title" tabIndex={-1} className="mx-auto max-w-[1240px] px-6 py-6 outline-none sm:px-10 lg:px-12">
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
     </InboxProvider>
   )
 }

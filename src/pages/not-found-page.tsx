@@ -9,7 +9,7 @@ export function NotFoundPage({ homePath = '/' }: { homePath?: string }) {
     <div className="mx-auto flex max-w-lg flex-col items-center px-6 py-20 text-center">
       <title>Page not found · Mews</title>
       <Text size="label" tone="muted" className="mb-3">404</Text>
-      <EmptyState size="page" headingLevel={1} title="Page not found" icon={<FileQuestion />} description={`This page does not exist. Check the address or ${homePath === '/app' ? 'return to the overview.' : 'return home.'}`} action={
+      <EmptyState size="page" headingLevel={homePath === '/app' ? 2 : 1} title={homePath === '/app' ? 'This page does not exist' : 'Page not found'} icon={<FileQuestion />} description={`Check the address or ${homePath === '/app' ? 'return to the overview.' : 'return home.'}`} action={
         <Button variant="outline" render={<Link to={homePath} />}><ArrowLeft aria-hidden="true" /><ButtonLabel labels={['Back to overview', 'Back to home']}>{homePath === '/app' ? 'Back to overview' : 'Back to home'}</ButtonLabel></Button>
       } />
     </div>

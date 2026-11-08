@@ -33,11 +33,13 @@ The main view is a compact semantic table. Desktop columns show report, colony/c
 - `Drawer`, `DrawerContent`, `DrawerHeader`, `DrawerBody`, and `DrawerFooter`: a right-side Base UI modal with an independently scrolling body.
 - `NotificationButton`: the standard Lucide bell at 20 px inside the shared icon button, with a small attention dot and an accessible count.
 
-These controls have colocated Storybook stories. **Pages → Inbox → Busy inbox** supplies thirty fictional reports to inspect density. **Report drawer** opens a report directly. The page reuses PageHeader, Heading, Text, Card, Button, Badge, Input, Textarea, Label, Checkbox, Separator, Dialog, and EmptyState without changing their visual styles.
+These controls have colocated Storybook stories. **Pages → Inbox → Busy inbox** supplies thirty fictional reports to inspect density. **Report drawer** opens a report directly. The page reuses WorkspaceHeader, Heading, Text, Card, Button, Badge, Input, Textarea, Label, Checkbox, Separator, Dialog, and EmptyState without changing their visual styles.
 
 ## Workspace toolbar and submissions
 
-The static “Mews → Workspace” breadcrumb bar has been replaced with a 56 px utility bar. It contains a notification button and **New report**. The notification popover lists urgent, unprocessed reports; it is not a complete alerts or task system. Selecting one opens its inbox drawer.
+The shared workspace header stays at the top during page scroll. The page name and any parent breadcrumbs appear on the left. **New report** and notifications stay on the right. Workspace routes supply their names through `handle.breadcrumb`; the current name is the single `h1`, and parent names link back to their routes. Overview and Inbox are top-level pages, so each shows only its own name. Page bodies do not repeat the title or an introductory description. Report drawer titles and instructions stay inside the drawer. **Navigation → Workspace header** documents the shared component, nested paths, and long labels.
+
+The notification popover lists urgent, unprocessed reports; it is not a complete alerts or task system. Selecting one opens its inbox drawer.
 
 **New report** is available from every protected workspace page. It opens the same shared right-side drawer as report review and fills phone screens. The header and Cancel/Submit actions stay visible while the form body scrolls. The form uses **What happened?**, **Colony**, **Details**, **Attachments (optional)**, and **Needs urgent attention**. Its final action is **Submit report**. Unknown colony is allowed at submission; the reviewer must identify it before processing.
 

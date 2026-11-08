@@ -49,8 +49,8 @@ export const router = createBrowserRouter([
         loader: workspaceLoader,
         Component: AppLayout,
         children: [
-          { index: true, Component: OverviewPage },
-          { path: 'inbox', Component: InboxPage },
+          { index: true, Component: OverviewPage, handle: { breadcrumb: 'Overview' } },
+          { path: 'inbox', Component: InboxPage, handle: { breadcrumb: 'Inbox' } },
           { path: '*', element: <NotFoundPage homePath="/app" /> },
         ],
       },

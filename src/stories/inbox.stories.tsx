@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { AppLayout } from '@/components/layout/app-layout'
+import { OverviewPage } from '@/features/overview/pages/overview-page'
 import { InboxScreen } from '@/features/inbox/components/inbox-screen'
 import { localInboxData } from '@/features/inbox/data/local-inbox'
 import type { InboxData, ReviewStatus } from '@/features/inbox/types'
@@ -9,7 +10,10 @@ import type { SessionUser } from '../../shared/types/auth'
 
 const user: SessionUser = { id: 'storybook-member', name: 'Alex Morgan', email: 'alex@mews.test', phone: null, role: 'administrator', status: 'active' }
 function InboxStory({ data = localInboxData, initialView = 'review', initialReportId }: { data?: InboxData; initialView?: ReviewStatus; initialReportId?: string }) {
-  const [router] = useState(() => createMemoryRouter([{ id: 'workspace', path: '/app', loader: () => user, element: <AppLayout inboxData={data} />, children: [{ path: 'inbox', element: <InboxScreen currentUser={user.name} initialView={initialView} /> }] }], { initialEntries: [initialReportId ? `/app/inbox?report=${initialReportId}` : '/app/inbox'] }))
+  const [router] = useState(() => createMemoryRouter([{ id: 'workspace', path: '/app', loader: () => user, element: <AppLayout inboxData={data} />, children: [
+    { index: true, Component: OverviewPage, handle: { breadcrumb: 'Overview' } },
+    { path: 'inbox', element: <InboxScreen currentUser={user.name} initialView={initialView} />, handle: { breadcrumb: 'Inbox' } },
+  ] }], { initialEntries: [initialReportId ? `/app/inbox?report=${initialReportId}` : '/app/inbox'] }))
   return <RouterProvider router={router} />
 }
 const meta = {

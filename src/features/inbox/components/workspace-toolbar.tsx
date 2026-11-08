@@ -15,11 +15,12 @@ import { RecordButton } from '@/components/ui/record-button'
 import { SelectField } from '@/components/ui/select-field'
 import { Textarea } from '@/components/ui/textarea'
 import { Text } from '@/components/ui/typography'
+import { WorkspaceHeader, type WorkspaceBreadcrumb } from '@/components/ui/workspace-header'
 import { useInbox } from '../inbox-context'
 import type { ReportAttachment } from '../types'
 import { ReportAttachments } from './report-attachments'
 
-export function WorkspaceToolbar({ currentUser }: { currentUser: string }) {
+export function WorkspaceToolbar({ currentUser, title: pageTitle, breadcrumbs }: { currentUser: string; title: string; breadcrumbs: WorkspaceBreadcrumb[] }) {
   const { data, reports, setReports, createAttachment, discardAttachment } = useInbox()
   const navigate = useNavigate()
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -60,7 +61,8 @@ export function WorkspaceToolbar({ currentUser }: { currentUser: string }) {
     navigate(`/app/inbox?report=${encodeURIComponent(id)}`)
   }
   return <>
-    <header className="flex h-14 items-center justify-end gap-2 border-b px-6 sm:px-10 lg:px-12" aria-label="Workspace actions">
+    <WorkspaceHeader title={pageTitle} breadcrumbs={breadcrumbs} actions={<>
+      <Button onClick={openComposer}><Plus aria-hidden="true" />New report</Button>
       <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
         <PopoverTrigger render={<NotificationButton count={urgentReports.length} label="Urgent reports" />} />
         <PopoverContent side="bottom" align="end">
@@ -68,8 +70,7 @@ export function WorkspaceToolbar({ currentUser }: { currentUser: string }) {
           {urgentReports.length ? <div className="grid max-h-80 gap-1 overflow-y-auto">{urgentReports.map((report) => <RecordButton key={report.id} title={report.title} description={data.colonies.find((colony) => colony.id === report.colonyId)?.name ?? 'Colony unknown'} render={<Link to={`/app/inbox?report=${encodeURIComponent(report.id)}`} />} onClick={() => setNotificationsOpen(false)} />)}</div> : <EmptyState icon={<Bell />} title="No urgent reports" />}
         </PopoverContent>
       </Popover>
-      <Button onClick={openComposer}><Plus aria-hidden="true" />New report</Button>
-    </header>
+    </>} />
     <Drawer open={reportOpen} onOpenChange={(open) => { if (!open) closeComposer() }}>
       <DrawerContent render={<form onSubmit={submitReport} />} closeLabel="Close new report">
         <DrawerHeader><DialogTitle>New report</DialogTitle><DialogDescription>Share a sighting, care concern, or feeding update with your team.</DialogDescription></DrawerHeader>

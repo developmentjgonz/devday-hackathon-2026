@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Check, CheckCheck, ClipboardList, Copy, MessageCircle, RotateCcw, Search, X } from 'lucide-react'
-import { PageHeader } from '@/components/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button, ButtonLabel } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -176,7 +175,6 @@ export function InboxScreen({ currentUser = 'Alex Morgan', initialView = 'review
 
   return (
     <>
-      <PageHeader title="Inbox" description="Review incoming reports and update care records." />
       <ViewTabs label="Inbox views" value={view} onValueChange={(next) => changeView(next as ReviewStatus)} items={views.map((item) => ({ ...item, count: reports.filter((report) => report.status === item.value).length }))}>
 
       <div className="my-5 flex flex-col gap-3 sm:flex-row">
