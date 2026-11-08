@@ -9,6 +9,7 @@ The following was observed locally on November 8, 2026 by the implementation own
 | Check | Observed result | Boundary |
 | --- | --- | --- |
 | Build and unit suite | `npm run build` passed; `npm test` passed with 13 tests. | It does not exercise a remote deployment or every browser/device. |
+| Repository build checks | Storybook built successfully. The pinned Wrangler 4.158.0 Worker dry run bundled successfully. CI now uses Node 24 and runs the synthetic test suite before deployment. | A dry run does not deploy or provision resources. The current Worker configuration binds D1/assets; hosted R2 still needs configuration. |
 | Google map | A real Google Maps Miami Beach basemap loaded, with the labelled simulated Skipper marker and broad weather cells. | Rescue markers/radii are fictional and approximate; a Maps key, billing/quota, and referrer restrictions are still required. |
 | Intake/census/dedupe | The original 12-message shift was delivered; one human duplicate merge reduced the active count from 4 to 3 before the live shift added further fixture records. | This proves only local synthetic persistence and human review, not real chat ingestion or identity evidence. |
 | Private photo | A fictional JPEG was uploaded and approved in the local protected photo flow. | No real photos, vision match, malware scanning, retention enforcement, or production storage were verified. |
