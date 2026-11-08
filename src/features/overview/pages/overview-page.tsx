@@ -1,4 +1,5 @@
-import { useRouteLoaderData } from 'react-router'
+import { Link, useRouteLoaderData } from 'react-router'
+import { TextLink } from '@/components/ui/text-link'
 import { useInbox } from '@/features/inbox/inbox-context'
 import type { WorkspaceData } from '../../../../shared/types/directory'
 import { WorkspaceSummary } from '../components/workspace-summary'
@@ -13,6 +14,7 @@ export function OverviewPage() {
     <title>Overview · Mews</title>
     <div className="space-y-6">
       <WorkspaceSummary summary={summary} canViewTeamTasks={user.role === 'administrator'} />
+      {user.role === 'administrator' ? <TextLink render={<Link to="/app/statistics" />}>View statistics</TextLink> : null}
       <TeamWins tasks={summary.recentlyCompleted} />
     </div>
   </>

@@ -31,6 +31,8 @@ import { SignInPage } from '@/features/auth/pages/sign-in-page'
 import { SignUpPage } from '@/features/auth/pages/sign-up-page'
 import { AccountStatusPage } from '@/features/auth/pages/account-status-page'
 import { ProfilePage } from '@/features/auth/pages/profile-page'
+import { StatisticsPage } from '@/features/statistics/pages/statistics-page'
+import { statisticsLoader } from '@/features/statistics/statistics-api'
 
 export const router = createBrowserRouter([
   {
@@ -66,6 +68,7 @@ export const router = createBrowserRouter([
         Component: AppLayout,
         children: [
           { index: true, Component: OverviewPage, handle: { breadcrumb: 'Overview' } },
+          { path: 'statistics', loader: statisticsLoader, Component: StatisticsPage, handle: { breadcrumb: 'Statistics & exports' } },
           { path: 'community', Component: CommunityAdminPage, handle: { breadcrumb: 'Community board' } },
           { path: 'colonies', handle: { breadcrumb: 'Colonies' }, children: [
             { index: true, Component: ColoniesPage },

@@ -16,6 +16,7 @@ import { reportAnalysisRoutes } from './routes/report-analysis.ts'
 import { generateCareTasks } from './db/care-rules.ts'
 import { automationRoutes } from './routes/automation.ts'
 import { runAutopilot } from './services/autopilot.ts'
+import { statisticsRoutes } from './routes/statistics.ts'
 
 const app = new Hono<AppEnv>()
 const api = new Hono<AppEnv>()
@@ -39,6 +40,7 @@ api.route('/community-board', communityRoutes)
 api.route('/public-reports', publicReportRoutes)
 api.route('/configuration', configurationRoutes)
 api.route('/automation', automationRoutes)
+api.route('/statistics', statisticsRoutes)
 api.route('/', reportAnalysisRoutes)
 api.notFound((c) => c.json({ error: 'Not found' }, 404))
 

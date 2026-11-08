@@ -15,6 +15,7 @@ function fixture(t) {
     prepare(sql) {
       let values = [];
       return {
+        read: /^\s*SELECT\b/i.test(sql),
         bind(...args) { values = args; return this; },
         async first() { return sqlite.prepare(sql).get(...values) ?? null; },
         async all() { return { results: sqlite.prepare(sql).all(...values) }; },
@@ -23,7 +24,7 @@ function fixture(t) {
     },
     async batch(statements) {
       sqlite.exec('BEGIN');
-      try { const result = []; for (const statement of statements) result.push(await statement.run()); sqlite.exec('COMMIT'); return result; }
+      try { const result = []; for (const statement of statements) result.push(await (statement.read ? statement.all() : statement.run())); sqlite.exec('COMMIT'); return result; }
       catch (error) { sqlite.exec('ROLLBACK'); throw error; }
     },
   };
@@ -309,4 +310,65 @@ test('a failed activity write rolls back the cat creation', async (t) => {
   const response = await request('/api/directory/cats', { method: 'POST', cookie, body: { name: 'No partial cat', colonyId: 'canal' } });
   assert.equal(response.status, 503);
   assert.equal(sqlite.prepare("SELECT count(*) AS count FROM cats WHERE name = 'No partial cat'").get().count, 0);
+});
+
+test('statistics and both exports require an active administrator', async (t) => {
+  const { request, signIn } = fixture(t);
+  for (const path of ['/api/statistics', '/api/statistics/export?kind=summary', '/api/statistics/export?kind=cats']) {
+    assert.equal((await request(path)).status, 401);
+    for (const user of ['local-member', 'local-pending', 'local-suspended']) {
+      assert.equal((await request(path, { cookie: await signIn(user) })).status, 403);
+    }
+    const response = await request(path, { cookie: await signIn('local-admin') });
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('Cache-Control'), 'no-store');
+  }
+});
+
+test('statistics exports include current counts, empty colonies, unassigned cats, and the selected colony only', async (t) => {
+  const { sqlite, request, signIn } = fixture(t);
+  const cookie = await signIn('local-admin');
+  sqlite.prepare('UPDATE cats SET colony_id = NULL WHERE id = ?').run('miso');
+  sqlite.prepare('INSERT INTO colonies (id, name) VALUES (?, ?)').run('empty', 'Empty colony');
+  const data = await (await request('/api/statistics', { cookie })).json();
+  assert.ok(Number.isFinite(Date.parse(data.asOf)));
+  assert.equal(data.cats.length, 3);
+  assert.equal(data.colonies.length, 4);
+  assert.equal(data.cats.filter((cat) => !cat.colonyId).length, 1);
+  const summary = await request('/api/statistics/export?kind=summary', { cookie });
+  assert.match(summary.headers.get('Content-Type'), /^text\/csv/);
+  assert.match(summary.headers.get('Content-Disposition'), /attachment; filename="mews-summary-\d{4}-\d{2}-\d{2}\.csv"/);
+  const text = await summary.text();
+  assert.match(text, /"Total","","All colonies","3","4","1"/);
+  assert.match(text, /"Colony","empty","Empty colony","0","1","0"/);
+  assert.match(text, /"Without a colony","","","1","0","1"/);
+  const filtered = await (await request('/api/statistics/export?kind=summary&colonyId=riverside', { cookie })).text();
+  assert.match(filtered, /"Total","","Riverside","1","1","0"/);
+  assert.doesNotMatch(filtered, /"Canal"|"Miso"|"Empty colony"|"Without a colony"/);
+  const cats = await (await request('/api/statistics/export?kind=cats&colonyId=riverside', { cookie })).text();
+  assert.match(cats, /"pepper","Pepper","riverside","Riverside"/);
+  assert.doesNotMatch(cats, /"Miso"|"Luna"/);
+  assert.equal((await request('/api/statistics/export?kind=summary&colonyId=missing', { cookie })).status, 404);
+  assert.equal((await request('/api/statistics/export?kind=other', { cookie })).status, 400);
+  sqlite.exec('DELETE FROM cats; DELETE FROM colonies');
+  const empty = await (await request('/api/statistics/export?kind=summary', { cookie })).text();
+  assert.match(empty, /"Total","","All colonies","0","0","0"/);
+  const emptyCats = await (await request('/api/statistics/export?kind=cats', { cookie })).text();
+  assert.equal(emptyCats.trim().split('\r\n').length, 1);
+});
+
+test('CSV exports preserve Unicode, quotes and newlines and neutralize spreadsheet formulas', async (t) => {
+  const { sqlite, request, signIn } = fixture(t);
+  const cookie = await signIn('local-admin');
+  sqlite.prepare('UPDATE cats SET name = ?, description = ?, birth_date = ?, birth_date_estimated = 1 WHERE id = ?')
+    .run('猫, "Miso"', '\t=HYPERLINK("https://example.test")\nSecond line', '2024-05-01', 'miso');
+  sqlite.prepare('UPDATE colonies SET name = ? WHERE id = ?').run('+SUM(1,2)', 'canal');
+  const response = await request('/api/statistics/export?kind=cats', { cookie });
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  assert.deepEqual([...bytes.slice(0, 3)], [239, 187, 191]);
+  const text = new TextDecoder().decode(bytes);
+  assert.ok(text.includes('"猫, ""Miso"""'));
+  assert.ok(text.includes('"\'+SUM(1,2)"'));
+  assert.ok(text.includes('"\'\t=HYPERLINK(""https://example.test"")\nSecond line"'));
+  assert.ok(text.includes('"2024-05-01","Yes"'));
 });

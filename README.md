@@ -95,6 +95,8 @@ The frontend uses React, TypeScript, Vite, React Router in Data Mode, Tailwind C
 
 The local backend uses Hono and TypeScript on Cloudflare Workers, with D1 for application records and private R2 storage for report attachments. Shared Zod schemas validate inputs. Routes handle HTTP, middleware checks access, services own account operations, and `worker/db/` owns SQL. Builds check the backend with strict TypeScript settings. See the [backend decision](docs/decisions/0004-hono-typescript-backend.md).
 
+Administrators can open **Statistics & exports** below Cats in the workspace menu, or use **View statistics** on Overview. The page shows current registered cat and colony counts, including cats without a colony. Select a colony to narrow the counts and CSV downloads. Summary CSVs include totals and counts by colony; cat record CSVs include IDs, names, colony, birth date details, and descriptions. Every export reads current records and includes an As of time in UTC. Page data and downloads require an active administrator account.
+
 Administrators can enable an AI report chat, download its QR code, and choose whether to show phone and email contact details on the public report form. The standard form remains available separately. Calls, texts, and emails go directly to those contacts and do not enter Mews. Team members can request AI suggestions while reviewing reports. Anonymous reports submitted through the chat or form enter the team inbox for review. See [administrator configuration](docs/configuration.md) for setup and key storage.
 
 React Doctor is installed as a development dependency for manual checks only:
