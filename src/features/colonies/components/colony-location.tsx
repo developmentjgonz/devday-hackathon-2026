@@ -1,8 +1,9 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useMemo, useRef, useState, type FormEvent } from 'react'
 import { MapPin, Pencil } from 'lucide-react'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { ColonyMap, type ColonyMapData } from '@/components/ui/colony-map'
+import { EmptyState } from '@/components/ui/empty-state'
 import { DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader } from '@/components/ui/drawer'
 import { LocationPicker, locationCoordinates, locationDraft, locationIsEmpty } from '@/components/ui/location-picker'
@@ -12,8 +13,11 @@ import { Heading, Text } from '@/components/ui/typography'
 import { useInbox } from '@/features/inbox/inbox-context'
 import type { InboxColony } from '@/features/inbox/types'
 
-export function ColonyLocation({ colony }: { colony: InboxColony }) {
+export function ColonyLocation({ colony, catCount, fill = false }: { colony: InboxColony; catCount: number; fill?: boolean }) {
   const { data, updateColonyLocation } = useInbox()
+  const mapData = useMemo<ColonyMapData | null>(() => colony.coordinates ? {
+    audience: 'team', colonies: [{ id: colony.id, name: colony.name, coordinates: colony.coordinates, status: 'unknown', catCount }],
+  } : null, [colony.coordinates, colony.id, colony.name, catCount])
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState(() => locationDraft(colony.coordinates, colony.address))
   const [error, setError] = useState('')
@@ -38,15 +42,16 @@ export function ColonyLocation({ colony }: { colony: InboxColony }) {
     finally { setSaving(false) }
   }
 
-  return <section aria-labelledby="colony-location" className="space-y-3">
+  return <section aria-labelledby="colony-location" className={fill ? "flex flex-col gap-3 lg:h-full" : "space-y-3"}>
     <div className="flex flex-wrap items-center justify-between gap-3">
       <Heading id="colony-location" level={2} size="card">Location</Heading>
       <Button ref={trigger} variant="outline" size="sm" onClick={begin}>{colony.coordinates ? <Pencil aria-hidden="true" /> : <MapPin aria-hidden="true" />}{colony.coordinates ? 'Edit location' : 'Set location'}</Button>
     </div>
-    <Card size="sm"><CardContent>
-      <Text size="small" tone={colony.coordinates ? 'default' : 'muted'}>{colony.address || (colony.coordinates ? `${colony.coordinates[1].toFixed(5)}, ${colony.coordinates[0].toFixed(5)}` : 'No location set')}</Text>
+    {colony.coordinates && mapData ? <>
+      <ColonyMap variant="location" height={fill ? 'fill' : 'default'} title={`${colony.name} location`} data={mapData} initialView={{ center: colony.coordinates, zoom: 14 }} />
+      <Text data-colony-location-value size="small" className="wrap-anywhere">{colony.address || `${colony.coordinates[1].toFixed(5)}, ${colony.coordinates[0].toFixed(5)}`}</Text>
       {colony.address ? <TextLink size="sm" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</TextLink> : null}
-    </CardContent></Card>
+    </> : <EmptyState icon={<MapPin />} title="No location set" />}
     <Drawer open={open} onOpenChange={(next) => { if (!saving) setOpen(next) }}>
       <DrawerContent render={<form onSubmit={save} />} closeLabel="Close location editor" closeDisabled={saving} finalFocus={() => trigger.current}>
         <DrawerHeader><DialogTitle>{colony.coordinates ? 'Edit location' : 'Set location'}</DialogTitle><DialogDescription>Choose where {colony.name} is located.</DialogDescription></DrawerHeader>

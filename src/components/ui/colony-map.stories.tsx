@@ -60,6 +60,7 @@ const meta = {
   argTypes: {
     data: { control: false },
     state: { control: 'select', options: ['ready', 'loading', 'error'] },
+    height: { control: 'select', options: ['default', 'fill'], description: 'For a saved location, fill available height on large screens.' },
   },
 } satisfies Meta<typeof ColonyMap>
 export default meta
@@ -78,6 +79,12 @@ export const PublicAreas: Story = {
 export const TeamColonies: Story = {
   name: 'Team colonies',
   args: { data: teamMapData },
+}
+export const SavedLocationFill: Story = {
+  name: 'Saved location · Fill height',
+  args: { variant: 'location', height: 'fill', title: 'Canal colony location', data: { audience: 'team', colonies: [teamMapData.colonies[0]] }, initialView: { center: [-80.249, 25.812], zoom: 14 } },
+  render: (args) => <div className="flex h-[32rem] flex-col"><ColonyMap {...args} /></div>,
+  parameters: { docs: { description: { story: 'A saved location fills a flexible parent on large screens and stays compact on smaller screens.' } } },
 }
 export const Loading: Story = { args: { state: 'loading' } }
 export const Empty: Story = {

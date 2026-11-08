@@ -28,6 +28,10 @@ const statusLabels = {
 export type ColonyMapProps = {
   data: ColonyMapData
   title?: string
+  /** A map for a single saved location without the directory list. */
+  variant?: 'directory' | 'location'
+  /** Fill the available height on large screens for a saved location. */
+  height?: 'default' | 'fill'
   state?: 'ready' | 'loading' | 'error'
   /** Supply an account's saved map view. Otherwise the map fits its data. */
   initialView?: MapInitialView
@@ -57,6 +61,8 @@ function LoadingMap() {
 export function ColonyMap({
   data,
   title = 'Colony map',
+  variant = 'directory',
+  height = 'default',
   state = 'ready',
   initialView,
   snapshotLabel,
@@ -75,6 +81,7 @@ export function ColonyMap({
   const entries = data.audience === 'public' ? data.areas : data.colonies
   const selected = entries.find((entry) => entry.id === selection?.id)
   const empty = entries.length === 0
+  const locationView = variant === 'location'
 
   useEffect(() => {
     const element = container.current
@@ -96,13 +103,15 @@ export function ColonyMap({
     <Card
       render={<section />}
       padding="none"
-      aria-labelledby={`${id}-title`}
+      aria-label={locationView ? title : undefined}
+      aria-labelledby={locationView ? undefined : `${id}-title`}
       className={cn(
         'mews-colony-map w-full min-w-0',
+        locationView && height === 'fill' && 'lg:flex-1',
         className,
       )}
     >
-      <CardHeader className="py-6">
+      {!locationView ? <CardHeader className="py-6">
         <div>
           <Heading level={2} size="card" id={`${id}-title`}>
             {title}
@@ -113,10 +122,10 @@ export function ColonyMap({
               : 'Colony locations')}
           </Text>
         </div>
-      </CardHeader>
+      </CardHeader> : null}
       <div
         ref={container}
-        className="relative h-96 min-w-0 overflow-hidden bg-muted/30"
+        className={cn('relative min-w-0 overflow-hidden bg-muted/30', locationView ? height === 'fill' ? 'h-64 sm:h-72 lg:h-auto lg:min-h-72 lg:flex-1' : 'h-64 sm:h-72' : 'h-96')}
         aria-label={
           publicView
             ? 'Map of broad colony activity areas'
@@ -126,7 +135,7 @@ export function ColonyMap({
         {state === 'loading' ? (
           <LoadingMap />
         ) : state === 'error' ? (
-          <EmptyState role="alert" tone="danger" className="h-full" icon={<CircleAlert />} title="Could not load the map" description="The location list is still available below." action={onRetry ? (
+          <EmptyState role="alert" tone="danger" className="h-full" icon={<CircleAlert />} title="Could not load the map" description={locationView ? 'The location is still available below.' : 'The location list is still available below.'} action={onRetry ? (
               <Button variant="outline" size="sm" onClick={onRetry}>
                 Retry map
               </Button>
@@ -143,13 +152,15 @@ export function ColonyMap({
               onSelect={selectFromMap}
               styleUrl={mapStyleUrl}
               initialView={initialView}
+              locationView={locationView}
+              title={title}
             />
           </Suspense>
         ) : (
           <LoadingMap />
         )}
       </div>
-      <CardFooter className="block space-y-4">
+      {!locationView ? <CardFooter className="block space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           {publicView ? (
             <div
@@ -229,7 +240,7 @@ export function ColonyMap({
         >
           {selected ? `${selected.name} selected.` : ''}
         </Text>
-      </CardFooter>
+      </CardFooter> : null}
     </Card>
   )
 }

@@ -35,25 +35,27 @@ export function ColonyPage() {
     <title>{colony.name} · Mews</title>
     <div className="space-y-8">
       <RecordActions colonyId={colony.id} />
-      <ColonyLocation colony={colony} />
-      {urgentReports.length ? <section aria-labelledby="colony-urgent-reports" className="space-y-3">
-        <Heading id="colony-urgent-reports" level={2} size="card">Urgent reports to review</Heading>
-        <ReportActivity reports={urgentReports} />
-      </section> : null}
-      <div className="grid items-start gap-8 lg:grid-cols-2">
-        <section aria-labelledby="colony-tasks" className="space-y-3">
-          <Heading id="colony-tasks" level={2} size="card">Open tasks</Heading>
-          <OpenTasks tasks={tasks} />
-        </section>
-        {!summary.feedingReport || !urgentIds.has(summary.feedingReport.id) ? <section aria-labelledby="colony-feeding" className="space-y-3">
-          <Heading id="colony-feeding" level={2} size="card">Latest feeding report</Heading>
-          {summary.feedingReport ? <Card size="sm"><CardContent className="space-y-2">
-            <TextLink render={<Link to={`/app/reports?report=${encodeURIComponent(summary.feedingReport.id)}`} />}>{summary.feedingReport.title}</TextLink>
-            <Text size="caption" tone="muted">{formatReportTime(summary.feedingReport.submittedAt)}</Text>
-            <Badge variant="secondary">{reportStatusLabels[summary.feedingReport.status]}</Badge>
-          </CardContent></Card> : <EmptyState icon={<House />} title="No feeding reports" />}
-        </section> : null}
+      <div className="grid items-start gap-8 lg:grid-cols-2 lg:items-stretch">
+        <div className="space-y-8">
+          {urgentReports.length ? <section aria-labelledby="colony-urgent-reports" className="space-y-3">
+            <div className="lg:flex lg:min-h-(--control-height-sm) lg:items-center"><Heading id="colony-urgent-reports" level={2} size="card">Urgent reports to review</Heading></div>
+            <ReportActivity reports={urgentReports} />
+          </section> : null}
+          <section aria-labelledby="colony-tasks" className="space-y-3">
+            <Heading id="colony-tasks" level={2} size="card">Open tasks</Heading>
+            <OpenTasks tasks={tasks} />
+          </section>
+        </div>
+        <ColonyLocation colony={colony} catCount={cats.length} fill />
       </div>
+      {!summary.feedingReport || !urgentIds.has(summary.feedingReport.id) ? <section aria-labelledby="colony-feeding" className="space-y-3">
+        <Heading id="colony-feeding" level={2} size="card">Latest feeding report</Heading>
+        {summary.feedingReport ? <Card size="sm"><CardContent className="space-y-2">
+          <TextLink render={<Link to={`/app/reports?report=${encodeURIComponent(summary.feedingReport.id)}`} />}>{summary.feedingReport.title}</TextLink>
+          <Text size="caption" tone="muted">{formatReportTime(summary.feedingReport.submittedAt)}</Text>
+          <Badge variant="secondary">{reportStatusLabels[summary.feedingReport.status]}</Badge>
+        </CardContent></Card> : <EmptyState icon={<House />} title="No feeding reports" />}
+      </section> : null}
       <section aria-labelledby="colony-cats" className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3"><Heading id="colony-cats" level={2} size="card">Cats</Heading><NewRecordButton kind="cat" colonyId={colony.id} /></div>
         {cats.length ? <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{cats.map((cat) => <Card key={cat.id} size="sm" interactive render={<Link to={`/app/cats/${encodeURIComponent(cat.id)}`} />} aria-label={cat.name}><CardContent className="flex items-center gap-3"><RecordAvatar name={cat.name} kind="cat" src={cat.photoUrl} /><Text size="small" weight="medium">{cat.name}</Text></CardContent></Card>)}</div> : <EmptyState icon={<Cat />} title="No cats in this colony" />}

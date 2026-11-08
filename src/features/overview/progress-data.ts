@@ -15,7 +15,7 @@ export function overviewProgress(reports: InboxReport[], tasks: Task[], currentU
   return {
     mine: taskProgress(tasks.filter((task) => task.ownerId === currentUser), today),
     team: taskProgress(tasks, today),
-    assignees: new Set(tasks.map((task) => task.ownerId).filter(Boolean)).size,
+    assignees: new Set(tasks.filter((task) => task.status === 'open').map((task) => task.ownerId).filter(Boolean)).size,
     reports: {
       total: reports.length,
       processed: reports.filter((report) => report.status === 'processed').length,

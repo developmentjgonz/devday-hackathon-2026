@@ -28,7 +28,7 @@ const statuses = [
   { value: 'all', label: 'All tasks' },
 ]
 
-export function MyTasksScreen({ currentUser, initialStatus = 'open' }: { currentUser: string; initialStatus?: TaskFilter }) {
+export function MyTasksScreen({ currentUser, initialStatus = 'open', cardHeadingLevel = 2 }: { currentUser: string; initialStatus?: TaskFilter; cardHeadingLevel?: 2 | 3 }) {
   const { data, reports, tasks: allTasks } = useInbox()
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedTask = searchParams.get('task')
@@ -93,7 +93,7 @@ export function MyTasksScreen({ currentUser, initialStatus = 'open' }: { current
     {requestedTask ? <Text size="small" tone="muted">Showing selected task. Clear filters to see all your tasks.</Text> : null}
     {view === 'list' ? <DataTable ref={contentRef} table={table} label="My tasks" itemName="task" columnClassName={taskColumnClassName} emptyState={emptyState} /> :
       <div ref={contentRef} role="region" aria-label="My tasks" tabIndex={-1} className="rounded-control outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        {table.getRowModel().rows.length ? <TaskCards tasks={table.getRowModel().rows.map((row) => row.original)} onStatusChange={changeTaskStatus} reopeningTaskIds={reopeningTaskIds} currentUser={currentUser} /> : <Card>{emptyState}</Card>}
+        {table.getRowModel().rows.length ? <TaskCards tasks={table.getRowModel().rows.map((row) => row.original)} onStatusChange={changeTaskStatus} reopeningTaskIds={reopeningTaskIds} currentUser={currentUser} headingLevel={cardHeadingLevel} /> : <Card>{emptyState}</Card>}
         <DataTablePagination table={table} label="My tasks" itemName="task" presentation="cards" />
       </div>}
   </div>

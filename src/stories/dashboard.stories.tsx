@@ -48,7 +48,7 @@ function DashboardStory() {
 const meta = {
   title: 'Pages/Dashboard',
   component: DashboardStory,
-  parameters: { layout: 'fullscreen', docs: { description: { component: 'The workspace overview shows personal, team, and report completion progress, plus completed tasks by assignee. It links to My Tasks and Reports and keeps full lists on those pages. Storybook uses isolated fictional records.' } } },
+  parameters: { layout: 'fullscreen', docs: { description: { component: 'The workspace overview shows open tasks and reports plus completed tasks by assignee. The My tasks card expands the task list and the Report reviews card opens Reports. Completion totals include all recorded completed tasks. Storybook uses isolated fictional records.' } } },
 } satisfies Meta<typeof DashboardStory>
 export default meta
 type Story = StoryObj<typeof meta>
