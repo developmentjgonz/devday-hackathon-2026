@@ -136,6 +136,28 @@ test('desktop report rows scroll while controls, column headings, and pagination
   }
 })
 
+test('task and team tables keep pagination within a short desktop window', async ({ page }, info) => {
+  await page.setViewportSize({ width: 1280, height: 600 })
+  for (const { story, label, teamTasks } of [
+    { story: 'pages-my-tasks--many-tasks', label: 'My tasks' },
+    { story: 'pages-my-tasks--many-tasks', label: 'Team tasks', teamTasks: true },
+    { story: 'pages-team--many-accounts', label: 'Team accounts' },
+  ]) {
+    await open(page, story, info.project.name === 'dark')
+    if (teamTasks) await page.getByRole('link', { name: 'Team Tasks', exact: true }).click()
+    const rows = page.getByRole('region', { name: `${label} rows`, exact: true })
+    await expect(rows).toBeVisible()
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true)
+    await expect(page.getByRole('navigation', { name: `${label} pagination` })).toBeInViewport({ ratio: 1 })
+    await rows.focus()
+    await page.keyboard.press('End')
+    await expect.poll(() => rows.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+    await page.getByRole('button', { name: 'Next page', exact: true }).click()
+    await expect.poll(() => rows.evaluate((element) => element.scrollTop)).toBe(0)
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true)
+  }
+})
+
 test('delayed page changes retain existing rows and prevent stale interactions', async ({ page }, info) => {
   await open(page, 'display-data-table--delayed-pages', info.project.name === 'dark')
   await expect(page.locator('[data-slot="table"] tbody tr')).toHaveCount(10)
