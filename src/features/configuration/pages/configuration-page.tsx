@@ -161,6 +161,7 @@ function AiForm({ initial, store }: { initial: Configuration; store: Configurati
         <Label htmlFor="configuration-key">OpenAI API key</Label>
         <Input id="configuration-key" type="password" autoComplete="off" maxLength={512} disabled={Boolean(action) || !saved.secureKeyStorageAvailable} value={apiKey} onChange={(event) => setApiKey(event.target.value)} aria-describedby="configuration-key-help" />
         <Text id="configuration-key-help" size="caption" tone="muted">{keyHelp}</Text>
+        <div><TextLink size="sm" render={<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" />}>Create an OpenAI API key</TextLink></div>
         {!saved.secureKeyStorageAvailable ? <Text size="small" tone="danger">Secure key storage is unavailable. Ask the site operator for help.</Text> : null}
         {saved.openaiKeyStatus !== 'not-set' ? <div><Button type="button" size="sm" variant="outline" loading={action === 'remove'} disabled={Boolean(action)} onClick={() => void removeKey()}>Remove key</Button></div> : null}
       </div>
