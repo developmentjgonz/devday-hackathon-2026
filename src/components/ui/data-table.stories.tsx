@@ -3,7 +3,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import type { PaginationState, Updater } from '@tanstack/react-table'
 import { DataTable, useDataTable, type DataTableRequest } from './data-table'
 import { Button } from './button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './dialog'
+import { DialogTitle, DialogDescription } from './dialog'
+import { Drawer, DrawerContent, DrawerHeader, DrawerBody } from './drawer'
 import { Text } from './typography'
 import type { InboxReport } from '@/features/inbox/types'
 import { localInboxData } from '@/features/inbox/data/local-inbox'
@@ -21,6 +22,7 @@ function DataTableExample({ mode = 'ready' }: { mode?: 'ready' | 'loading' | 'er
   const [data, setData] = useState(mode === 'empty' || mode === 'error' || mode === 'loading' ? [] : mode === 'delayed' ? records.slice(0, 10) : records)
   const [request, setRequest] = useState<DataTableRequest | undefined>(() => mode === 'loading' ? { status: 'loading' } : mode === 'error' ? { status: 'error', message: 'The connection was interrupted. Try loading the reports again.', onRetry: retry } : undefined)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const returnFocus = useRef<HTMLButtonElement | null>(null)
   useEffect(() => () => clearTimeout(timer.current), [])
   const columns = useInboxColumns(localInboxData)
 
@@ -49,15 +51,18 @@ function DataTableExample({ mode = 'ready' }: { mode?: 'ready' | 'loading' | 'er
 
   return <>
     <DataTable table={table} label="Reports" itemName="report" request={request} columnClassName={inboxColumnClassName}
-      onOpenRow={setOpened} activeRowId={opened?.id}
+      onOpenRow={(report, trigger) => { returnFocus.current = trigger; setOpened(report) }} activeRowId={opened?.id}
       selection={{ getLabel: (report) => report.title, actions: (selected) => <Button variant="outline" size="sm" onClick={() => {
         const ids = new Set(selected.map((row) => row.id))
         setData((rows) => rows.map((row) => ids.has(row.id) ? { ...row, unread: false } : row))
         table.resetRowSelection()
       }}>Mark read</Button> }} />
-    <Dialog open={Boolean(opened)} onOpenChange={(open) => { if (!open) setOpened(null) }}>
-      <DialogContent><DialogHeader><DialogTitle>{opened?.title}</DialogTitle><DialogDescription>{opened?.reporter}</DialogDescription></DialogHeader><Text size="small">{opened?.message}</Text></DialogContent>
-    </Dialog>
+    <Drawer open={Boolean(opened)} onOpenChange={(open) => { if (!open) setOpened(null) }}>
+      <DrawerContent closeLabel="Close report" finalFocus={() => returnFocus.current}>
+        <DrawerHeader><DialogTitle>{opened?.title}</DialogTitle><DialogDescription>{opened?.reporter}</DialogDescription></DrawerHeader>
+        <DrawerBody><Text size="small">{opened?.message}</Text></DrawerBody>
+      </DrawerContent>
+    </Drawer>
   </>
 }
 
