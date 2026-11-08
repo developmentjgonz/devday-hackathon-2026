@@ -2,6 +2,8 @@
 
 Status: deployment attempted November 8, 2026, blocked by D1 authorization. The existing release was not changed. Do not present the planned demo address as a live deployment.
 
+After the user approved and configured both API secrets, the [deployment retry](https://github.com/developmentjgonz/devday-hackathon-2026/actions/runs/42492341290) reached the dedicated deploy step with all four encrypted configuration secrets available. Cloudflare again rejected D1 listing with `10000: Authentication error`. No dedicated D1, R2, or Worker resource was created. Key-sharing approval is resolved; Cloudflare account authorization remains the blocker.
+
 ## Required account access
 
 The current GitHub Actions credential authenticates to Workers, but Cloudflare rejected D1 listing with error `10000`. The Cloudflare account owner must check that the token targets the account in `wrangler.jsonc` and can manage D1 databases, Workers R2 storage, and Worker scripts, with any account-read permission Wrangler requires. An account token that can deploy the original Hello Worker is not sufficient evidence of D1/R2 management access.
