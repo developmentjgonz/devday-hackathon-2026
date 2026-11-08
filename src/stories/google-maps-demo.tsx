@@ -180,7 +180,7 @@ function GooglePlaceSearch({ onSelect, cancelVersion }: { onSelect: (point: Poin
         if (disposed || !target) return
         widget = new PlaceAutocompleteElement()
         widgetRef.current = widget
-        widget.placeholder = 'Search for an address or place'
+        widget.placeholder = 'Search address or place'
         widget.setAttribute('aria-label', 'Search for an address or place')
         const updateTheme = () => { if (widget) widget.style.colorScheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light' }
         updateTheme()
