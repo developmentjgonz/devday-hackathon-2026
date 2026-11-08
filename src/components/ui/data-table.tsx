@@ -49,7 +49,7 @@ type DataTableProps<T extends RowData> = {
   request?: DataTableRequest
   activeRowId?: string
   onOpenRow?: (row: T, trigger: HTMLButtonElement | null) => void
-  selection?: { getLabel: (row: T) => string; actions: (rows: T[]) => ReactNode }
+  selection?: { getLabel: (row: T) => string; actions: (rows: T[]) => ReactNode; busy?: boolean }
   columnClassName?: (columnId: string) => string | undefined
   /** Let the page scroll naturally, or keep the table in a bounded viewport. */
   scrollMode?: 'contained' | 'page'
@@ -66,7 +66,7 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
 
   return (
     <div className="space-y-3">
-      {toolbar || (selection && selected.length) ? <DataTableToolbar {...toolbar} selection={selection && selected.length ? { count: selected.length, actions: selection.actions(selected.map((row) => row.original)), onClear: () => table.resetRowSelection() } : undefined} /> : null}
+      {toolbar || (selection && selected.length) ? <DataTableToolbar {...toolbar} selection={selection ? { count: selected.length, actions: selection.actions(selected.map((row) => row.original)), onClear: () => table.resetRowSelection(), busy: selection.busy } : undefined} /> : null}
       <Card ref={ref} padding="none" tabIndex={-1} aria-label={label}>
       <div className="relative" aria-busy={busy || undefined}>
         {request?.status === 'error' ? <EmptyState
@@ -84,7 +84,7 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
                   {selection ? <TableHead className="w-12">
                     <Checkbox aria-label="Select this page" checked={rows.length > 0 && table.getIsAllPageRowsSelected()}
                       indeterminate={table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()}
-                      disabled={!rows.length || busy} onCheckedChange={(checked) => table.toggleAllPageRowsSelected(checked)} />
+                      disabled={!rows.length || busy || selection.busy} onCheckedChange={(checked) => table.toggleAllPageRowsSelected(checked)} />
                   </TableHead> : null}
                   {group.headers.map((header) => {
                     const direction = header.column.getIsSorted()
@@ -110,7 +110,7 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
                   }}>
                   {selection ? <TableCell>
                     <Checkbox aria-label={`Select ${selection.getLabel(row.original)}`} checked={row.getIsSelected()}
-                      disabled={!row.getCanSelect() || busy} onCheckedChange={(checked) => row.toggleSelected(checked)} />
+                      disabled={!row.getCanSelect() || busy || selection.busy} onCheckedChange={(checked) => row.toggleSelected(checked)} />
                   </TableCell> : null}
                   {row.getVisibleCells().map((cell) => <TableCell key={cell.id} className={columnClassName?.(cell.column.id)}>
                     <table.FlexRender cell={cell} />

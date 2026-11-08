@@ -15,10 +15,25 @@ export function useTaskActions(currentUser: string, fallbackFocus: RefObject<HTM
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [reopeningTaskIds, setReopeningTaskIds] = useState<ReadonlySet<string>>(() => new Set())
-  const reopening = useRef(new Set<string>())
   const [error, setError] = useState('')
+  const reopening = useRef(new Set<string>())
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const cancelRef = useRef<HTMLButtonElement>(null)
+
+  const reopenTask = useCallback((task: AssignedTask, trigger?: HTMLButtonElement) => {
+    if (reopening.current.has(task.id)) return
+    reopening.current.add(task.id)
+    setReopeningTaskIds((current) => new Set(current).add(task.id))
+    const notice = trigger ? undefined : toast.loading('Reopening task…', { description: task.title })
+    void saveStatus(task.id, 'open').then(() => {
+      toast.success('Task reopened', { id: notice, description: task.title })
+      if (trigger) requestAnimationFrame(() => { if (!trigger.isConnected) fallbackFocus.current?.focus({ preventScroll: true }) })
+    }).catch(() => toast.error('Could not reopen the task. Try again.', { id: notice }))
+      .finally(() => {
+        reopening.current.delete(task.id)
+        setReopeningTaskIds((current) => { const next = new Set(current); next.delete(task.id); return next })
+      })
+  }, [saveStatus, fallbackFocus])
 
   const changeTaskStatus = useCallback((task: AssignedTask, next: TaskStatus, trigger: HTMLButtonElement) => {
     if (task.ownerId !== currentUser && !canManageOthers) return
@@ -29,17 +44,8 @@ export function useTaskActions(currentUser: string, fallbackFocus: RefObject<HTM
       setOpen(true)
       return
     }
-    if (reopening.current.has(task.id)) return
-    reopening.current.add(task.id)
-    setReopeningTaskIds((current) => new Set(current).add(task.id))
-    void saveStatus(task.id, 'open').then(() => {
-      toast.success('Task reopened', { description: task.title })
-      requestAnimationFrame(() => { if (!trigger.isConnected) fallbackFocus.current?.focus({ preventScroll: true }) })
-    }).catch(() => toast.error('Could not reopen the task. Try again.')).finally(() => {
-      reopening.current.delete(task.id)
-      setReopeningTaskIds((current) => { const next = new Set(current); next.delete(task.id); return next })
-    })
-  }, [currentUser, canManageOthers, saveStatus, fallbackFocus])
+    reopenTask(task, trigger)
+  }, [currentUser, canManageOthers, reopenTask])
 
   async function confirmCompletion() {
     if (!completion || !open || saving) return
@@ -50,9 +56,7 @@ export function useTaskActions(currentUser: string, fallbackFocus: RefObject<HTM
       setOpen(false)
       toast.success('Task completed', {
         description: task.title,
-        action: { label: 'Undo', onClick: () => {
-          void saveStatus(task.id, 'open').then(() => toast.success('Task reopened', { description: task.title })).catch(() => toast.error('Could not reopen the task. Try again.'))
-        } },
+        action: { label: 'Undo', onClick: () => reopenTask(task) },
       })
     } catch (error) { setError(error instanceof Error ? error.message : 'Could not complete the task. Try again.') }
     finally { setSaving(false) }

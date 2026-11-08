@@ -14,6 +14,7 @@ import type { InboxData, Task } from '@/features/inbox/types'
 import type { SessionUser } from '../../shared/types/auth'
 import { storyDirectoryStore, storyWorkspace } from './fixtures/directory-store'
 import { storyWorkspaceStore } from './fixtures/workspace-store'
+import { waitForStoryRequest } from './fixtures/controlled-request'
 
 const user: SessionUser = { id: 'storybook-member', name: 'Alex Morgan', email: 'alex@mews.test', phone: null, role: 'administrator', status: 'active' }
 const focusedTasks: Record<string, Omit<Task, 'reportId' | 'associations' | 'ownerId'>[]> = {
@@ -35,22 +36,30 @@ const focusedData: InboxData = {
   tasks: Object.entries(focusedTasks).flatMap(([reportId, tasks]) => tasks.map((task) => ({ ...task, ownerId: `story:${task.owner}`, reportId, associations: [] }))),
 }
 
-function MyTasksStory({ data = localInboxData, currentUser = user.name, initialPath = '/app/tasks' }: { data?: InboxData; currentUser?: string; initialPath?: string }) {
-  const [router] = useState(() => createMemoryRouter([{
-    id: 'workspace', path: '/app', loader: () => storyWorkspace({ ...user, name: currentUser }, data), element: <AppLayout directoryStore={storyDirectoryStore} workspaceStore={storyWorkspaceStore({ ...user, name: currentUser }, storyWorkspace({ ...user, name: currentUser }, data).workspace)} />, children: [
-      { index: true, Component: OverviewPage, handle: { breadcrumb: 'Overview' } },
-      { path: 'tasks', Component: MyTasksPage, handle: { breadcrumb: 'My Tasks' } },
-      { path: 'reports', Component: InboxPage, handle: { breadcrumb: 'Reports' } },
-      { path: 'cats', handle: { breadcrumb: 'Cats' }, children: [
-        { index: true, Component: CatsPage },
-        { path: ':catId', Component: CatPage, handle: { breadcrumb: (params: Params, data: InboxData) => data.cats.find((cat) => cat.id === params.catId)?.name ?? 'Cat not found' } },
-      ] },
-      { path: 'colonies', handle: { breadcrumb: 'Colonies' }, children: [
-        { index: true, Component: ColoniesPage },
-        { path: ':colonyId', Component: ColonyPage, handle: { breadcrumb: (params: Params, data: InboxData) => data.colonies.find((colony) => colony.id === params.colonyId)?.name ?? 'Colony not found' } },
-      ] },
-    ],
-  }], { initialEntries: [initialPath] }))
+function MyTasksStory({ data = localInboxData, currentUser = user.name, initialPath = '/app/tasks', failTaskStatus = false, controlledTaskStatus = false }: { data?: InboxData; currentUser?: string; initialPath?: string; failTaskStatus?: boolean; controlledTaskStatus?: boolean }) {
+  const [router] = useState(() => {
+    const store = storyWorkspaceStore({ ...user, name: currentUser }, storyWorkspace({ ...user, name: currentUser }, data).workspace)
+    const workspaceStore = controlledTaskStatus ? { ...store, async changeTaskStatus(...args: Parameters<typeof store.changeTaskStatus>) {
+      await waitForStoryRequest('storybook:release-task-status')
+      if (failTaskStatus) throw new Error('Could not update task status.')
+      return store.changeTaskStatus(...args)
+    } } : store
+    return createMemoryRouter([{
+      id: 'workspace', path: '/app', loader: () => storyWorkspace({ ...user, name: currentUser }, data), element: <AppLayout directoryStore={storyDirectoryStore} workspaceStore={workspaceStore} />, children: [
+        { index: true, Component: OverviewPage, handle: { breadcrumb: 'Overview' } },
+        { path: 'tasks', Component: MyTasksPage, handle: { breadcrumb: 'My Tasks' } },
+        { path: 'reports', Component: InboxPage, handle: { breadcrumb: 'Reports' } },
+        { path: 'cats', handle: { breadcrumb: 'Cats' }, children: [
+          { index: true, Component: CatsPage },
+          { path: ':catId', Component: CatPage, handle: { breadcrumb: (params: Params, data: InboxData) => data.cats.find((cat) => cat.id === params.catId)?.name ?? 'Cat not found' } },
+        ] },
+        { path: 'colonies', handle: { breadcrumb: 'Colonies' }, children: [
+          { index: true, Component: ColoniesPage },
+          { path: ':colonyId', Component: ColonyPage, handle: { breadcrumb: (params: Params, data: InboxData) => data.colonies.find((colony) => colony.id === params.colonyId)?.name ?? 'Colony not found' } },
+        ] },
+      ],
+    }], { initialEntries: [initialPath] })
+  })
   return <RouterProvider router={router} />
 }
 
@@ -59,7 +68,7 @@ const meta = {
   component: MyTasksStory,
   parameters: {
     layout: 'fullscreen',
-    docs: { description: { component: 'The production My Tasks page and shared workspace layout. The workspace loader supplies the signed-in member. Only tasks assigned to the signed-in member appear. Tasks can be created without a report and related to cats, colonies, people, paperwork, or other named items. Open tasks appear in a note card view by default; the toolbar switches between cards and a sortable table while preserving filters and pagination. The browser remembers the selected view. Search matches task, report, and related item names. Due dates sort earliest first, with undated tasks last. Complete and Reopen update the Storybook store, with shared Sonner notifications. Report review status is independent. Small labelled actions open linked reports in the existing drawer and linked cats or colonies in their detail pages. Missing records get no action. Overview shows current personal, team, and report completion totals without time-based productivity claims. The fictional Storybook records reset on refresh. The application saves task changes through the authenticated API using stable assignee IDs. Focused tasks covers open/completed tasks, another assignee, missing due dates, and a task on a processed report. Many tasks covers pagination. Long content covers narrow layouts. Empty has no tasks for the current member. The shared top bar remains the only page heading.' } },
+    docs: { description: { component: 'The production My Tasks page and shared workspace layout. The workspace loader supplies the signed-in member. Only tasks assigned to the signed-in member appear. Tasks can be created without a report and related to cats, colonies, people, paperwork, or other named items. Open tasks appear in a note card view by default; the toolbar switches between cards and a sortable table while preserving filters and pagination. The browser remembers the selected view. Search matches task, report, and related item names. Due dates sort earliest first, with undated tasks last. Complete and Reopen update the Storybook store, with shared Sonner notifications. Report review status is independent. Small labelled actions open linked reports in the existing drawer and linked cats or colonies in their detail pages. Missing records get no action. Overview shows current personal, team, and report completion totals without time-based productivity claims. The fictional Storybook records reset on refresh. The application saves task changes through the authenticated API using stable assignee IDs. Focused tasks covers open/completed tasks, another assignee, missing due dates, and a task on a processed report. Many tasks covers pagination. Long content covers narrow layouts. Empty has no tasks for the current member. The shared top bar remains the only page heading. Delayed task status waits up to 30 seconds for loading checks; tests can release it sooner.' } },
   },
 } satisfies Meta<typeof MyTasksStory>
 export default meta
@@ -67,6 +76,8 @@ type Story = StoryObj<typeof meta>
 
 export const MyTasks: Story = {}
 export const FocusedTasks: Story = { args: { data: focusedData } }
+export const DelayedTaskStatus: Story = { args: { data: focusedData, controlledTaskStatus: true } }
+export const FailedTaskStatus: Story = { args: { data: focusedData, controlledTaskStatus: true, failTaskStatus: true } }
 export const ProgressOverview: Story = { args: { data: focusedData, initialPath: '/app' } }
 export const NoTasksOverview: Story = { args: { data: { ...focusedData, tasks: [] }, initialPath: '/app' } }
 export const DifferentAssignee: Story = { args: { data: focusedData, currentUser: 'Sam Chen' } }

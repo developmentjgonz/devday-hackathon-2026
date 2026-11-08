@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CheckCheck, Search } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, ButtonLabel } from '@/components/ui/button'
 import { DataTable, useDataTable } from '@/components/ui/data-table'
 import { useSearchParams } from 'react-router'
 import { useInbox } from '../inbox-context'
@@ -121,16 +121,18 @@ export function InboxScreen({ initialStatus = 'pending' }: {
             options: [{ value: 'all', label: 'All colonies' }, { value: '', label: 'Colony unknown' }, ...initialData.colonies.map((colony) => ({ value: colony.id, label: colony.name }))],
             onValueChange: (value) => { setColonyFilter(value); resetTable(); closeDrawer() },
           }],
-          onReset: query || colonyFilter !== 'all' || statusFilter !== 'all' ? () => { setSearch(''); setColonyFilter('all'); setStatusFilter('all'); resetTable(); closeDrawer() } : undefined,
+          onReset: () => { setSearch(''); setColonyFilter('all'); setStatusFilter('all'); resetTable(); closeDrawer() },
+          resetActive: Boolean(query || colonyFilter !== 'all' || statusFilter !== 'all'),
         }}
         columnClassName={inboxColumnClassName}
         activeRowId={drawerOpen ? selected?.id : undefined}
         onOpenRow={openReport}
         selection={{
+          busy: marking,
           getLabel: (report) => report.title,
           actions: (items) => {
             const unread = items.every((report) => !report.unread)
-            return <Button variant="outline" size="sm" loading={marking} onClick={() => void markRead(items, unread)}>Mark {unread ? 'unread' : 'read'}</Button>
+            return <Button variant="outline" size="sm" loading={marking} onClick={() => void markRead(items, unread)}><ButtonLabel labels={['Mark read', 'Mark unread']}>Mark {unread ? 'unread' : 'read'}</ButtonLabel></Button>
           },
         }}
         emptyState={<EmptyState

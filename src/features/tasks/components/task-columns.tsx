@@ -15,7 +15,7 @@ export const taskColumnClassName = (id: string) => ({
   action: 'w-28',
 })[id]
 
-export function useTaskColumns(onStatusChange: (task: AssignedTask, status: TaskStatus, trigger: HTMLButtonElement) => void, currentUser: string) {
+export function useTaskColumns(onStatusChange: (task: AssignedTask, status: TaskStatus, trigger: HTMLButtonElement) => void, currentUser: string, reopeningTaskIds: ReadonlySet<string>) {
   return useMemo(() => column.columns([
     column.accessor('title', {
       header: 'Task',
@@ -37,8 +37,8 @@ export function useTaskColumns(onStatusChange: (task: AssignedTask, status: Task
       id: 'action', header: 'Action',
       cell: ({ row }) => {
         const completed = row.original.status === 'completed'
-        return <Button variant="outline" size="sm" aria-label={`${completed ? 'Reopen' : 'Complete'} task: ${row.original.title}`} onClick={(event) => onStatusChange(row.original, completed ? 'open' : 'completed', event.currentTarget)}>{completed ? 'Reopen' : 'Complete'}</Button>
+        return <Button variant="outline" size="sm" loading={reopeningTaskIds.has(row.original.id)} aria-label={`${completed ? 'Reopen' : 'Complete'} task: ${row.original.title}`} onClick={(event) => onStatusChange(row.original, completed ? 'open' : 'completed', event.currentTarget)}>{completed ? 'Reopen' : 'Complete'}</Button>
       },
     }),
-  ]), [onStatusChange, currentUser])
+  ]), [onStatusChange, currentUser, reopeningTaskIds])
 }
