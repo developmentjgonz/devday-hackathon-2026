@@ -19,7 +19,6 @@ export const createReportSchema = z.object({ title, message: text, colonyId: opt
 export const finishReportSchema = z.object({ colonyId: id, catId: optionalId, careNote: text, urgent: z.boolean() })
 export const questionSchema = z.object({ text })
 export const duplicateSchema = z.object({ targetId: id })
-export const markReportsSchema = z.object({ ids: z.array(id).min(1).max(100), unread: z.boolean() })
 export const taskInputSchema = z.object({ title, ownerId: id, due, reportId: id.optional(), associations: z.array(association).max(30) })
 export const taskStatusSchema = z.object({ status: z.enum(['open', 'completed']) })
 

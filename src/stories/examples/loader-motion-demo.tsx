@@ -47,7 +47,7 @@ export function LoaderMotionDemo() {
           <Text size="small" tone="muted">Actions stay disabled while loading. Button sizes stay fixed.</Text>
         </section>
       </div>
-      <Text size="small" tone="muted">Reduced motion keeps the prints still. These examples do not send data.</Text>
+      <Text size="small" tone="muted">Reduced motion keeps the paw still. These examples do not send data.</Text>
     </div>
   )
 }

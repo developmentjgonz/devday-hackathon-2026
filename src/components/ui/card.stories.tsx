@@ -38,6 +38,10 @@ export const Note: Story = {
   render: () => <Card tone="note" size="sm" className="w-80 max-w-full"><CardContent className="space-y-3"><Text size="caption" tone="muted">Riverside</Text><Heading size="card" level={3}>Arrange a care check</Heading><Text size="caption" tone="muted">Due Nov 8, 2026</Text></CardContent></Card>,
   parameters: { docs: { description: { story: 'The note tone is a warm, understated surface for short pieces of work. It supports light and dark themes.' } } },
 }
+export const Subtle: Story = {
+  render: () => <Card tone="subtle" size="sm" className="w-80 max-w-full"><CardContent><Text size="caption" tone="muted">Latest feeding report</Text><Text size="small" weight="medium">Nov 7, 8:05 AM · Needs review</Text></CardContent></Card>,
+  parameters: { docs: { description: { story: 'A quiet inset surface for supporting information inside a larger card.' } } },
+}
 export const Interactive: Story = {
   render: () => <Card interactive size="sm" render={<a href="#colony" />} className="w-80 max-w-full"><CardContent className="space-y-1"><Heading size="card">Canal colony</Heading><Text size="caption" tone="muted">8 known cats</Text></CardContent></Card>,
   parameters: { docs: { description: { story: 'An interactive card is a single link with a shared hover and focus state. Use it when the entire card opens one record.' } } },

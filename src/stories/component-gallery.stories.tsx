@@ -160,11 +160,11 @@ function ComponentGallery() {
                   LoadingIndicator
                 </Heading>
                 <a
-                  href="./?path=/story/feedback-loading-indicator--cat-prints"
+                  href="./?path=/story/feedback-loading-indicator--single-paw"
                   target="_top"
                   className="text-xs text-primary-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
                 >
-                  Open cat-print story{' '}
+                  Open single-paw story{' '}
                   <ArrowUpRight className="inline size-3" aria-hidden="true" />
                 </a>
               </div>

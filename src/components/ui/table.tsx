@@ -1,4 +1,4 @@
-import { useId, type ComponentProps } from 'react'
+import type { ComponentProps } from 'react'
 import { cn } from '@/lib/utils'
 
 export function Table({ className, density = 'comfortable', ...props }: ComponentProps<'table'> & { density?: 'comfortable' | 'compact' }) {
@@ -13,7 +13,6 @@ export function TableRow({ interactive = false, selected = false, className, ...
 export function TableCell({ className, ...props }: ComponentProps<'td'>) {
   return <td className={cn('px-4 py-3 align-middle first:pl-5 last:pr-5 group-data-[density=compact]/table:py-2', className)} {...props} />
 }
-export function TableOpenButton({ children, className, unread = false, 'aria-describedby': describedBy, ...props }: ComponentProps<'button'> & { unread?: boolean }) {
-  const unreadId = useId()
-  return <button type="button" aria-haspopup="dialog" data-slot="table-open-button" aria-describedby={[describedBy, unread ? unreadId : undefined].filter(Boolean).join(' ') || undefined} className={cn('flex min-h-7 max-w-full items-center rounded-sm font-sans text-sm leading-6 text-foreground outline-none select-none hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2', unread ? 'font-semibold' : 'font-normal', className)} {...props}>{unread ? <span id={unreadId} className="sr-only">Unread report</span> : null}<span className="truncate">{children}</span></button>
+export function TableOpenButton({ children, className, ...props }: ComponentProps<'button'>) {
+  return <button type="button" aria-haspopup="dialog" data-slot="table-open-button" className={cn('flex min-h-7 max-w-full items-center rounded-sm font-sans text-sm leading-6 font-normal text-foreground outline-none select-none hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2', className)} {...props}><span className="truncate">{children}</span></button>
 }

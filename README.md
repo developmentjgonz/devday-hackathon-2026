@@ -88,6 +88,8 @@ The frontend uses React, TypeScript, Vite, React Router in Data Mode, Tailwind C
 
 The local backend uses Hono and TypeScript on Cloudflare Workers, with D1 for application records and private R2 storage for report attachments. Shared Zod schemas validate inputs. Routes handle HTTP, middleware checks access, services own account operations, and `worker/db/` owns SQL. Builds check the backend with strict TypeScript settings. See the [backend decision](docs/decisions/0004-hono-typescript-backend.md).
 
+Administrators can save phone, email, and OpenAI configuration. Channel connections, AI analysis, and public reporting are not active. See [administrator configuration](docs/configuration.md) for key storage and setup.
+
 React Doctor is installed as a development dependency for manual checks only:
 
 ```sh

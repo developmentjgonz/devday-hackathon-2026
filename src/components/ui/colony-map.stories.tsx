@@ -79,6 +79,16 @@ export const TeamColonies: Story = {
   name: 'Team colonies',
   args: { data: teamMapData },
 }
+export const SavedLocation: Story = {
+  name: 'Saved colony location',
+  args: {
+    variant: 'location',
+    title: 'Canal colony location',
+    data: { audience: 'team', colonies: [teamMapData.colonies[0]] },
+    initialView: { center: [-80.249, 25.812], zoom: 14 },
+  },
+  parameters: { docs: { description: { story: 'A compact map for one saved location. The surrounding page supplies the location text and edit action.' } } },
+}
 export const Loading: Story = { args: { state: 'loading' } }
 export const Empty: Story = {
   args: { data: { audience: 'public', areas: [] } },

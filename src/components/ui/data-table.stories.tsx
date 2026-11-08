@@ -54,9 +54,9 @@ function DataTableExample({ mode = 'ready', scrollMode = 'contained' }: { mode?:
       onOpenRow={(report, trigger) => { returnFocus.current = trigger; setOpened(report) }} activeRowId={opened?.id}
       selection={{ getLabel: (report) => report.title, actions: (selected) => <Button variant="outline" size="sm" onClick={() => {
         const ids = new Set(selected.map((row) => row.id))
-        setData((rows) => rows.map((row) => ids.has(row.id) ? { ...row, unread: false } : row))
+        setData((rows) => rows.filter((row) => !ids.has(row.id)))
         table.resetRowSelection()
-      }}>Mark read</Button> }} />
+      }}>Remove selected</Button> }} />
     <Drawer open={Boolean(opened)} onOpenChange={(open) => { if (!open) setOpened(null) }}>
       <DrawerContent closeLabel="Close report" finalFocus={() => returnFocus.current}>
         <DrawerHeader><DialogTitle>{opened?.title}</DialogTitle><DialogDescription>{opened?.reporter}</DialogDescription></DrawerHeader>

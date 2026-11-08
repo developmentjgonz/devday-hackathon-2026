@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CheckCheck, Search } from 'lucide-react'
+import { ArrowDownUp, CheckCheck, Search } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 import { DataTable, useDataTable } from '@/components/ui/data-table'
+import { ReportListItem } from '@/components/ui/report-list-item'
 import { useSearchParams } from 'react-router'
 import { useInbox } from '../inbox-context'
 import { inboxColumnClassName, useInboxColumns } from './inbox-columns'
@@ -25,13 +28,12 @@ function sortedReports(reports: InboxReport[]) {
 export function InboxScreen({ initialStatus = 'pending' }: {
   initialStatus?: StatusFilter
 }) {
-  const { data: initialData, reports, markReports } = useInbox()
+  const { data: initialData, reports } = useInbox()
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedId = searchParams.get('report')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(searchParams.has('colony') ? 'all' : initialStatus)
   const [selectedId, setSelectedId] = useState<string | null>(requestedId)
   const [drawerOpen, setDrawerOpen] = useState(Boolean(requestedId))
-  const [marking, setMarking] = useState(false)
   const [search, setSearch] = useState('')
   const [colonyFilter, setColonyFilter] = useState(() => initialData.colonies.some((colony) => colony.id === searchParams.get('colony')) ? searchParams.get('colony')! : 'all')
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
@@ -54,20 +56,19 @@ export function InboxScreen({ initialStatus = 'pending' }: {
     onPaginationChange: setPagination,
   })
   const selected = reports.find((report) => report.id === selectedId) ?? null
-  const requestedUnread = reports.find((report) => report.id === requestedId)?.unread
+  const titleColumn = table.getColumn('title')
+  const titleSort = titleColumn?.getIsSorted()
   // The report composer and record links can open a report from another route.
   useEffect(() => {
     if (!requestedId) return
     setSelectedId(requestedId)
     setDrawerOpen(true)
-    if (requestedUnread) void markReports([requestedId], false).catch(() => toast.error('Could not mark the report as read.'))
-  }, [requestedId, requestedUnread, markReports])
+  }, [requestedId])
 
   function openReport(report: InboxReport, trigger: HTMLButtonElement | null) {
     returnFocus.current = trigger
     setSelectedId(report.id)
     setDrawerOpen(true)
-    if (report.unread) void markReports([report.id], false).catch(() => toast.error('Could not mark the report as read.'))
   }
 
   function closeDrawer() {
@@ -87,18 +88,6 @@ export function InboxScreen({ initialStatus = 'pending' }: {
 
   function resetTable() {
     table.firstPage()
-    table.resetRowSelection()
-  }
-
-  async function markRead(items: InboxReport[], unread: boolean) {
-    if (marking) return
-    setMarking(true)
-    try {
-      await markReports(items.map((report) => report.id), unread)
-      table.resetRowSelection()
-      toast.success(`${items.length} ${items.length === 1 ? 'report' : 'reports'} marked as ${unread ? 'unread' : 'read'}.`)
-    } catch { toast.error('Could not update the selected reports. Try again.') }
-    finally { setMarking(false) }
   }
 
   return (
@@ -109,10 +98,15 @@ export function InboxScreen({ initialStatus = 'pending' }: {
         label="Reports"
         itemName="report"
         toolbar={{
-          actions: <NewReportButton />,
+          actions: <>
+            <Button variant="outline" size="sm" className="md:hidden" onClick={() => { titleColumn?.toggleSorting(); table.firstPage() }}>
+              <ArrowDownUp aria-hidden="true" />Sort by title{titleSort === 'asc' ? ': A–Z' : titleSort === 'desc' ? ': Z–A' : ''}
+            </Button>
+            <NewReportButton />
+          </>,
           search: { label: 'Search reports', placeholder: 'Search reports…', value: search, onValueChange: (value) => { setSearch(value); resetTable(); closeDrawer() } },
           filters: [{
-            id: 'status', label: 'Filter by status', value: statusFilter,
+            id: 'status', label: 'Filter by status', value: statusFilter, width: 'wide',
             options: statuses,
             onValueChange: (value) => changeStatus(value as StatusFilter),
           }, {
@@ -121,21 +115,32 @@ export function InboxScreen({ initialStatus = 'pending' }: {
             options: [{ value: 'all', label: 'All colonies' }, { value: '', label: 'Colony unknown' }, ...initialData.colonies.map((colony) => ({ value: colony.id, label: colony.name }))],
             onValueChange: (value) => { setColonyFilter(value); resetTable(); closeDrawer() },
           }],
-          onReset: query || colonyFilter !== 'all' || statusFilter !== 'all' ? () => { setSearch(''); setColonyFilter('all'); setStatusFilter('all'); resetTable(); closeDrawer() } : undefined,
+          onReset: () => { setSearch(''); setColonyFilter('all'); setStatusFilter('all'); resetTable(); closeDrawer() },
+          resetActive: Boolean(query || colonyFilter !== 'all' || statusFilter !== 'all'),
         }}
         columnClassName={inboxColumnClassName}
         activeRowId={drawerOpen ? selected?.id : undefined}
         onOpenRow={openReport}
-        selection={{
-          getLabel: (report) => report.title,
-          actions: (items) => {
-            const unread = items.every((report) => !report.unread)
-            return <Button variant="outline" size="sm" loading={marking} onClick={() => void markRead(items, unread)}>Mark {unread ? 'unread' : 'read'}</Button>
-          },
+        renderMobileCard={(report, { selected, onOpen }) => {
+          const colony = initialData.colonies.find((item) => item.id === report.colonyId)?.name ?? 'Colony unknown'
+          const duplicate = Boolean(report.possibleDuplicateOf && !report.duplicateOf && report.status !== 'processed')
+          return <Card padding="none"><ReportListItem
+            title={report.title}
+            meta={`${colony} · ${report.category}`}
+            badge={<>
+              {report.urgent ? <Badge size="comfortable" variant="destructive">Urgent</Badge> : null}
+              <Badge size="comfortable" variant={report.status === 'pending' ? 'warning' : report.status === 'processed' ? 'success' : 'outline'}>{reportStatusLabels[report.status]}</Badge>
+              {duplicate ? <Badge size="comfortable" variant="outline">Possible duplicate</Badge> : null}
+            </>}
+            selected={selected}
+            aria-label={`Review ${report.title}`}
+            aria-description={`${report.urgent ? 'Urgent. ' : ''}${reportStatusLabels[report.status]}. ${colony}. ${report.category}.${duplicate ? ' Possible duplicate.' : ''}`}
+            onClick={onOpen}
+          /></Card>
         }}
         emptyState={<EmptyState
           icon={query || colonyFilter !== 'all' ? <Search /> : <CheckCheck />}
-          title={query || colonyFilter !== 'all' ? 'No matching reports' : statusFilter === 'pending' ? 'All reports reviewed' : statusFilter === 'waiting' ? 'No reports waiting' : statusFilter === 'processed' ? 'No processed reports' : 'No reports'}
+          title={query || colonyFilter !== 'all' ? 'No matching reports' : statusFilter === 'pending' ? 'No reports need review' : statusFilter === 'waiting' ? 'No reports waiting' : statusFilter === 'processed' ? 'No reviewed reports' : 'No reports'}
           description={query || colonyFilter !== 'all' ? 'Try another search or colony.' : statusFilter === 'pending' ? 'Reports that need review will appear here.' : undefined}
         />}
       />

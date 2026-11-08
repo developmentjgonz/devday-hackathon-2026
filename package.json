@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npm run cf:typegen && node scripts/dev.mjs",
     "dev:web": "vite --host 127.0.0.1 --port 5197 --strictPort",
-    "dev:api": "wrangler dev --local --ip 127.0.0.1 --port 8797 --var LOCAL_TEST_SIGN_IN:true --var APP_ORIGIN:http://127.0.0.1:5197",
+    "dev:api": "node scripts/ensure-local-config-key.mjs && wrangler dev --local --ip 127.0.0.1 --port 8797 --var LOCAL_TEST_SIGN_IN:true --var APP_ORIGIN:http://127.0.0.1:5197",
     "local:setup": "npm run db:migrate:local && npm run db:seed:local",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:seed:local": "wrangler d1 execute DB --local --file seeds/local.sql && wrangler d1 execute DB --local --file seeds/workspace.sql",

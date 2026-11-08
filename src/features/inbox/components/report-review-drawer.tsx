@@ -85,7 +85,7 @@ export function ReportReviewDrawer({ report, reports, data, open, onClose, onNot
     try {
       await finishReport(report.id, { ...draft, careNote: draft.careNote.trim() })
       setDrafts((items) => { const next = { ...items }; delete next[report.id]; return next })
-      onNotice(`Review finished: ${report.title}. Find it under Processed.${reportTasks.some((task) => task.status === 'open') ? ' Linked care tasks remain open.' : ''}`)
+      onNotice(`Review finished: ${report.title}. Find it under Reviewed.${reportTasks.some((task) => task.status === 'open') ? ' Linked care tasks remain open.' : ''}`)
       closeReview()
     } catch (error) { setError(error instanceof Error ? error.message : 'Could not save the review. Try again.') }
     finally { setSaving(false) }
@@ -94,7 +94,7 @@ export function ReportReviewDrawer({ report, reports, data, open, onClose, onNot
   async function reopen() {
     if (!report || saving) return
     setSaving(true); setError('')
-    try { await reopenReport(report.id); onNotice('Report returned to Pending.'); closeReview() }
+    try { await reopenReport(report.id); onNotice('Report returned to Needs review.'); closeReview() }
     catch (error) { setError(error instanceof Error ? error.message : 'Could not reopen the report. Try again.') }
     finally { setSaving(false) }
   }

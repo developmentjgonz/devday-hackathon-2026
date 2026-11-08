@@ -65,7 +65,7 @@ test('local completed task examples survive re-seeding without overwriting chang
   assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM tasks WHERE id LIKE 'sample-complete-%'").get().count, 8);
 });
 
-test('reports, attachments, review, and read state persist per member', async (t) => {
+test('reports, attachments, and review status are shared across members', async (t) => {
   const { request, signIn, reportForm } = fixture(t);
   const admin = await signIn('local-admin');
   const member = await signIn('local-member');
@@ -80,15 +80,16 @@ test('reports, attachments, review, and read state persist per member', async (t
   const file = await request(fileUrl, { cookie: member });
   assert.equal(await file.text(), 'care notes');
   assert.equal(file.headers.get('X-Content-Type-Options'), 'nosniff');
-  await request('/api/reports/read', { method: 'POST', cookie: admin, body: { ids: [report.id], unread: false } });
   const adminData = await (await request('/api/workspace-data', { cookie: admin })).json();
   const memberData = await (await request('/api/workspace-data', { cookie: member })).json();
-  assert.equal(adminData.reports.find((item) => item.id === report.id).unread, false);
-  assert.equal(memberData.reports.find((item) => item.id === report.id).unread, true);
+  assert.equal(adminData.reports.find((item) => item.id === report.id).status, 'pending');
+  assert.equal(memberData.reports.find((item) => item.id === report.id).status, 'pending');
   const reviewed = await request(`/api/reports/${report.id}/finish`, { method: 'POST', cookie: admin, body: { colonyId: 'canal', catId: 'miso', careNote: 'Fresh water provided.', urgent: false } });
   assert.equal(reviewed.status, 200);
   assert.equal((await reviewed.json()).report.status, 'processed');
-  assert.equal((await (await request('/api/workspace-data', { cookie: member })).json()).reports.find((item) => item.id === report.id).careNote, 'Fresh water provided.');
+  const memberReport = (await (await request('/api/workspace-data', { cookie: member })).json()).reports.find((item) => item.id === report.id);
+  assert.equal(memberReport.status, 'processed');
+  assert.equal(memberReport.careNote, 'Fresh water provided.');
 });
 
 test('tasks use member IDs and persist with related records and report history', async (t) => {
@@ -102,13 +103,56 @@ test('tasks use member IDs and persist with related records and report history',
   assert.equal(task.ownerId, 'local-member');
   assert.deepEqual(task.associations, input.associations);
   assert.match(report.history.at(-1), /created a task/);
-  assert.equal((await request(`/api/tasks/${task.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } })).status, 200);
+  const completedResponse = await request(`/api/tasks/${task.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } });
+  assert.equal(completedResponse.status, 200);
+  const completed = (await completedResponse.json()).task;
+  assert.ok(Number.isFinite(Date.parse(completed.completedAt)));
   const data = await (await request('/api/workspace-data', { cookie: member })).json();
   assert.equal(data.tasks.find((item) => item.id === task.id).status, 'completed');
+  assert.equal(data.tasks.find((item) => item.id === task.id).completedAt, completed.completedAt);
   assert.ok(data.reports.find((item) => item.id === 'report-injury').history.some((item) => item.includes('completed task')));
+  const unchanged = await request(`/api/tasks/${task.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } });
+  assert.equal((await unchanged.json()).task.completedAt, completed.completedAt);
+  const reopened = await request(`/api/tasks/${task.id}/status`, { method: 'POST', cookie: member, body: { status: 'open' } });
+  assert.equal((await reopened.json()).task.completedAt, undefined);
+  const recompleted = await request(`/api/tasks/${task.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } });
+  assert.ok(Number.isFinite(Date.parse((await recompleted.json()).task.completedAt)));
   const other = await request('/api/tasks', { method: 'POST', cookie: admin, body: { ...input, ownerId: 'local-admin' } });
   const otherTask = (await other.json()).task;
   assert.equal((await request(`/api/tasks/${otherTask.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } })).status, 403);
+});
+
+test('record history follows task and report changes across linked cats and colonies', async (t) => {
+  const { request, signIn, reportForm } = fixture(t);
+  const admin = await signIn('local-admin');
+  const member = await signIn('local-member');
+  const createdReport = await request('/api/reports', { method: 'POST', cookie: admin, form: reportForm({ title: 'Food check', message: 'Food is needed.', colonyId: 'canal', catId: 'miso', urgent: false }) });
+  const { report } = await createdReport.json();
+  const createdTask = await request('/api/tasks', { method: 'POST', cookie: admin, body: { title: 'Bring food', ownerId: 'local-member', due: '', associations: [{ type: 'cat', id: 'miso' }] } });
+  const { task } = await createdTask.json();
+  const history = async (type, id, cookie = admin) => (await (await request(`/api/directory/${type}/${id}/activity`, { cookie })).json()).activity;
+  assert.ok((await history('cats', 'miso')).some((event) => event.summary === 'Report submitted: Food check' && event.reportId === report.id));
+  assert.ok((await history('colonies', 'canal')).some((event) => event.summary === 'Task created: Bring food'));
+  const beforeUnchanged = (await history('cats', 'miso')).length;
+  assert.equal((await request(`/api/tasks/${task.id}/edit`, { method: 'POST', cookie: member, body: { title: 'Bring food', ownerId: 'local-member', due: '', associations: [{ type: 'cat', id: 'miso' }] } })).status, 200);
+  assert.equal((await history('cats', 'miso')).length, beforeUnchanged);
+  const reviewed = await request(`/api/reports/${report.id}/finish`, { method: 'POST', cookie: admin, body: { colonyId: 'riverside', catId: 'pepper', careNote: 'Food delivered.', urgent: false } });
+  assert.equal(reviewed.status, 200);
+  for (const id of ['miso', 'pepper']) assert.ok((await history('cats', id)).some((event) => event.summary === 'Report reviewed: Food check' && event.changes.some((change) => change.field === 'Cat' && change.before === 'Miso' && change.after === 'Pepper')));
+  const edited = await request(`/api/tasks/${task.id}/edit`, { method: 'POST', cookie: member, body: { title: 'Bring wet food', ownerId: 'local-member', due: '2026-11-12', associations: [{ type: 'cat', id: 'pepper' }] } });
+  assert.equal(edited.status, 200);
+  assert.ok((await history('cats', 'miso')).some((event) => event.summary === 'Task updated: Bring wet food' && event.changes.some((change) => change.field === 'Title' && change.before === 'Bring food')));
+  assert.ok((await history('cats', 'pepper')).some((event) => event.summary === 'Task updated: Bring wet food'));
+  assert.ok((await history('colonies', 'riverside')).some((event) => event.summary === 'Task updated: Bring wet food'));
+  assert.equal((await request(`/api/tasks/${task.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } })).status, 200);
+  assert.ok((await history('cats', 'pepper', member)).some((event) => event.summary === 'Task completed: Bring wet food' && event.actorName === 'Sam Rivera'));
+  const before = (await history('cats', 'pepper')).length;
+  assert.equal((await request(`/api/tasks/${task.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } })).status, 200);
+  assert.equal((await history('cats', 'pepper')).length, before);
+  const adminTask = (await (await request('/api/tasks', { method: 'POST', cookie: admin, body: { title: 'Admin check', ownerId: 'local-admin', due: '', associations: [{ type: 'cat', id: 'pepper' }] } })).json()).task;
+  const beforeRejected = (await history('cats', 'pepper')).length;
+  assert.equal((await request(`/api/tasks/${adminTask.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } })).status, 403);
+  assert.equal((await history('cats', 'pepper')).length, beforeRejected);
 });
 
 test('invalid and unauthorized operations do not create records or leave files', async (t) => {

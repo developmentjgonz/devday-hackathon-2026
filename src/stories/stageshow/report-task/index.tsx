@@ -137,7 +137,7 @@ export function ReportTaskStage() {
                   <Text size="caption" tone="muted"><Roll variant="fade">{scene.tasksView ? 'Open tasks' : 'All reports'}</Roll></Text>
                   <div className="mews-stage-views">
                     <div className="mews-stage-view" data-active={!scene.tasksView || undefined}>
-                      <Row pad={12} selected={scene.review} data-target="report" data-cursor="pointer" title={<StageText>Possible injury near the feeding station</StageText>} subtitle={<span>Riverside · <Roll>{scene.finished ? 'Processed' : 'Pending'}</Roll></span>} />
+                      <Row pad={12} selected={scene.review} data-target="report" data-cursor="pointer" title={<StageText>Possible injury near the feeding station</StageText>} subtitle={<span>Riverside · <Roll>{scene.finished ? 'Reviewed' : 'Needs review'}</Roll></span>} />
                       <Row pad={12} title={<Bar w={165} h={8} />} subtitle={<Bar w={110} h={6} />} />
                       <Row pad={12} title={<Bar w={135} h={8} />} subtitle={<Bar w={90} h={6} />} />
                     </div>
@@ -153,7 +153,7 @@ export function ReportTaskStage() {
               <Popover show={scene.review} origin="top right" className="mews-stage-panel" style={g.review}>
                 <div className="mews-stage-panel-view mews-stage-review" data-active={!scene.dialog || undefined}>
                 <Heading level={3} size="card">Possible injury near the feeding station</Heading>
-                <Text size="caption" tone="muted">Care concern · Urgent · Pending</Text>
+                <Text size="caption" tone="muted">Care concern · Urgent · Needs review</Text>
                 {layout === 'wide' ? <div className="mews-stage-section mews-stage-original">
                   <Text size="label">Original report</Text>
                   <Text size="small">Pepper was limping near the feeding station.</Text>

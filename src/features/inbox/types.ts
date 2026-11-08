@@ -4,9 +4,9 @@ import type { Report, ReportAttachment as Attachment, ReportEntry as Entry, Repo
 // UI names for the shared workspace contracts.
 export type ReportStatus = Status
 export const reportStatusLabels: Record<ReportStatus, string> = {
-  pending: 'Pending',
+  pending: 'Needs review',
   waiting: 'Waiting for details',
-  processed: 'Processed',
+  processed: 'Reviewed',
 }
 export type InboxColony = Colony
 export type InboxCat = Cat

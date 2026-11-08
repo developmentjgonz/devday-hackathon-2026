@@ -1,4 +1,4 @@
-import { Cat, House, Inbox, LayoutDashboard, ListTodo, UsersRound } from 'lucide-react'
+import { Cat, House, Inbox, LayoutDashboard, ListTodo, Settings2, UsersRound } from 'lucide-react'
 import { NavLink } from 'react-router'
 import type { MouseEvent } from 'react'
 import { isPlainNavigation } from '@/lib/navigation'
@@ -31,9 +31,14 @@ export function WorkspaceNavigation({ showTeam = false, onNavigate }: { showTeam
             {label}
           </TextLink>
         ))}
-        {showTeam ? <TextLink variant="navigation" onClick={(event) => followLink(event, '/app/team')} render={<NavLink to="/app/team" />}>
-          <UsersRound className="size-4 shrink-0" aria-hidden="true" />Team
-        </TextLink> : null}
+        {showTeam ? <>
+          <TextLink variant="navigation" onClick={(event) => followLink(event, '/app/team')} render={<NavLink to="/app/team" />}>
+            <UsersRound className="size-4 shrink-0" aria-hidden="true" />Team
+          </TextLink>
+          <TextLink variant="navigation" onClick={(event) => followLink(event, '/app/configuration')} render={<NavLink to="/app/configuration" />}>
+            <Settings2 className="size-4 shrink-0" aria-hidden="true" />Configuration
+          </TextLink>
+        </> : null}
       </div>
     </nav>
   )

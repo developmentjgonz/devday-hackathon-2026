@@ -5,6 +5,7 @@ import type { WorkspaceData } from '../../../shared/types/directory'
 
 /** Storybook keeps its isolated examples in memory. */
 export const storyDirectoryStore: DirectoryStore = {
+  async getActivity() { return [] },
   async addColony(name, coordinates, address, googlePlaceId) { return { id: crypto.randomUUID(), name: name.trim(), coordinates, address: address?.trim() || undefined, googlePlaceId } },
   async updateColonyLocation(colony, coordinates, address, googlePlaceId) { return { ...colony, coordinates: coordinates ?? undefined, address: address.trim() || undefined, googlePlaceId } },
   async addCat(input) { return { id: crypto.randomUUID(), name: input.name.trim(), colonyId: input.colonyId, birthDate: input.birthDate || undefined, birthDateEstimated: input.birthDate ? input.birthDateEstimated : undefined, description: input.description?.trim() || undefined, photoUrl: input.photo ? `data:${input.photo.mimeType};base64,${input.photo.data}` : undefined } },
@@ -15,7 +16,7 @@ async function unavailable(): Promise<never> {
   await new Promise((resolve) => setTimeout(resolve, 400))
   throw new Error('The directory is unavailable. Try again.')
 }
-export const failingDirectoryStore: DirectoryStore = { addColony: unavailable, updateColonyLocation: unavailable, addCat: unavailable, updateCat: unavailable }
+export const failingDirectoryStore: DirectoryStore = { getActivity: unavailable, addColony: unavailable, updateColonyLocation: unavailable, addCat: unavailable, updateCat: unavailable }
 
 export function storyWorkspace(user: SessionUser, data: InboxData): WorkspaceData {
   const names = [...new Set([user.name, ...data.members, ...data.tasks.map((task) => task.owner)])]

@@ -30,7 +30,7 @@ const completedTasks = [
 const dashboardData: InboxData = {
   ...localInboxData,
   tasks: [...localInboxData.tasks, ...completedTasks.map(([title, owner], index) => ({
-    id: `dashboard-completed-${index}`, title, owner, ownerId: `story:${owner}`, due: '', status: 'completed' as const, associations: [],
+    id: `dashboard-completed-${index}`, title, owner, ownerId: `story:${owner}`, due: '', status: 'completed' as const, completedAt: new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000).toISOString(), associations: [],
   }))],
 }
 function DashboardStory() {
@@ -48,7 +48,7 @@ function DashboardStory() {
 const meta = {
   title: 'Pages/Dashboard',
   component: DashboardStory,
-  parameters: { layout: 'fullscreen', docs: { description: { component: 'The workspace overview shows personal, team, and report completion progress, plus completed tasks by assignee. It links to My Tasks and Reports and keeps full lists on those pages. Storybook uses isolated fictional records.' } } },
+  parameters: { layout: 'fullscreen', docs: { description: { component: 'The workspace overview shows open tasks, tasks completed in the last 30 days, and reports pending review or waiting for details. The team chart groups recent completed tasks by assignee. It links to My Tasks and Reports and keeps full lists on those pages. Storybook uses isolated fictional records.' } } },
 } satisfies Meta<typeof DashboardStory>
 export default meta
 type Story = StoryObj<typeof meta>

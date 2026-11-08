@@ -7,9 +7,10 @@ import { formatTaskDue, type AssignedTask } from '../task-data'
 import { TaskRecordActions } from './task-record-actions'
 import { TaskEditor } from './task-editor'
 
-export function TaskCards({ tasks, onStatusChange, headingLevel = 2, currentUser }: {
+export function TaskCards({ tasks, onStatusChange, reopeningTaskIds, headingLevel = 2, currentUser }: {
   tasks: AssignedTask[]
   currentUser: string
+  reopeningTaskIds: ReadonlySet<string>
   onStatusChange: (task: AssignedTask, status: TaskStatus, trigger: HTMLButtonElement) => void
   headingLevel?: 2 | 3
 }) {
@@ -27,7 +28,7 @@ export function TaskCards({ tasks, onStatusChange, headingLevel = 2, currentUser
           <div className="mt-auto space-y-2">
             <div className="flex flex-wrap items-center"><TaskRecordActions task={task} /><TaskEditor task={task} currentUser={currentUser} /></div>
             <div className="flex justify-end">
-            <Button variant="outline" size="sm" aria-label={`${completed ? 'Reopen' : 'Complete'} task: ${task.title}`} onClick={(event) => onStatusChange(task, completed ? 'open' : 'completed', event.currentTarget)}>
+            <Button variant="outline" size="sm" loading={reopeningTaskIds.has(task.id)} aria-label={`${completed ? 'Reopen' : 'Complete'} task: ${task.title}`} onClick={(event) => onStatusChange(task, completed ? 'open' : 'completed', event.currentTarget)}>
               {completed ? <RotateCcw aria-hidden="true" /> : <Check aria-hidden="true" />}{completed ? 'Reopen' : 'Complete'}
             </Button>
             </div>

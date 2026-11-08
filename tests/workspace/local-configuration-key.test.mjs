@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { parseEnv } from 'node:util';
+import { test } from 'node:test';
+
+test('local setup preserves existing environment values and a stable encryption key', (t) => {
+  const directory = mkdtempSync(join(tmpdir(), 'mews-config-'));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const script = fileURLToPath(new URL('../../scripts/ensure-local-config-key.mjs', import.meta.url));
+  const localEnv = join(directory, '.env.local');
+  writeFileSync(localEnv, 'VITE_OTHER_VALUE=preserved\n');
+  const run = () => execFileSync(process.execPath, [script], { cwd: directory, encoding: 'utf8' });
+  assert.equal(run(), '');
+  const first = parseEnv(readFileSync(localEnv, 'utf8'));
+  assert.equal(first.VITE_OTHER_VALUE, 'preserved');
+  assert.match(first.CONFIG_ENCRYPTION_KEY, /^[A-Za-z0-9+/]{43}=$/);
+  assert.equal(statSync(localEnv).mode & 0o077, 0);
+  assert.equal(run(), '');
+  assert.equal(parseEnv(readFileSync(localEnv, 'utf8')).CONFIG_ENCRYPTION_KEY, first.CONFIG_ENCRYPTION_KEY);
+  const devVars = join(directory, '.dev.vars');
+  writeFileSync(devVars, 'OTHER_VALUE=preserved\n');
+  run();
+  const devValues = parseEnv(readFileSync(devVars, 'utf8'));
+  assert.equal(devValues.OTHER_VALUE, 'preserved');
+  assert.equal(devValues.CONFIG_ENCRYPTION_KEY, first.CONFIG_ENCRYPTION_KEY);
+  unlinkSync(localEnv);
+  unlinkSync(devVars);
+  run();
+  assert.equal(parseEnv(readFileSync(localEnv, 'utf8')).CONFIG_ENCRYPTION_KEY, first.CONFIG_ENCRYPTION_KEY);
+});

@@ -75,12 +75,16 @@ export default function MapCanvas({
   onSelect,
   styleUrl,
   initialView,
+  locationView = false,
+  title,
 }: {
   data: ColonyMapData
   selection: MapSelection | null
   onSelect: (id: string) => void
   styleUrl: string
   initialView?: MapInitialView
+  locationView?: boolean
+  title: string
 }) {
   const container = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
@@ -141,7 +145,9 @@ export default function MapCanvas({
         .getCanvas()
         .setAttribute(
           'aria-label',
-          data.audience === 'public'
+          locationView
+            ? `${title}. Use the map or zoom controls to explore.`
+            : data.audience === 'public'
             ? 'Public area activity map. Use the area buttons below for keyboard selection.'
             : 'Team colony map. Use the colony buttons below for keyboard selection.',
         )
@@ -240,7 +246,7 @@ export default function MapCanvas({
             },
           )
         }
-        for (const layer of ['area-fill', 'colony-points']) {
+        for (const layer of locationView ? [] : ['area-fill', 'colony-points']) {
           map.on('click', layer, (event) => {
             const id = event.features?.[0]?.properties?.id
             if (typeof id === 'string') latest.current.onSelect(id)
@@ -276,7 +282,7 @@ export default function MapCanvas({
       map?.remove()
       mapRef.current = null
     }
-  }, [data.audience, styleUrl, attempt, initialLng, initialLat, initialZoom])
+  }, [data.audience, styleUrl, attempt, initialLng, initialLat, initialZoom, locationView, title])
 
   useEffect(() => {
     const map = mapRef.current
@@ -331,7 +337,7 @@ export default function MapCanvas({
           role="alert"
           className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-card/95 px-6 text-center"
         >
-          <EmptyState tone="danger" title="Map background unavailable" description="Check your connection and retry. You can still use the location list below." icon={<CircleAlert />} action={<Button
+          <EmptyState tone="danger" title="Map background unavailable" description={locationView ? 'Check your connection and retry. The location is still available below.' : 'Check your connection and retry. You can still use the location list below.'} icon={<CircleAlert />} action={<Button
             size="sm"
             variant="outline"
             onClick={() => setAttempt((previous) => previous + 1)}

@@ -7,10 +7,12 @@ import { RecordAvatar } from '@/components/ui/record-avatar'
 import { TextLink } from '@/components/ui/text-link'
 import { Heading, Text } from '@/components/ui/typography'
 import { useInbox } from '@/features/inbox/inbox-context'
-import { OpenTasks, ReportActivity } from '@/features/colonies/components/record-activity'
+import { ReportActivity } from '@/features/colonies/components/record-activity'
+import { RecordTasks } from '@/features/colonies/components/record-tasks'
+import { RecordTimeline } from '@/features/colonies/components/record-timeline'
 import { RecordActions } from '@/features/colonies/components/record-actions'
 import { recentReports } from '@/features/colonies/directory-data'
-import { openTasksForRecord, resolveTasks } from '@/features/tasks/task-data'
+import { resolveTasks, tasksForRecord } from '@/features/tasks/task-data'
 import { EditCatButton } from '../components/edit-cat-button'
 
 const birthDateFormat = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
@@ -32,7 +34,7 @@ export function CatPage() {
   if (!cat) return <EmptyState size="page" icon={<Cat />} title="Cat not found" action={<Button render={<Link to="/app/cats" />}>View cats</Button>} />
   const colony = data.colonies.find((item) => item.id === cat.colonyId)
   const associatedReports = reports.filter((report) => report.catId === cat.id)
-  const tasks = openTasksForRecord(resolveTasks(allTasks, reports, data), 'cat', cat.id)
+  const tasks = tasksForRecord(resolveTasks(allTasks, reports, data), 'cat', cat.id)
 
   return <>
     <title>{cat.name} · Mews</title>
@@ -45,14 +47,12 @@ export function CatPage() {
           {cat.description ? <div><Text size="caption" tone="muted">Details</Text><Text size="small" className="whitespace-pre-wrap wrap-anywhere">{cat.description}</Text></div> : null}
         </CardContent></Card>
       </section>
-      <section aria-labelledby="cat-tasks" className="space-y-3">
-        <Heading id="cat-tasks" level={2} size="card">Open tasks</Heading>
-        <OpenTasks tasks={tasks} />
-      </section>
+      <RecordTasks type="cat" tasks={tasks} />
       <section aria-labelledby="cat-reports" className="space-y-3">
         <Heading id="cat-reports" level={2} size="card">Recent associated reports</Heading>
         <ReportActivity reports={recentReports(associatedReports).slice(0, 5)} />
       </section>
+      <RecordTimeline key={cat.id} type="cat" id={cat.id} />
     </div>
   </>
 }

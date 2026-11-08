@@ -144,7 +144,7 @@ test('selected table row retains its fill on hover and focus within', async ({ p
 test('tabs keep a selected underline; hover is not selection', async ({ page }, info) => {
   await openStateStory(page, 'selection', info.project.name === 'dark')
   const current = page.getByRole('tab', { name: 'To review' })
-  const other = page.getByRole('tab', { name: 'Processed' })
+  const other = page.getByRole('tab', { name: 'Reviewed' })
   const border = (target: typeof current) => target.evaluate((element) => getComputedStyle(element).borderBottomColor)
   const selectedBorder = await border(current)
   await other.hover()

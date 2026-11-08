@@ -29,6 +29,8 @@ const statusLabels = {
 export type ColonyMapProps = {
   data: ColonyMapData
   title?: string
+  /** A compact map for a single saved location, without the directory list. */
+  variant?: 'directory' | 'location'
   /** Google is available for team locations in the local demo. */
   provider?: 'default' | 'google'
   state?: 'ready' | 'loading' | 'error'
@@ -60,6 +62,7 @@ function LoadingMap() {
 export function ColonyMap({
   data,
   title = 'Colony map',
+  variant = 'directory',
   provider = 'default',
   state = 'ready',
   initialView,
@@ -79,6 +82,7 @@ export function ColonyMap({
   const entries = data.audience === 'public' ? data.areas : data.colonies
   const selected = entries.find((entry) => entry.id === selection?.id)
   const empty = entries.length === 0
+  const locationView = variant === 'location'
 
   useEffect(() => {
     const element = container.current
@@ -100,13 +104,14 @@ export function ColonyMap({
     <Card
       render={<section />}
       padding="none"
-      aria-labelledby={`${id}-title`}
+      aria-label={locationView ? title : undefined}
+      aria-labelledby={locationView ? undefined : `${id}-title`}
       className={cn(
         'mews-colony-map w-full min-w-0',
         className,
       )}
     >
-      <CardHeader className="py-6">
+      {!locationView ? <CardHeader className="py-6">
         <div>
           <Heading level={2} size="card" id={`${id}-title`}>
             {title}
@@ -117,10 +122,10 @@ export function ColonyMap({
               : 'Colony locations')}
           </Text>
         </div>
-      </CardHeader>
+      </CardHeader> : null}
       <div
         ref={container}
-        className="relative h-96 min-w-0 overflow-hidden bg-muted/30"
+        className={cn('relative min-w-0 overflow-hidden bg-muted/30', locationView ? 'h-64 sm:h-72' : 'h-96')}
         aria-label={
           publicView
             ? 'Map of broad colony activity areas'
@@ -130,7 +135,7 @@ export function ColonyMap({
         {state === 'loading' ? (
           <LoadingMap />
         ) : state === 'error' ? (
-          <EmptyState role="alert" tone="danger" className="h-full" icon={<CircleAlert />} title="Could not load the map" description="The location list is still available below." action={onRetry ? (
+          <EmptyState role="alert" tone="danger" className="h-full" icon={<CircleAlert />} title="Could not load the map" description={locationView ? 'The location is still available below.' : 'The location list is still available below.'} action={onRetry ? (
               <Button variant="outline" size="sm" onClick={onRetry}>
                 Retry map
               </Button>
@@ -142,9 +147,10 @@ export function ColonyMap({
         ) : visible ? (
           <Suspense fallback={<LoadingMap />}>
             {provider === 'google' && data.audience === 'team' ? <GoogleMapCanvas
+              key={locationView && initialView ? `${initialView.center[0]},${initialView.center[1]},${initialView.zoom}` : undefined}
               colonies={data.colonies}
               selectedColony={selected?.id}
-              onSelectColony={selectFromMap}
+              onSelectColony={locationView ? undefined : selectFromMap}
               animateSelection={Boolean(selection?.pointer)}
               initialCenter={initialView ? { lng: initialView.center[0], lat: initialView.center[1] } : undefined}
               initialZoom={initialView?.zoom}
@@ -154,13 +160,15 @@ export function ColonyMap({
               onSelect={selectFromMap}
               styleUrl={mapStyleUrl}
               initialView={initialView}
+              locationView={locationView}
+              title={title}
             />}
           </Suspense>
         ) : (
           <LoadingMap />
         )}
       </div>
-      <CardFooter className="block space-y-4">
+      {!locationView ? <CardFooter className="block space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           {publicView ? (
             <div
@@ -240,7 +248,7 @@ export function ColonyMap({
         >
           {selected ? `${selected.name} selected.` : ''}
         </Text>
-      </CardFooter>
+      </CardFooter> : null}
     </Card>
   )
 }

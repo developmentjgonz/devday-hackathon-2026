@@ -28,7 +28,7 @@ export function useInboxColumns(data: InboxData) {
       column.accessor('title', {
         header: 'Report',
         cell: ({ row }) => <div className="min-w-0 space-y-1">
-          <TableOpenButton unread={row.original.unread} aria-label={`Review ${row.original.title}`}>{row.original.title}</TableOpenButton>
+          <TableOpenButton aria-label={`Review ${row.original.title}`}>{row.original.title}</TableOpenButton>
           <div className="flex min-h-5 flex-wrap items-center gap-x-3 gap-y-1">
             {row.original.urgent ? <Text size="caption" tone="danger" weight="medium">Urgent</Text> : null}
             <Text size="caption" tone="muted" className="truncate"><span className="lg:hidden">{colonies.get(row.original.colonyId) ?? 'Colony unknown'} · </span>{row.original.category}</Text>

@@ -12,6 +12,7 @@ export type Task = {
   owner: string
   due: string
   status: TaskStatus
+  completedAt?: string
   reportId?: string
   associations: TaskAssociation[]
 }
@@ -28,7 +29,6 @@ export type Report = {
   catId: string
   careNote: string
   urgent: boolean
-  unread: boolean
   status: ReportStatus
   possibleDuplicateOf?: string
   duplicateOf?: string

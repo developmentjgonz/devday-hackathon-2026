@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PaginationState } from '@tanstack/react-table'
-import { ArrowRight, Search, ShieldCheck, UserRoundPlus, UsersRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Search, ShieldCheck, UserRoundPlus, UsersRound } from 'lucide-react'
 import { useRevalidator, useRouteLoaderData } from 'react-router'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -73,6 +73,8 @@ function UsersScreen({ currentUser, store }: { currentUser: SessionUser; store: 
 
   const query = search.trim().toLocaleLowerCase()
   const pendingCount = users.filter((user) => user.status === 'pending').length
+  const viewingRequests = filter === 'pending'
+  const showRequestCard = !request && pendingCount > 0
   const filteredUsers = useMemo(() => users.filter((user) => (filter === 'all' || user.status === filter)
     && (!query || [user.name, user.email, user.phone ?? ''].some((value) => value.toLocaleLowerCase().includes(query)))), [users, filter, query])
 
@@ -135,19 +137,22 @@ function UsersScreen({ currentUser, store }: { currentUser: SessionUser; store: 
 
   const emptyTitle = query ? 'No matching accounts' : filter === 'pending' ? 'No requests awaiting approval' : filter === 'active' ? 'No active accounts' : filter === 'suspended' ? 'No suspended accounts' : 'No team accounts'
   return <div className="space-y-6">
-    {!request && pendingCount > 0 ? <Card size="sm" tone="note">
+    {showRequestCard ? <Card size="sm" tone="note">
       <CardContent><div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div className="flex items-start gap-3"><UserRoundPlus aria-hidden="true" className="mt-1 size-5 shrink-0 text-primary-text" />
           <Heading level={2} size="card">{pendingCount} {pendingCount === 1 ? 'person is' : 'people are'} waiting to join</Heading>
         </div>
-        {filter !== 'pending' ? <Button variant="outline" size="sm" onClick={() => { setSearch(''); setFilter('pending'); table.firstPage() }}>Review requests <ArrowRight aria-hidden="true" /></Button> : null}
+        <Button variant="outline" size="sm" onClick={() => { setSearch(''); setFilter(viewingRequests ? 'all' : 'pending'); table.firstPage() }}>
+          {viewingRequests ? <><ArrowLeft aria-hidden="true" /> View all accounts</> : <>Review requests <ArrowRight aria-hidden="true" /></>}
+        </Button>
       </div></CardContent>
     </Card> : null}
     <section aria-label="Team accounts" className="space-y-4">
       <DataTableToolbar label="Team controls"
         search={{ label: 'Search team accounts', placeholder: 'Search by name or email…', value: search, onValueChange: (value) => { setSearch(value); table.firstPage() } }}
         filters={[{ id: 'status', label: 'Filter accounts by access', value: filter, options: statusOptions, onValueChange: (value) => { setFilter(value as StatusFilter); table.firstPage() } }]}
-        onReset={query || filter !== 'all' ? () => { setSearch(''); setFilter('all'); table.firstPage() } : undefined} />
+        onReset={() => { setSearch(''); setFilter('all'); table.firstPage() }}
+        resetActive={Boolean(query || (filter !== 'all' && !(showRequestCard && viewingRequests)))} />
       <DataTable ref={tableRef} table={table} label="Team accounts" itemName="account" request={request} columnClassName={columnClassName} scrollMode="page"
         emptyState={<EmptyState icon={query ? <Search /> : <UsersRound />} title={emptyTitle} description={query ? 'Try another name, email, or phone number.' : filter === 'pending' ? 'New requests will appear here.' : undefined} />} />
     </section>

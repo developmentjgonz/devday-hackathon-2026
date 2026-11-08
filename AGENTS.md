@@ -22,7 +22,14 @@ This is a greenfield application with no users yet. For now, there are no backwa
 
 # Agent-led UI exploration
 
-Use `agent-browser` for exploratory browser checks of the app and Storybook. Use these checks alongside the appropriate automated tests.
+Use `agent-browser` when a change needs a browser check to verify its appearance or behavior. Check the affected app or Storybook UI, as appropriate, and keep the check focused. Do not open a browser for changes that can be verified without one.
+
+# Efficient verification
+
+- Match verification to the size and risk of the change. A quick review is often enough for a small, reversible edit. Run automated tests when they are needed to verify the change or when the user requests them. Do not add tests that only repeat the implementation.
+- Group related changes and run the relevant focused checks once, after the changes are ready. Do not run a full suite or repeat a build for every small edit.
+- Run broader checks for large or high-risk changes, or when the user asks for them. Re-run only checks affected by later code changes or failures.
+- If a development server restarts or a test environment fails, retry only the affected check when useful. Do not repeat checks that already passed.
 
 # Local browser security
 

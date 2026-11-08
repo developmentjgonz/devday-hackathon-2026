@@ -1,4 +1,4 @@
-import { useId, useRef, type ReactNode, type Ref } from 'react'
+import { useId, useRef, type MouseEvent, type ReactNode, type Ref } from 'react'
 import {
   columnVisibilityFeature, createPaginatedRowModel, createSortedRowModel,
   createTableHook, rowPaginationFeature, rowSelectionFeature, rowSortingFeature,
@@ -49,7 +49,9 @@ type DataTableProps<T extends RowData> = {
   request?: DataTableRequest
   activeRowId?: string
   onOpenRow?: (row: T, trigger: HTMLButtonElement | null) => void
-  selection?: { getLabel: (row: T) => string; actions: (rows: T[]) => ReactNode }
+  /** Optional phone presentation for tables without bulk selection; shares the table's rows and pagination. */
+  renderMobileCard?: (row: T, props: { selected: boolean; onOpen: (event: MouseEvent<HTMLButtonElement>) => void }) => ReactNode
+  selection?: { getLabel: (row: T) => string; actions: (rows: T[]) => ReactNode; busy?: boolean }
   columnClassName?: (columnId: string) => string | undefined
   /** Let the page scroll naturally, or keep the table in a bounded viewport. */
   scrollMode?: 'contained' | 'page'
@@ -57,17 +59,19 @@ type DataTableProps<T extends RowData> = {
   toolbar?: Omit<DataTableToolbarProps, 'selection'>
 }
 
-export function DataTable<T extends RowData>({ table, label, itemName = 'record', emptyState, request, activeRowId, onOpenRow, selection, columnClassName, scrollMode = 'contained', ref, toolbar }: DataTableProps<T>) {
+export function DataTable<T extends RowData>({ table, label, itemName = 'record', emptyState, request, activeRowId, onOpenRow, renderMobileCard, selection, columnClassName, scrollMode = 'contained', ref, toolbar }: DataTableProps<T>) {
   const viewport = useRef<HTMLDivElement>(null)
   const rows = table.getRowModel().rows
   const selected = table.getSelectedRowModel().rows
   const busy = request?.status === 'loading' || request?.status === 'refreshing'
   const pages = Math.max(1, table.getPageCount())
+  const mobileCards = selection ? undefined : renderMobileCard
 
   return (
     <div className="space-y-3">
-      {toolbar || (selection && selected.length) ? <DataTableToolbar {...toolbar} selection={selection && selected.length ? { count: selected.length, actions: selection.actions(selected.map((row) => row.original)), onClear: () => table.resetRowSelection() } : undefined} /> : null}
-      <Card ref={ref} padding="none" tabIndex={-1} aria-label={label}>
+      {toolbar || (selection && selected.length) ? <DataTableToolbar {...toolbar} selection={selection ? { count: selected.length, actions: selection.actions(selected.map((row) => row.original)), onClear: () => table.resetRowSelection(), busy: selection.busy } : undefined} /> : null}
+      <div ref={mobileCards ? ref : undefined} tabIndex={mobileCards ? -1 : undefined} aria-label={mobileCards ? label : undefined}>
+      <Card ref={mobileCards ? undefined : ref} padding="none" tabIndex={mobileCards ? undefined : -1} aria-label={mobileCards ? undefined : label} className={mobileCards ? 'hidden md:flex' : undefined}>
       <div className="relative" aria-busy={busy || undefined}>
         {request?.status === 'error' ? <EmptyState
           icon={<CircleAlert />} tone="danger" title={`Could not load ${label.toLowerCase()}`}
@@ -84,7 +88,7 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
                   {selection ? <TableHead className="w-12">
                     <Checkbox aria-label="Select this page" checked={rows.length > 0 && table.getIsAllPageRowsSelected()}
                       indeterminate={table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()}
-                      disabled={!rows.length || busy} onCheckedChange={(checked) => table.toggleAllPageRowsSelected(checked)} />
+                      disabled={!rows.length || busy || selection.busy} onCheckedChange={(checked) => table.toggleAllPageRowsSelected(checked)} />
                   </TableHead> : null}
                   {group.headers.map((header) => {
                     const direction = header.column.getIsSorted()
@@ -110,7 +114,7 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
                   }}>
                   {selection ? <TableCell>
                     <Checkbox aria-label={`Select ${selection.getLabel(row.original)}`} checked={row.getIsSelected()}
-                      disabled={!row.getCanSelect() || busy} onCheckedChange={(checked) => row.toggleSelected(checked)} />
+                      disabled={!row.getCanSelect() || busy || selection.busy} onCheckedChange={(checked) => row.toggleSelected(checked)} />
                   </TableCell> : null}
                   {row.getVisibleCells().map((cell) => <TableCell key={cell.id} className={columnClassName?.(cell.column.id)}>
                     <table.FlexRender cell={cell} />
@@ -127,6 +131,29 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
       </div>
       <DataTablePagination table={table} label={label} itemName={itemName} request={request} onPageChange={() => viewport.current?.scrollTo({ top: 0 })} />
       </Card>
+      {mobileCards ? <div className="space-y-3 md:hidden" aria-busy={busy || undefined}>
+        {request?.status === 'error' ? <EmptyState
+          icon={<CircleAlert />} tone="danger" title={`Could not load ${label.toLowerCase()}`}
+          description={request.message} action={<Button variant="outline" onClick={request.onRetry}>Try again</Button>}
+        /> : request?.status === 'loading' && !rows.length ? <div className="flex min-h-64 flex-col items-center justify-center gap-4">
+          <LoadingIndicator label={`Loading ${label.toLowerCase()}`} />
+          <Text size="small" tone="muted">Loading {label.toLowerCase()}…</Text>
+        </div> : <div className="relative">
+          <div inert={busy || undefined}>
+            {rows.length ? <ul className="space-y-3" aria-label={label}>
+              {rows.map((row) => <li key={row.id}>{mobileCards(row.original, {
+                selected: row.id === activeRowId,
+                onOpen: (event) => onOpenRow?.(row.original, event.currentTarget),
+              })}</li>)}
+            </ul> : emptyState ?? <EmptyState icon={<Search />} title="No matching records" />}
+          </div>
+          {busy ? <div className="absolute inset-0 z-20 flex items-center justify-center bg-card/80">
+            <LoadingIndicator label={`Updating ${label.toLowerCase()}`} />
+          </div> : null}
+        </div>}
+        <DataTablePagination table={table} label={label} itemName={itemName} request={request} presentation="cards" onPageChange={() => (typeof ref === 'object' ? ref?.current : null)?.scrollIntoView({ block: 'start' })} />
+      </div> : null}
+      </div>
     </div>
   )
 }

@@ -26,18 +26,16 @@ export function LoadingIndicator({
       data-size={size}
       data-paused={paused || undefined}
       className={cn(
-        'mews-loader inline-flex shrink-0 items-center justify-center gap-1.5 align-middle',
+        'mews-loader inline-flex shrink-0 items-center justify-center align-middle',
         className,
       )}
       role={decorative ? undefined : 'status'}
       aria-label={decorative ? undefined : label}
       aria-hidden={decorative || undefined}
     >
-      {(size === 'sm' ? [0] : [0, 1, 2]).map((index) => (
-        <span key={index} className="mews-paw inline-flex">
-          <CatPawPrint />
-        </span>
-      ))}
+      <span className="mews-paw inline-flex">
+        <CatPawPrint />
+      </span>
     </span>
   )
 }

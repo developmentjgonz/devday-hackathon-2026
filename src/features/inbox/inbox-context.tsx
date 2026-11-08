@@ -5,18 +5,19 @@ import type { Coordinates } from '../../../shared/types/directory'
 import type { DirectoryStore } from '@/features/colonies/directory-api'
 import type { CreateReportInput, FinishReportInput, TaskInput } from '../../../shared/schemas/workspace'
 import type { TaskStatus, WorkspaceMember, WorkspaceSnapshot } from '../../../shared/types/workspace'
+import type { RecordActivity, RecordType } from '../../../shared/types/record-activity'
 import type { TaskResult, WorkspaceStore } from './workspace-api'
 
 type InboxStore = {
   data: InboxData; reports: InboxReport[]; tasks: Task[]; members: WorkspaceMember[]
   googleMapsEnabled: boolean
   refreshWorkspace: () => Promise<void>
+  getRecordActivity: (type: RecordType, id: string, signal?: AbortSignal) => Promise<RecordActivity[]>; activityRevision: number
   addColony: (name: string, coordinates?: Coordinates, address?: string, googlePlaceId?: string) => Promise<InboxColony>; updateColonyLocation: (colony: InboxColony, coordinates: Coordinates | null, address: string, googlePlaceId?: string) => Promise<InboxColony>; addCat: (input: CatInput) => Promise<InboxCat>; updateCat: (cat: InboxCat, input: CatInput) => Promise<InboxCat>
   createAttachment: (file: File) => ReportAttachment; discardAttachment: (attachment: ReportAttachment) => void
   createReport: (input: CreateReportInput, attachments: ReportAttachment[]) => Promise<InboxReport>
   finishReport: (id: string, input: FinishReportInput) => Promise<InboxReport>; reopenReport: (id: string) => Promise<InboxReport>
   askQuestion: (id: string, text: string) => Promise<InboxReport>; linkDuplicate: (id: string, targetId: string) => Promise<InboxReport>
-  markReports: (ids: string[], unread: boolean) => Promise<void>
   createTask: (input: TaskInput) => Promise<Task>; editTask: (id: string, input: TaskInput) => Promise<Task>; changeTaskStatus: (id: string, status: TaskStatus) => Promise<Task>
 }
 const InboxContext = createContext<InboxStore | null>(null)
@@ -25,6 +26,8 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
   const [reports, setReports] = useState(() => structuredClone(workspace.reports))
   const [tasks, setTasks] = useState(() => structuredClone(workspace.tasks))
   const [members, setMembers] = useState(() => structuredClone(workspace.members))
+  const [activityRevision, setActivityRevision] = useState(0)
+  const getRecordActivity = useCallback((type: RecordType, id: string, signal?: AbortSignal) => directoryStore.getActivity(type, id, signal), [directoryStore])
   const [directory, setDirectory] = useState(() => ({ colonies: structuredClone(data.colonies), cats: structuredClone(data.cats) }))
   const workspaceData = useMemo(() => ({ ...data, ...directory }), [data, directory])
   const objectUrls = useRef(new Set<string>())
@@ -62,6 +65,7 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
         setReports(snapshot.reports)
         setTasks(snapshot.tasks)
         setMembers(snapshot.members)
+        setActivityRevision((revision) => revision + 1)
       } catch {
         if (!controller.signal.aborted && revision !== mutationRevision.current) refreshNeeded.current = true
       }
@@ -109,26 +113,31 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
   async function addColony(name: string, coordinates?: Coordinates, address?: string, googlePlaceId?: string): Promise<InboxColony> {
     const colony = await directoryStore.addColony(name, coordinates, address, googlePlaceId)
     setDirectory((current) => ({ ...current, colonies: [...current.colonies, colony] }))
+    setActivityRevision((revision) => revision + 1)
     return colony
   }
   async function updateColonyLocation(existing: InboxColony, coordinates: Coordinates | null, address: string, googlePlaceId?: string): Promise<InboxColony> {
     const colony = await directoryStore.updateColonyLocation(existing, coordinates, address, googlePlaceId)
     setDirectory((current) => ({ ...current, colonies: current.colonies.map((item) => item.id === colony.id ? colony : item) }))
+    setActivityRevision((revision) => revision + 1)
     return colony
   }
   async function addCat(input: CatInput): Promise<InboxCat> {
     const cat = await directoryStore.addCat(input)
     setDirectory((current) => ({ ...current, cats: [...current.cats, cat] }))
+    setActivityRevision((revision) => revision + 1)
     return cat
   }
   async function updateCat(existing: InboxCat, input: CatInput): Promise<InboxCat> {
     const cat = await directoryStore.updateCat(existing, input)
     setDirectory((current) => ({ ...current, cats: current.cats.map((item) => item.id === cat.id ? cat : item) }))
+    setActivityRevision((revision) => revision + 1)
     return cat
   }
-  const applyReport = useCallback((report: InboxReport) => { setReports((items) => items.map((item) => item.id === report.id ? report : item)); return report }, [])
+  const applyReport = useCallback((report: InboxReport) => { setReports((items) => items.map((item) => item.id === report.id ? report : item)); setActivityRevision((revision) => revision + 1); return report }, [])
   const applyTask = useCallback(({ task, report }: TaskResult) => {
     setTasks((items) => items.some((item) => item.id === task.id) ? items.map((item) => item.id === task.id ? task : item) : [...items, task])
+    setActivityRevision((revision) => revision + 1)
     if (report) applyReport(report)
     return task
   }, [applyReport])
@@ -141,6 +150,7 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
       })
       const report = await workspaceStore.createReport(input, files)
       setReports((items) => [report, ...items])
+      setActivityRevision((revision) => revision + 1)
       for (const attachment of attachments) {
         attachmentFiles.current.delete(attachment.id)
         if (!report.attachments.some((item) => item.url === attachment.url)) discardAttachment(attachment)
@@ -152,15 +162,10 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
   const reopenReport = useCallback((id: string) => mutateWorkspace(async () => applyReport(await workspaceStore.reopenReport(id))), [workspaceStore, applyReport, mutateWorkspace])
   const askQuestion = useCallback((id: string, text: string) => mutateWorkspace(async () => applyReport(await workspaceStore.askQuestion(id, text))), [workspaceStore, applyReport, mutateWorkspace])
   const linkDuplicate = useCallback((id: string, targetId: string) => mutateWorkspace(async () => applyReport(await workspaceStore.linkDuplicate(id, targetId))), [workspaceStore, applyReport, mutateWorkspace])
-  const markReports = useCallback((ids: string[], unread: boolean) => mutateWorkspace(async () => {
-    await workspaceStore.markReports(ids, unread)
-    const selected = new Set(ids)
-    setReports((items) => items.map((item) => selected.has(item.id) ? { ...item, unread } : item))
-  }), [workspaceStore, mutateWorkspace])
   const createTask = useCallback((input: TaskInput) => mutateWorkspace(async () => applyTask(await workspaceStore.createTask(input))), [workspaceStore, applyTask, mutateWorkspace])
   const editTask = useCallback((id: string, input: TaskInput) => mutateWorkspace(async () => applyTask(await workspaceStore.editTask(id, input))), [workspaceStore, applyTask, mutateWorkspace])
   const changeTaskStatus = useCallback((id: string, status: TaskStatus) => mutateWorkspace(async () => applyTask(await workspaceStore.changeTaskStatus(id, status))), [workspaceStore, applyTask, mutateWorkspace])
-  return <InboxContext value={{ data: workspaceData, reports, tasks, members, googleMapsEnabled, refreshWorkspace, addColony, updateColonyLocation, addCat, updateCat, createAttachment, discardAttachment, createReport, finishReport, reopenReport, askQuestion, linkDuplicate, markReports, createTask, editTask, changeTaskStatus }}>{children}</InboxContext>
+  return <InboxContext value={{ data: workspaceData, reports, tasks, members, googleMapsEnabled, getRecordActivity, activityRevision, refreshWorkspace, addColony, updateColonyLocation, addCat, updateCat, createAttachment, discardAttachment, createReport, finishReport, reopenReport, askQuestion, linkDuplicate, createTask, editTask, changeTaskStatus }}>{children}</InboxContext>
 }
 export function useInbox() {
   const store = useContext(InboxContext)

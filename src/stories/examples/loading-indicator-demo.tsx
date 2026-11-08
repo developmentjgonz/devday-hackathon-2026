@@ -62,7 +62,7 @@ export function LoadingIndicatorDemo() {
         </label>
       </div>
       <p className="text-xs leading-5 text-muted-foreground">
-        Shared cat-print pulse. Static when reduced motion is enabled.
+        Shared single-paw pulse. Static when reduced motion is enabled.
       </p>
     </div>
   )

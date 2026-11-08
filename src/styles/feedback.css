@@ -1,6 +1,5 @@
 .mews-loader[data-size='sm'] {
   --loader-size: 1rem;
-  --loader-rest-opacity: 0.65;
 }
 .mews-loader[data-size='md'] {
   --loader-size: 1.5rem;
@@ -18,14 +17,6 @@
 }
 .mews-paw {
   animation: mews-paw var(--loader-playback-duration, var(--duration-loading)) var(--ease-in-out) infinite;
-}
-.mews-paw:nth-child(2) {
-  animation-delay: calc(var(--loader-playback-duration, var(--duration-loading)) * -2 / 3);
-}
-.mews-paw:nth-child(3) {
-  animation-delay: calc(var(--loader-playback-duration, var(--duration-loading)) / -3);
-}
-.mews-paw {
   animation-play-state: var(--loader-play-state, running);
 }
 .mews-loader[data-paused] .mews-paw {
@@ -38,7 +29,7 @@
   0%,
   65%,
   100% {
-    opacity: var(--loader-rest-opacity, 0.4);
+    opacity: 0.65;
   }
   30% {
     opacity: 1;

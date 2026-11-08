@@ -39,9 +39,13 @@ export function getAssignedTasks(tasks: Task[], reports: InboxReport[], data: Pi
     .sort((a, b) => (a.due || '9999-12-31').localeCompare(b.due || '9999-12-31') || a.title.localeCompare(b.title) || a.id.localeCompare(b.id))
 }
 
+export function tasksForRecord(tasks: AssignedTask[], type: 'cat' | 'colony', id: string) {
+  return tasks.filter((task) => task.related.some((item) => item.type === type && item.id === id))
+    .sort((a, b) => (a.status === b.status ? 0 : a.status === 'open' ? -1 : 1) || (a.due || '9999-12-31').localeCompare(b.due || '9999-12-31') || a.title.localeCompare(b.title))
+}
+
 export function openTasksForRecord(tasks: AssignedTask[], type: 'cat' | 'colony', id: string) {
-  return tasks.filter((task) => task.status === 'open' && task.related.some((item) => item.type === type && item.id === id))
-    .sort((a, b) => (a.due || '9999-12-31').localeCompare(b.due || '9999-12-31') || a.title.localeCompare(b.title))
+  return tasksForRecord(tasks, type, id).filter((task) => task.status === 'open')
 }
 
 const dueFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })

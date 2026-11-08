@@ -4,3 +4,5 @@
 # LOCAL_TEST_SIGN_IN=true
 # APP_ORIGIN=http://127.0.0.1:5197
 # .dev.vars is ignored by Git. Keep provider secrets out of VITE_ variables.
+# npm run dev:api creates a local CONFIG_ENCRYPTION_KEY if none is present.
+# Keep that value stable; it protects API keys saved in local configuration.

@@ -1,17 +1,14 @@
 import { useState } from 'react'
 import { Cat, LayoutGrid, Map as MapIcon, Search } from 'lucide-react'
-import { Link } from 'react-router'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { DataTableToolbar } from '@/components/ui/data-table-toolbar'
 import { EmptyState } from '@/components/ui/empty-state'
-import { RecordAvatar } from '@/components/ui/record-avatar'
-import { Heading, Text } from '@/components/ui/typography'
+import { Text } from '@/components/ui/typography'
 import { ViewSwitcher } from '@/components/ui/view-switcher'
 import { useInbox } from '@/features/inbox/inbox-context'
 import { DirectoryMap } from '@/features/colonies/components/directory-map'
 import { openTasksForRecord, resolveTasks } from '@/features/tasks/task-data'
 import { NewRecordButton } from '@/features/colonies/components/new-record-button'
+import { CatRecordCard } from '../components/cat-record-card'
 
 export function CatsPage() {
   const { data, reports, tasks } = useInbox()
@@ -39,15 +36,7 @@ export function CatsPage() {
         const associated = reports.filter((report) => report.catId === cat.id)
         const urgentCount = associated.filter((report) => report.urgent && report.status !== 'processed').length
         const taskCount = openTasksForRecord(resolvedTasks, 'cat', cat.id).length
-        return <Card key={cat.id} size="sm" interactive render={<Link to={`/app/cats/${encodeURIComponent(cat.id)}`} />} aria-label={cat.name}><CardContent className="flex items-start gap-4">
-          <RecordAvatar name={cat.name} kind="cat" src={cat.photoUrl} size="lg" />
-          <div className="min-w-0 space-y-2"><div><Heading level={2} size="compact">{cat.name}</Heading>
-            <Text size="caption" tone="muted">{data.colonies.find((colony) => colony.id === cat.colonyId)?.name ?? 'Colony unknown'}</Text></div>
-            {cat.description ? <Text size="caption" tone="muted" className="line-clamp-2 wrap-anywhere">{cat.description}</Text> : null}
-            {urgentCount ? <Badge variant="destructive">{urgentCount} urgent {urgentCount === 1 ? 'report' : 'reports'}</Badge> : null}
-            {taskCount ? <Text size="caption" tone="muted">{taskCount} open {taskCount === 1 ? 'task' : 'tasks'}</Text> : null}
-          </div>
-        </CardContent></Card>
+        return <CatRecordCard key={cat.id} cat={cat} colonyName={data.colonies.find((colony) => colony.id === cat.colonyId)?.name ?? 'Colony unknown'} urgentCount={urgentCount} taskCount={taskCount} />
       })}</div> : <EmptyState icon={query || colonyId !== 'all' ? <Search /> : <Cat />} title={query || colonyId !== 'all' ? 'No matching cats' : 'No cats'} description={query || colonyId !== 'all' ? 'Try another search or colony.' : undefined} />}
     </div>
   </>

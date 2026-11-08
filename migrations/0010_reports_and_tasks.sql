@@ -14,12 +14,6 @@ CREATE TABLE reports (
   duplicate_of TEXT REFERENCES reports(id) ON DELETE SET NULL
 );
 
-CREATE TABLE report_reads (
-  report_id TEXT NOT NULL REFERENCES reports(id) ON DELETE CASCADE,
-  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  PRIMARY KEY (report_id, user_id)
-);
-
 CREATE TABLE report_entries (
   id TEXT PRIMARY KEY,
   report_id TEXT NOT NULL REFERENCES reports(id) ON DELETE CASCADE,

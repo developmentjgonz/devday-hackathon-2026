@@ -1,8 +1,8 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useMemo, useRef, useState, type FormEvent } from 'react'
 import { CircleAlert, MapPin, Pencil } from 'lucide-react'
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { ColonyMap, type ColonyMapData } from '@/components/ui/colony-map'
 import { DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader } from '@/components/ui/drawer'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -16,7 +16,7 @@ import { useInbox } from '@/features/inbox/inbox-context'
 import type { InboxColony } from '@/features/inbox/types'
 import { useGooglePlaces } from '@/lib/use-google-places'
 
-export function ColonyLocation({ colony }: { colony: InboxColony }) {
+export function ColonyLocation({ colony, catCount }: { colony: InboxColony; catCount: number }) {
   const { data, updateColonyLocation, googleMapsEnabled } = useInbox()
   const places = useGooglePlaces(colony.googlePlaceId ? [colony.googlePlaceId] : [], googleMapsEnabled)
   const place = colony.googlePlaceId ? places.values[colony.googlePlaceId] : undefined
@@ -24,6 +24,10 @@ export function ColonyLocation({ colony }: { colony: InboxColony }) {
   const address = place?.address ?? colony.address
   const hasLocation = Boolean(colony.googlePlaceId || colony.coordinates)
   const unavailable = Boolean(colony.googlePlaceId && !places.loading && !place)
+  const mapData = useMemo<ColonyMapData | null>(() => coordinates ? {
+    audience: 'team',
+    colonies: [{ id: colony.id, name: colony.name, coordinates, status: 'unknown', catCount }],
+  } : null, [colony.id, colony.name, coordinates, catCount])
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState(() => locationDraft(colony.coordinates, colony.address))
   const [error, setError] = useState('')
@@ -54,9 +58,17 @@ export function ColonyLocation({ colony }: { colony: InboxColony }) {
       <Heading id="colony-location" level={2} size="card">Location</Heading>
       <Button ref={trigger} variant="outline" size="sm" disabled={Boolean(colony.googlePlaceId && places.loading)} onClick={begin}>{hasLocation ? <Pencil aria-hidden="true" /> : <MapPin aria-hidden="true" />}{hasLocation ? 'Edit location' : 'Set location'}</Button>
     </div>
-    <Card size="sm"><CardContent>
-      {colony.googlePlaceId && places.loading ? <div role="status" className="flex items-center gap-3"><LoadingIndicator decorative /><Text size="small" tone="muted">Loading location…</Text></div> : unavailable ? <EmptyState role="alert" tone="danger" icon={<CircleAlert />} title="Location unavailable" description="The saved location could not be loaded." action={googleMapsEnabled ? <Button size="sm" variant="outline" onClick={places.retry}>Retry</Button> : undefined} /> : <><Text size="small" tone={hasLocation ? 'default' : 'muted'}>{address || (coordinates ? `${coordinates[1].toFixed(5)}, ${coordinates[0].toFixed(5)}` : 'No location set')}</Text>{place ? <GoogleMapsAttribution /> : colony.address ? <TextLink size="sm" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</TextLink> : null}</>}
-    </CardContent></Card>
+    {colony.googlePlaceId && places.loading ? <div role="status" className="flex items-center gap-3"><LoadingIndicator decorative /><Text size="small" tone="muted">Loading location…</Text></div> : unavailable ? <EmptyState role="alert" tone="danger" icon={<CircleAlert />} title="Location unavailable" description="The saved location could not be loaded." action={googleMapsEnabled ? <Button size="sm" variant="outline" onClick={places.retry}>Retry</Button> : undefined} /> : coordinates && mapData ? <>
+      <ColonyMap
+        variant="location"
+        provider={googleMapsEnabled ? 'google' : 'default'}
+        title={`${colony.name} location`}
+        data={mapData}
+        initialView={{ center: coordinates, zoom: 14 }}
+      />
+      <Text data-colony-location-value size="small" className="wrap-anywhere">{address || `${coordinates[1].toFixed(5)}, ${coordinates[0].toFixed(5)}`}</Text>
+    </> : <EmptyState icon={<MapPin />} title="No location set" />}
+    {place ? <GoogleMapsAttribution /> : colony.address ? <TextLink size="sm" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</TextLink> : null}
     <Drawer open={open} onOpenChange={(next) => { if (!saving) setOpen(next) }}>
       <DrawerContent render={<form onSubmit={save} />} closeLabel="Close location editor" closeDisabled={saving} finalFocus={() => trigger.current}>
         <DrawerHeader><DialogTitle>{hasLocation ? 'Edit location' : 'Set location'}</DialogTitle><DialogDescription>Choose where {colony.name} is located.</DialogDescription></DrawerHeader>

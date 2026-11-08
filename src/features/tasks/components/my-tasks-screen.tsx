@@ -57,8 +57,8 @@ export function MyTasksScreen({ currentUser, initialStatus = 'open' }: { current
     setSearchParams(next, { replace: true, preventScrollReset: true })
   }
 
-  const { changeTaskStatus, completionDialog } = useTaskActions(currentUser, contentRef)
-  const columns = useTaskColumns(changeTaskStatus, currentUser)
+  const { changeTaskStatus, completionDialog, reopeningTaskIds } = useTaskActions(currentUser, contentRef)
+  const columns = useTaskColumns(changeTaskStatus, currentUser, reopeningTaskIds)
   const table = useDataTable({
     data: visibleTasks,
     columns,
@@ -83,7 +83,8 @@ export function MyTasksScreen({ currentUser, initialStatus = 'open' }: { current
       label="Task controls"
       search={{ label: 'Search my tasks', placeholder: 'Search tasks…', value: search, onValueChange: (value) => { clearRequestedTask(); setSearch(value); table.firstPage() } }}
       filters={[{ id: 'status', label: 'Filter tasks by status', value: status, options: statuses, onValueChange: (value) => { clearRequestedTask(); setStatus(value as TaskFilter); table.firstPage() } }]}
-      onReset={query || requestedTask ? () => { clearRequestedTask(); setSearch(''); table.firstPage() } : undefined}
+      onReset={() => { clearRequestedTask(); setSearch(''); table.firstPage() }}
+      resetActive={Boolean(query || requestedTask)}
       actions={<><ViewSwitcher label="Task view" value={view} onValueChange={changeView} options={[
         { value: 'cards', label: 'Cards', icon: <LayoutGrid aria-hidden="true" /> },
         { value: 'list', label: 'List', icon: <List aria-hidden="true" /> },
@@ -92,7 +93,7 @@ export function MyTasksScreen({ currentUser, initialStatus = 'open' }: { current
     {requestedTask ? <Text size="small" tone="muted">Showing selected task. Clear filters to see all your tasks.</Text> : null}
     {view === 'list' ? <DataTable ref={contentRef} table={table} label="My tasks" itemName="task" columnClassName={taskColumnClassName} emptyState={emptyState} /> :
       <div ref={contentRef} role="region" aria-label="My tasks" tabIndex={-1} className="rounded-control outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        {table.getRowModel().rows.length ? <TaskCards tasks={table.getRowModel().rows.map((row) => row.original)} onStatusChange={changeTaskStatus} currentUser={currentUser} /> : <Card>{emptyState}</Card>}
+        {table.getRowModel().rows.length ? <TaskCards tasks={table.getRowModel().rows.map((row) => row.original)} onStatusChange={changeTaskStatus} reopeningTaskIds={reopeningTaskIds} currentUser={currentUser} /> : <Card>{emptyState}</Card>}
         <DataTablePagination table={table} label="My tasks" itemName="task" presentation="cards" />
       </div>}
   </div>

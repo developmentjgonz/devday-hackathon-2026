@@ -1,14 +1,14 @@
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { HTTPException } from 'hono/http-exception'
-import { createReportSchema, duplicateSchema, finishReportSchema, markReportsSchema, questionSchema, taskInputSchema, taskStatusSchema } from '../../shared/schemas/workspace.ts'
-import { addQuestion, changeTaskStatus, createTask, editTask, findAttachment, finishReport, insertReport, linkDuplicate, listReports, listWorkspace, reopenReport, setReadState, type StoredAttachment } from '../db/workspace.ts'
+import { createReportSchema, duplicateSchema, finishReportSchema, questionSchema, taskInputSchema, taskStatusSchema } from '../../shared/schemas/workspace.ts'
+import { addQuestion, changeTaskStatus, createTask, editTask, findAttachment, finishReport, insertReport, linkDuplicate, listReports, listWorkspace, reopenReport, type StoredAttachment } from '../db/workspace.ts'
 import { requireActiveUser, requireSameOrigin } from '../middleware/auth.ts'
 import { requireJson, validateJson } from '../middleware/validation.ts'
 import type { AppEnv } from '../types.ts'
 
 export const workspaceDataRoutes = new Hono<AppEnv>()
-workspaceDataRoutes.get('/workspace-data', requireActiveUser, async (c) => c.json(await listWorkspace(c.env.DB, c.get('user').id)))
+workspaceDataRoutes.get('/workspace-data', requireActiveUser, async (c) => c.json(await listWorkspace(c.env.DB)))
 const limitWorkspaceBody = bodyLimit({ maxSize: 32 * 1024, onError: () => { throw new HTTPException(413, { message: 'Form data is too large.' }) } })
 
 const imageTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'])
@@ -50,7 +50,7 @@ workspaceDataRoutes.post('/reports', requireActiveUser, requireSameOrigin, bodyL
     }
     await insertReport(c.env.DB, id, c.get('user'), parsed.data, stored)
     committed = true
-    const report = (await listReports(c.env.DB, c.get('user').id, id))[0]!
+    const report = (await listReports(c.env.DB, id))[0]!
     return c.json({ report }, 201)
   } catch (error) {
     if (!committed) await Promise.allSettled(stored.map((file) => c.env.UPLOADS.delete(file.key)))
@@ -58,11 +58,6 @@ workspaceDataRoutes.post('/reports', requireActiveUser, requireSameOrigin, bodyL
   }
 })
 
-workspaceDataRoutes.post('/reports/read', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(markReportsSchema), async (c) => {
-  const { ids, unread } = c.req.valid('json')
-  await setReadState(c.env.DB, c.get('user').id, ids, unread)
-  return c.json({ ok: true })
-})
 workspaceDataRoutes.post('/reports/:id/finish', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(finishReportSchema), async (c) => c.json({ report: await finishReport(c.env.DB, c.req.param('id'), c.get('user'), c.req.valid('json')) }))
 workspaceDataRoutes.post('/reports/:id/reopen', requireActiveUser, requireSameOrigin, async (c) => c.json({ report: await reopenReport(c.env.DB, c.req.param('id'), c.get('user')) }))
 workspaceDataRoutes.post('/reports/:id/questions', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(questionSchema), async (c) => c.json({ report: await addQuestion(c.env.DB, c.req.param('id'), c.get('user'), c.req.valid('json').text) }))
@@ -70,17 +65,17 @@ workspaceDataRoutes.post('/reports/:id/duplicate', requireActiveUser, requireSam
 
 workspaceDataRoutes.post('/tasks', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(taskInputSchema), async (c) => {
   const task = await createTask(c.env.DB, c.get('user'), c.req.valid('json'))
-  const report = task.reportId ? (await listReports(c.env.DB, c.get('user').id, task.reportId))[0] ?? null : null
+  const report = task.reportId ? (await listReports(c.env.DB, task.reportId))[0] ?? null : null
   return c.json({ task, report }, 201)
 })
 workspaceDataRoutes.post('/tasks/:id/edit', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(taskInputSchema), async (c) => {
   const task = await editTask(c.env.DB, c.req.param('id'), c.get('user'), c.req.valid('json'))
-  const report = task.reportId ? (await listReports(c.env.DB, c.get('user').id, task.reportId))[0] ?? null : null
+  const report = task.reportId ? (await listReports(c.env.DB, task.reportId))[0] ?? null : null
   return c.json({ task, report })
 })
 workspaceDataRoutes.post('/tasks/:id/status', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(taskStatusSchema), async (c) => {
   const task = await changeTaskStatus(c.env.DB, c.req.param('id'), c.get('user'), c.req.valid('json').status)
-  const report = task.reportId ? (await listReports(c.env.DB, c.get('user').id, task.reportId))[0] ?? null : null
+  const report = task.reportId ? (await listReports(c.env.DB, task.reportId))[0] ?? null : null
   return c.json({ task, report })
 })
 

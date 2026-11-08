@@ -5,7 +5,7 @@ import { Heading } from '@/components/ui/typography'
 import type { SessionUser } from '../../shared/types/auth'
 
 const member: SessionUser = { id: 'maya', name: 'Maya Rivera', email: 'maya@mews.test', phone: null, role: 'member', status: 'active' }
-const labels: Record<string, string> = { '/app': 'Overview', '/app/colonies': 'Colonies', '/app/cats': 'Cats', '/app/reports': 'Reports', '/app/tasks': 'My Tasks', '/app/team': 'Team', '/app/profile': 'Profile', '/sign-in': 'Sign in' }
+const labels: Record<string, string> = { '/app': 'Overview', '/app/colonies': 'Colonies', '/app/cats': 'Cats', '/app/reports': 'Reports', '/app/tasks': 'My Tasks', '/app/team': 'Team', '/app/configuration': 'Configuration', '/app/profile': 'Profile', '/sign-in': 'Sign in' }
 
 function WorkspaceMenuExample({ user = member }: { user?: SessionUser }) {
   return <MemoryRouter initialEntries={['/app']}><WorkspaceMenuShell user={user} /></MemoryRouter>

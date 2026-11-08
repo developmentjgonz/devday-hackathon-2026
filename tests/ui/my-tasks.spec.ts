@@ -164,7 +164,7 @@ test('complete and reopen survive report navigation without changing report revi
   await reportLink.click()
   const drawer = page.getByRole('dialog', { name: 'Possible injury near the feeding station', exact: true })
   await expect(drawer).toBeVisible()
-  await expect(drawer.getByText('Pending', { exact: true })).toBeVisible()
+  await expect(drawer.getByText('Needs review', { exact: true })).toBeVisible()
   await expect(drawer.getByText('Completed task assigned to Alex Morgan', { exact: true })).toBeVisible()
   await drawer.getByRole('button', { name: 'Close report', exact: true }).click()
   await navigation(page).getByRole('link', { name: 'My Tasks', exact: true }).click()
@@ -183,7 +183,7 @@ test('complete and reopen survive report navigation without changing report revi
   await taskRow(page, 'Restock the food container').getByRole('link', { name: /^Open report:/ }).click()
   const processedDrawer = page.getByRole('dialog', { name: 'Morning feeding and fresh water', exact: true })
   await expect(processedDrawer).toBeVisible()
-  await expect(processedDrawer.getByText('Processed', { exact: true })).toBeVisible()
+  await expect(processedDrawer.getByText('Reviewed', { exact: true })).toBeVisible()
   await expect(processedDrawer.getByText('Completed task assigned to Alex Morgan', { exact: true })).toBeVisible()
 })
 

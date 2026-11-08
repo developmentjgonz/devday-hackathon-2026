@@ -69,7 +69,7 @@ test('a reviewed report and its task appear in the related colony', async ({ pag
   const nav = page.getByRole('navigation', { name: 'Workspace navigation' })
   await nav.getByRole('link', { name: 'Colonies', exact: true }).click()
   await page.getByRole('link', { name: 'Riverside', exact: true }).click()
-  await expect(page.getByRole('link', { name: 'Check Pepper at the fence' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Open tasks' }).getByText('Check Pepper at the fence', { exact: true })).toBeVisible()
   await page.getByRole('link', { name: 'View colony reports' }).click()
   await expect(page.getByRole('combobox', { name: 'Filter by colony' })).toHaveValue('riverside')
   await expect(page.getByRole('combobox', { name: 'Filter by status' })).toHaveValue('all')
@@ -79,7 +79,8 @@ test('a reviewed report and its task appear in the related colony', async ({ pag
   await page.getByRole('dialog', { name: 'Complete this task?', exact: true }).getByRole('button', { name: 'Complete task', exact: true }).click()
   await nav.getByRole('link', { name: 'Colonies', exact: true }).click()
   await page.getByRole('link', { name: 'Riverside', exact: true }).click()
-  await expect(page.getByRole('link', { name: 'Check Pepper at the fence' })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Open tasks' }).getByText('Check Pepper at the fence', { exact: true })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Completed tasks' }).getByText('Check Pepper at the fence', { exact: true })).toBeVisible()
 })
 
 test('a report started from a cat profile includes its colony and cat', async ({ page }) => {

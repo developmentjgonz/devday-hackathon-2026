@@ -75,7 +75,7 @@ function SelectionStates() {
   return <div className="grid max-w-4xl gap-8 sm:grid-cols-2">
     <section aria-label="Records" className="grid content-start gap-2 p-2">{['Canal', 'Riverside'].map((name) => <RecordButton key={name} title={name} description="Colony care record" selected={record === name} onClick={() => setRecord(name)} />)}</section>
     <section aria-label="Reports" className="p-2">{['Morning feeding', 'Fresh water'].map((name) => <ReportListItem key={name} title={name} summary="Care report" meta="Canal colony" selected={report === name} onClick={() => setReport(name)} />)}<ReportListItem title="Unavailable report" summary="Care report" meta="Canal colony" disabled /></section>
-    <section aria-label="Tabs" className="p-2"><ViewTabs label="Report views" value={tab} onValueChange={setTab} items={[{ value: 'review', label: 'To review' }, { value: 'done', label: 'Processed' }]} /></section>
+    <section aria-label="Tabs" className="p-2"><ViewTabs label="Report views" value={tab} onValueChange={setTab} items={[{ value: 'review', label: 'To review' }, { value: 'done', label: 'Reviewed' }]} /></section>
     <section aria-label="Table" className="p-2"><Table><caption>Care reports</caption><tbody>{['Morning feeding', 'Fresh water'].map((name) => <TableRow key={name} interactive selected={report === name}><TableCell><TableOpenButton onClick={() => setReport(name)}>{name}</TableOpenButton></TableCell></TableRow>)}</tbody></Table></section>
     <section aria-label="Disclosure" className="p-2"><Disclosure title="Review history">Maya confirmed the colony.</Disclosure></section>
   </div>

@@ -11,7 +11,6 @@ export type WorkspaceStore = {
   reopenReport: (id: string) => Promise<Report>
   askQuestion: (id: string, text: string) => Promise<Report>
   linkDuplicate: (id: string, targetId: string) => Promise<Report>
-  markReports: (ids: string[], unread: boolean) => Promise<void>
   createTask: (input: TaskInput) => Promise<TaskResult>
   editTask: (id: string, input: TaskInput) => Promise<TaskResult>
   changeTaskStatus: (id: string, status: TaskStatus) => Promise<TaskResult>
@@ -37,7 +36,6 @@ export const databaseWorkspace: WorkspaceStore = {
   async reopenReport(id) { return (await post<{ report: Report }>(`/api/reports/${pathId(id)}/reopen`)).report },
   async askQuestion(id, text) { return (await post<{ report: Report }>(`/api/reports/${pathId(id)}/questions`, { text })).report },
   async linkDuplicate(id, targetId) { return (await post<{ report: Report }>(`/api/reports/${pathId(id)}/duplicate`, { targetId })).report },
-  async markReports(ids, unread) { await post('/api/reports/read', { ids, unread }) },
   createTask(input) { return post<TaskResult>('/api/tasks', input) },
   editTask(id, input) { return post<TaskResult>(`/api/tasks/${pathId(id)}/edit`, input) },
   changeTaskStatus(id, status) { return post<TaskResult>(`/api/tasks/${pathId(id)}/status`, { status }) },

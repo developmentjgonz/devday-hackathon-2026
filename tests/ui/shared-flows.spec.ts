@@ -108,7 +108,7 @@ test('touch changes selected controls without leaving hover on the previous item
       await first.tap()
       await expect.poll(() => fill(second)).toBe(idleFill)
     }
-    const tab = page.getByRole('tab', { name: 'Processed' })
+    const tab = page.getByRole('tab', { name: 'Reviewed' })
     await tab.tap()
     await expect(tab).toHaveAttribute('aria-selected', 'true')
     await openStateStory(page, 'fields', info.project.name === 'dark')

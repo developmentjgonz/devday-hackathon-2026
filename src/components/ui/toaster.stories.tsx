@@ -4,7 +4,7 @@ import { toast } from './toaster'
 
 function ToastExample() {
   return <div className="flex flex-wrap gap-3">
-    <Button onClick={() => toast.success('Report processed', { description: 'Care check requested at Grove' })}>Show save confirmation</Button>
+    <Button onClick={() => toast.success('Report reviewed', { description: 'Care check requested at Grove' })}>Show save confirmation</Button>
     <Button variant="outline" onClick={() => toast.error('Could not save the report', { description: 'Your changes are still available. Try again.' })}>Show error</Button>
   </div>
 }
