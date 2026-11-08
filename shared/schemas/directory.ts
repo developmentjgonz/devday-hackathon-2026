@@ -29,8 +29,11 @@ const coordinates = z.tuple([
   z.number().finite().min(-180).max(180),
   z.number().finite().min(-90).max(90),
 ])
-export const createColonySchema = z.object({ name, coordinates: coordinates.optional() })
-export const colonyLocationSchema = z.object({ coordinates: coordinates.nullable() })
+const address = z.string().trim().max(500, 'Use 500 characters or fewer').default('')
+export const createColonySchema = z.object({ name, coordinates: coordinates.optional(), address })
+  .refine((input) => input.coordinates || !input.address, { path: ['address'], message: 'Set a location to add an address' })
+export const colonyLocationSchema = z.object({ coordinates: coordinates.nullable(), address })
+  .refine((input) => input.coordinates || !input.address, { path: ['address'], message: 'Set a location to add an address' })
 export const createCatSchema = z.object({
   name,
   colonyId: z.string('Choose a colony').trim().min(1, 'Choose a colony').max(120, 'Choose a colony'),

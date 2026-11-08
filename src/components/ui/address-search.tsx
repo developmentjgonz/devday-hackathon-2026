@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { CircleAlert, Search } from 'lucide-react'
 import { addressResults, type AddressResult } from '@/lib/address-search'
+import { geocodingUrl } from '@/lib/geocoding-service'
 import { Button } from './button'
 import { EmptyState } from './empty-state'
 import { Input } from './input'
@@ -8,8 +9,6 @@ import { Label } from './label'
 import { RecordButton } from './record-button'
 import { TextLink } from './text-link'
 import { Text } from './typography'
-
-const endpoint = import.meta.env.VITE_GEOCODER_URL || 'https://photon.komoot.io/api'
 
 /** Submit an address or place search and choose one result. */
 export function AddressSearch({ onSelect, disabled = false }: { onSelect: (result: AddressResult) => void; disabled?: boolean }) {
@@ -38,7 +37,7 @@ export function AddressSearch({ onSelect, disabled = false }: { onSelect: (resul
     request.current = controller
     setSearching(true); setResults(null); setFailed(false)
     try {
-      const url = new URL(endpoint)
+      const url = geocodingUrl('search')
       url.searchParams.set('q', term)
       url.searchParams.set('limit', '5')
       const response = await fetch(url, { signal: controller.signal, credentials: 'omit', referrerPolicy: 'no-referrer' })
@@ -64,6 +63,6 @@ export function AddressSearch({ onSelect, disabled = false }: { onSelect: (resul
     {results?.length ? <ul aria-label="Address search results" className="grid max-h-56 gap-2 overflow-y-auto p-0">
       {results.map((result, index) => <li key={`${result.coordinates.join(',')}-${index}`}><RecordButton type="button" className="w-full" title={result.label} description={result.detail} disabled={disabled} onClick={() => { onSelect(result); updateQuery(result.label) }} /></li>)}
     </ul> : null}
-    <div className="flex flex-wrap items-center gap-x-1"><Text render={<span />} size="caption" tone="muted">Searches are sent to</Text><TextLink size="sm" href="https://photon.komoot.io/" target="_blank" rel="noreferrer">Photon</TextLink><Text render={<span />} size="caption" tone="muted">·</Text><TextLink size="sm" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</TextLink></div>
+    <div className="flex flex-wrap items-center gap-x-1"><Text render={<span />} size="caption" tone="muted">Searches and pin lookups are sent to</Text><TextLink size="sm" href="https://photon.komoot.io/" target="_blank" rel="noreferrer">Photon</TextLink><Text render={<span />} size="caption" tone="muted">·</Text><TextLink size="sm" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</TextLink></div>
   </div>
 }

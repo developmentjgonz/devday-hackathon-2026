@@ -65,7 +65,8 @@ export function NewRecordButton({ kind, colonyId: defaultColonyId = '', onCreate
     setSavingColony(true)
     setColonyError('')
     try {
-      const colony = await addColony(trimmedName, locationCoordinates(newColonyLocation) ?? undefined)
+      const coordinates = locationCoordinates(newColonyLocation) ?? undefined
+      const colony = await addColony(trimmedName, coordinates, coordinates ? newColonyLocation.address.trim() : '')
       setColonyId(colony.id)
       setNewColonyName('')
       setAddingColony(false)
@@ -81,7 +82,10 @@ export function NewRecordButton({ kind, colonyId: defaultColonyId = '', onCreate
     setError('')
     try {
       if (isCat) await addCat({ name: trimmedName, colonyId, birthDate: details.birthDate, birthDateEstimated: details.birthDateEstimated, description: details.description, photo: details.photo })
-      else await addColony(trimmedName, locationCoordinates(location) ?? undefined)
+      else {
+        const coordinates = locationCoordinates(location) ?? undefined
+        await addColony(trimmedName, coordinates, coordinates ? location.address.trim() : '')
+      }
       setOpen(false)
       onCreated?.()
       toast.success(isCat ? 'Cat added' : 'Colony added', { description: trimmedName })
