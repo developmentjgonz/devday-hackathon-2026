@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useRouteLoaderData } from 'react-router'
+import { Link, matchPath, useRouteLoaderData } from 'react-router'
 import { Bot, ClipboardCheck, History, ShieldCheck } from 'lucide-react'
 import type { WorkspaceData } from '../../../../shared/types/directory'
 import type { AutomationSnapshot } from '../../../../shared/types/automation'
@@ -13,9 +13,16 @@ import { LoadingIndicator } from '@/components/ui/loading-indicator'
 import { TextLink } from '@/components/ui/text-link'
 import { Heading, Text } from '@/components/ui/typography'
 import { useInbox } from '@/features/inbox/inbox-context'
+import { useReportDetailLink } from '@/features/inbox/components/report-detail-context'
 import { databaseAutomation, type AutomationStore } from '../automation-api'
 
 const dateLabel = (value: string) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+
+function AutomationRecordLink({ to, label, triggerKey }: { to: string; label: string; triggerKey: string }) {
+  const reportLink = useReportDetailLink()
+  const reportId = matchPath('/app/reports/:reportId', to)?.params.reportId
+  return <TextLink size="sm" render={<Link {...(reportId ? reportLink(reportId, triggerKey) : { to })} />}>{reportId ? 'Open report' : label}</TextLink>
+}
 
 export function AutomationPage({ store = databaseAutomation }: { store?: AutomationStore }) {
   const { user } = useRouteLoaderData('workspace') as WorkspaceData
@@ -88,7 +95,7 @@ function AutomationScreen({ store }: { store: AutomationStore }) {
       {snapshot.proposals.length ? <div className="space-y-4">{snapshot.proposals.map((proposal) => <Card key={proposal.id}><CardContent className="space-y-4">
         <div className="space-y-1"><Heading level={4} size="compact">{proposal.title}</Heading><Text size="small" tone="muted">{proposal.detail}</Text><Text size="caption" tone="muted">Proposed {dateLabel(proposal.createdAt)}</Text></div>
         <ul className="grid list-disc gap-2 pl-5">{proposal.changes.map((change, index) => <li key={index}><Text size="small">{change}</Text></li>)}</ul>
-        {proposal.links?.length ? <div className="flex flex-wrap gap-4">{proposal.links.map((link) => <TextLink key={link.to} size="sm" render={<Link to={link.to} />}>{link.label}</TextLink>)}</div> : null}
+        {proposal.links?.length ? <div className="flex flex-wrap gap-4">{proposal.links.map((link) => <AutomationRecordLink key={link.to} to={link.to} label={link.label} triggerKey={`automation-review:${proposal.id}:${link.to}`} />)}</div> : null}
         <div className="flex flex-wrap gap-2"><Button size="sm" loading={busy === `approve:${proposal.id}`} disabled={Boolean(busy) || snapshot.running} onClick={() => void act(`approve:${proposal.id}`, () => store.review(proposal.id, true))}>Approve changes</Button><Button size="sm" variant="outline" loading={busy === `reject:${proposal.id}`} disabled={Boolean(busy) || snapshot.running} onClick={() => void act(`reject:${proposal.id}`, () => store.review(proposal.id, false))}>Reject</Button></div>
       </CardContent></Card>)}</div> : <Card><EmptyState icon={<ClipboardCheck />} title="No changes need review" description="New proposals will appear here before the agent applies them." /></Card>}
     </section> : null}
@@ -97,7 +104,7 @@ function AutomationScreen({ store }: { store: AutomationStore }) {
       {snapshot.events.length ? <Card><CardContent><ol className="space-y-5">{snapshot.events.map((event) => <li key={event.id} className="space-y-2">
         <div className="flex flex-wrap items-center gap-2"><Badge variant={event.kind === 'error' ? 'destructive' : event.kind === 'review' ? 'warning' : 'secondary'}>{event.kind === 'error' ? 'Needs attention' : event.kind === 'review' ? 'Human review' : event.kind === 'merge' ? 'Colony merge' : event.kind}</Badge><Text render={<time dateTime={event.occurredAt} />} size="caption" tone="muted">{dateLabel(event.occurredAt)}</Text></div>
         <Heading level={4} size="compact">{event.title}</Heading><Text size="small" tone="muted">{event.detail}</Text>
-        {event.targetPath ? <TextLink size="sm" render={<Link to={event.targetPath} />}>View details</TextLink> : null}
+        {event.targetPath ? <AutomationRecordLink to={event.targetPath} label="View details" triggerKey={`automation-event:${event.id}`} /> : null}
       </li>)}</ol></CardContent></Card> : <Card><EmptyState icon={<History />} title="No activity yet" description="The agent’s changes, review requests, and failed actions will appear here." /></Card>}
       {offset > 0 || snapshot.hasMore ? <div className="flex flex-wrap gap-2"><Button variant="outline" disabled={offset === 0 || Boolean(busy)} onClick={() => setOffset((value) => Math.max(0, value - 50))}>Newer activity</Button><Button variant="outline" disabled={!snapshot.hasMore || Boolean(busy)} onClick={() => setOffset((value) => value + 50)}>Older activity</Button></div> : null}
       <Disclosure title="What autopilot manages"><Text size="small" tone="muted">Autopilot uses the features selected in AI setup. It records report reviews, duplicate links, task assignments, cat updates, colony updates, and colony merges. It keeps reports open when evidence is missing. People complete physical care tasks.</Text></Disclosure>

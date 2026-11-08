@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { AppLayout } from '@/components/layout/app-layout'
 import { AutomationPage } from '@/features/automation/pages/automation-page'
+import { InboxPage } from '@/features/inbox/pages/inbox-page'
 import type { AutomationStore } from '@/features/automation/automation-api'
 import { localInboxData } from '@/features/inbox/data/local-inbox'
 import { storyDirectoryStore, storyWorkspace } from './fixtures/directory-store'
@@ -16,13 +17,13 @@ const initial: AutomationSnapshot = {
   lastRun: { id: 'run-1', startedAt: '2026-11-08T14:00:00Z', finishedAt: '2026-11-08T14:00:10Z', status: 'completed', summary: 'Autopilot checked the enabled features.' },
   proposals: [
     { id: 'review-merge', title: 'Merge Riverside Cats into Riverside', detail: 'The colony names and locations match.', changes: ['Move 3 cats, linked reports, task links, and care rules to Riverside.', 'Keep record history and remove the duplicate colony.'], createdAt: '2026-11-08T14:00:05Z' },
-    { id: 'review-report', title: 'Review possible injury near the feeding station', detail: 'Pepper was seen limping and needs a care check.', changes: ['Update Pepper: limping on a front paw.', 'Create and assign task: Check Pepper at the feeding station.', 'Finish the report review after supported changes.'], createdAt: '2026-11-08T14:00:08Z' },
+    { id: 'review-report', title: 'Review possible injury near the feeding station', detail: 'Pepper was seen limping and needs a care check.', changes: ['Update Pepper: limping on a front paw.', 'Create and assign task: Check Pepper at the feeding station.', 'Finish the report review after supported changes.'], links: [{ label: 'Open report', to: '/app/reports/report-injury' }], createdAt: '2026-11-08T14:00:08Z' },
   ],
   events: [
     { id: 'event-review', kind: 'review', title: 'Human review requested: Merge Riverside Cats into Riverside', detail: 'The colony names and locations match.', targetPath: null, occurredAt: '2026-11-08T14:00:05Z' },
     { id: 'event-task', kind: 'task', title: 'Task assigned: Refill water at Canal', detail: 'Assigned to Maya Rivera based on open task count.', targetPath: null, occurredAt: '2026-11-08T13:55:04Z' },
     { id: 'event-cat', kind: 'cat', title: 'Cat updated: Miso', detail: 'Saved the confirmed sighting at the Canal entrance.', targetPath: null, occurredAt: '2026-11-08T13:55:03Z' },
-    { id: 'event-report', kind: 'report', title: 'Report reviewed: Morning feeding and fresh water', detail: 'The report confirms clean bowls and fresh water at Grove.', targetPath: null, occurredAt: '2026-11-08T13:55:02Z' },
+    { id: 'event-report', kind: 'report', title: 'Report reviewed: Morning feeding and fresh water', detail: 'The report confirms clean bowls and fresh water at Grove.', targetPath: '/app/reports/report-feeding', occurredAt: '2026-11-08T13:55:02Z' },
   ],
 }
 
@@ -57,7 +58,10 @@ function AutomationStory({ values = initial, mode = 'ready', member = false }: {
     return createMemoryRouter([{
       path: '/app', id: 'workspace', loader: () => workspace,
       element: <AppLayout directoryStore={storyDirectoryStore} workspaceStore={storyWorkspaceStore(user, workspace.workspace)} />,
-      children: [{ path: 'automation', element: <AutomationPage store={store} />, handle: { breadcrumb: 'Automation' } }],
+      children: [
+        { path: 'automation', element: <AutomationPage store={store} />, handle: { breadcrumb: 'Automation' } },
+        { path: 'reports/:reportId?', Component: InboxPage, handle: { breadcrumb: 'Reports' } },
+      ],
     }], { initialEntries: ['/app/automation'] })
   })
   return <RouterProvider router={router} />
