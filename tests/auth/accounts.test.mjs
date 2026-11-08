@@ -217,6 +217,20 @@ test('the configured app origin supports the Vite proxy without trusting forward
   assert.equal(denied.status, 403);
 });
 
+test('local Vite proxy accepts loopback aliases only at the configured port', async (t) => {
+  const { request } = fixture(t, { APP_ORIGIN: 'http://127.0.0.1:5197' });
+  const body = { userId: 'local-admin' };
+  const options = { base: 'http://127.0.0.1:8797', method: 'POST', body };
+  assert.equal((await request('/api/auth/local/sign-in', { ...options, origin: 'http://localhost:5197' })).status, 200);
+  for (const origin of ['http://localhost:5198', 'https://localhost:5197', 'http://localhost.evil:5197', 'null']) {
+    assert.equal((await request('/api/auth/local/sign-in', { ...options, origin })).status, 403);
+  }
+
+  const reverse = fixture(t, { APP_ORIGIN: 'http://localhost:5197' });
+  assert.equal((await reverse.request('/api/auth/local/sign-in', { ...options, origin: 'http://127.0.0.1:5197' })).status, 200);
+  assert.equal((await request('/api/auth/sign-out', { base: 'https://mews.example', method: 'POST', origin: 'http://localhost:5197' })).status, 403);
+});
+
 test('expired sessions and signed-out sessions cannot be reused', async (t) => {
   const { request, signIn, sqlite } = fixture(t);
   const expiredCookie = await signIn();
