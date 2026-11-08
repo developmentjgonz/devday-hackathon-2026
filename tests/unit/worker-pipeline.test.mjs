@@ -45,7 +45,8 @@ test("synthetic intake requires session and CSRF, persists traceability, preserv
   assert.equal(result.reportsImported, 12);
   assert.equal(result.traceIds.length, 12);
   const replay = await worker.fetch(importRequest(authenticated), env);
-  assert.equal(replay.status, 409);
+  assert.equal(replay.status, 200);
+  assert.deepEqual({ imported: (await replay.clone().json()).reportsImported, skipped: (await replay.json()).reportsSkipped }, { imported: 0, skipped: 12 });
   const snapshot = await worker.fetch(new Request(`${env.APP_ORIGIN}/api/private/intake`, { headers: { Cookie: cookies.join("; ") } }), env);
   assert.equal(snapshot.status, 200);
   const data = await snapshot.json();

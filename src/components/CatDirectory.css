@@ -2,3 +2,5 @@
 @media (max-width:760px) { .cat-directory-layout { grid-template-columns: 1fr; }.cat-directory-facts, .feeder-log > div { grid-template-columns: 1fr 1fr; }.cat-directory-tools > input { min-width: 0; width: 100%; }.feeder-log header { align-items: stretch; flex-direction: column; } }
 
 .cat-directory-profile header small{display:block;margin-top:6px}
+
+.cat-profile-care{margin:18px 0;padding:16px;border:1px solid #d9a88b;border-left:4px solid #b46046;border-radius:12px;background:#fff3e9;color:#643d31}.cat-profile-care p,.cat-profile-care blockquote{font-size:.85rem;line-height:1.6;margin:8px 0}.cat-profile-care .secondary-button{margin-top:12px}.cat-profile-care small{display:block}

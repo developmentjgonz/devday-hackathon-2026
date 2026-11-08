@@ -2,7 +2,7 @@
 
 Review date: November 8, 2026. All data and credentials discussed here are for the local synthetic hackathon demo only.
 
-**Latest implementation:** [Feature pass 7](feature-pass-7.md) supersedes the earlier vision/data inventory below. There are now 32 passing tests, actual pixel-backed OpenAI comparisons, 72 additional reports/18 colonies, global search, My shift, appointments, supply pledges, and handoffs. Hosted D1/R2 is prepared but blocked by the existing Cloudflare credential's D1 authorization error; see [hosted setup](hosted-demo-setup.md).
+**Latest implementation:** [Feature pass 8 and regrade](feature-pass-8-regrade.md) records **50 passing tests**, cross-mode source identity checked before inference, preserved original evidence, account-scoped notifications, grouped navigation, care-source profile links, and map pause/follow controls. [Pass 7](feature-pass-7.md) added actual pixel-backed OpenAI comparisons, 72 additional reports/18 colonies, search, My shift, appointments, supplies, and handoffs. These guides supersede the earlier feature inventory below. Hosted storage status is tracked in [hosted setup](hosted-demo-setup.md).
 
 ## Formal verification record
 
@@ -10,7 +10,7 @@ The following was observed locally on November 8, 2026 by the implementation own
 
 | Check | Observed result | Boundary |
 | --- | --- | --- |
-| Build and unit suite | `npm run build` passed; `npm test` passed with 16 tests after feature pass 6. | It does not exercise a remote deployment or every browser/device. |
+| Build and unit suite | `npm run build` passed; `npm test` passed with 50 tests after feature pass 8. | It does not exercise a remote deployment or every browser/device. |
 | Repository build checks | Storybook built successfully. The pinned Wrangler 4.158.0 Worker dry run bundled successfully. CI now uses Node 24 and runs the synthetic test suite before deployment. | A dry run does not deploy or provision resources. The current Worker configuration binds D1/assets; hosted R2 still needs configuration. |
 | Google map | A real Google Maps Miami Beach basemap loaded, with the labelled simulated Skipper marker and broad weather cells. | Rescue markers/radii are fictional and approximate; a Maps key, billing/quota, and referrer restrictions are still required. |
 | Intake/census/dedupe | The original 12-message shift was delivered; one human duplicate merge reduced the active count from 4 to 3 before the live shift added further fixture records. | This proves only local synthetic persistence and human review, not real chat ingestion or identity evidence. |
@@ -23,7 +23,7 @@ The following was observed locally on November 8, 2026 by the implementation own
 | Persistent missing case | Tux was marked missing only after a manager decision; a live agent plan was saved. Unsafe feedback immediately hid one zone and made the plan stale; a second live agent run saved two remaining zones. | Zones are unverified heuristics. Field feedback never automatically confirms identity or reunion. |
 | Internal search map and mobile | Stored Tux zones appeared internally and were absent from public preview. The 320 px operations board had no horizontal overflow. | Desktop DOM width was checked, but full desktop visual inspection and physical-device testing remain incomplete. |
 
-Not verified: a remote Worker/D1/R2 deployment, live WhatsApp/SMS/Facebook integration, real vision matching, or production privacy/security controls. The running local server has OpenAI explicitly enabled; a plain future `npm run dev:full` remains deterministic unless the enable flag is set.
+Not verified: a remote Worker/D1/R2 deployment, live WhatsApp/SMS/Facebook integration, real-world visual identity accuracy, or production privacy/security controls. Actual image-input model calls are documented in pass 7. The running local server has OpenAI explicitly enabled; a plain future `npm run dev:full` remains deterministic unless the enable flag is set.
 
 ## Executive summary
 
@@ -142,7 +142,7 @@ This feature is not a complete production photo-safety solution. It does not dem
 
 ## Five improvement-loop ratings
 
-These are subjective engineering estimates, not judge scores, benchmarks, or a production-readiness claim. Each value is out of 10 and reflects the **local synthetic demo** after that pass. The OpenAI path is opt-in/deterministic-first and no vision workflow is implemented, so no category is scored as complete.
+These are historical subjective engineering estimates, not judge scores, benchmarks, or a production-readiness claim. Each value is out of 10 and reflects the **local synthetic demo** after that pass. A vision workflow was added in pass 7; the current score is in the pass 8 guide.
 
 | Pass | Fit | Originality | Codex / OpenAI | Feasibility | Presentation | Concrete change/evidence |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |

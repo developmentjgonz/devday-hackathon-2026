@@ -16,6 +16,7 @@ export function LiveShift() {
   const [delayMs, setDelayMs] = useState(1500);
   const [notice, setNotice] = useState("Sign in as an admin or coordinator, then start a fictional shift. Every delivered message is stored by the backend.");
   const indexes = useRef<Record<Scenario, number>>({ original: 0, followup: 0, weekend: 0 });
+  const deliveryCounts = useRef<Record<Scenario, { imported: number; skipped: number }>>({ original: { imported: 0, skipped: 0 }, followup: { imported: 0, skipped: 0 }, weekend: { imported: 0, skipped: 0 } });
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => { controller.current?.abort(); }, []);
   async function play() {
@@ -33,14 +34,20 @@ export function LiveShift() {
         const incoming = await fetch("/api/private/synthetic-import", { method: "POST", signal: abort.signal, headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf }, body: JSON.stringify({ ...fixture, synthetic: true, analysisMode: assessmentMode, batchId: `${fixture.batchId}-${record.id}`, records: [record] }) });
         if (!incoming.headers.get("content-type")?.includes("application/json")) throw new Error("Backend unavailable");
         const result = await incoming.json();
-        if (!incoming.ok && incoming.status !== 409) throw new Error(result.error ?? "Import failed");
-        setDelivered((current) => [...current, { ...record, scenario, result: incoming.status === 409 ? "Already stored · original record retained" : "Stored · triage " + (result.modes ?? ["unknown"]).join(", ") }]);
+        // Only an accepted identity is delivered. A conflicting payload or an
+        // in-flight claim is a real error, never a harmless duplicate advance.
+        if (!incoming.ok) throw new Error(result.error ?? "Import failed");
+        const imported = Number(result.reportsImported ?? 1);
+        const skipped = Number(result.reportsSkipped ?? 0);
+        deliveryCounts.current[scenario].imported += imported;
+        deliveryCounts.current[scenario].skipped += skipped;
+        setDelivered((current) => [...current, { ...record, scenario, result: skipped ? "Already stored · original evidence and reviews retained" : "Stored · triage " + (result.modes ?? ["unknown"]).join(", ") }]);
         indexes.current[scenario] += 1;
         dispatchEvent(new Event("mews-data-changed"));
-        setNotice(indexes.current[scenario] + " of " + fixture.records.length + " fictional messages delivered from " + selected.label + ".");
+        setNotice(indexes.current[scenario] + " of " + fixture.records.length + " fictional sources checked · " + deliveryCounts.current[scenario].imported + " newly stored · " + deliveryCounts.current[scenario].skipped + " already stored. No source is counted twice across bulk and chat replay.");
         await new Promise<void>((resolve) => { const timer = setTimeout(resolve, delayMs); abort.signal.addEventListener("abort", () => { clearTimeout(timer); resolve(); }, { once: true }); });
       }
-      if (!abort.signal.aborted) setNotice("Shift delivered. Open Care workspace to review the stored census and urgent cases. Replaying keeps the original backend records.");
+      if (!abort.signal.aborted) setNotice("Shift checked · " + deliveryCounts.current[scenario].imported + " newly stored · " + deliveryCounts.current[scenario].skipped + " already stored. Open Care workspace to review the census and urgent cases; original evidence and human decisions were retained.");
     } catch (error) { if (!abort.signal.aborted) setNotice(error instanceof Error ? error.message : "Delivery stopped."); }
     finally { if (controller.current === abort) setPlaying(false); }
   }

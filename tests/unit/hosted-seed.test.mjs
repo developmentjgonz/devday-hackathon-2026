@@ -15,6 +15,7 @@ test('hosted seed is idempotent, retains reviewed identities and separates negat
   refresh('2026-11-08T20:00:00.000Z');
   assert.equal(sqlite.prepare('SELECT count(*) n FROM intake_source_messages').get().n,112);
   assert.equal(sqlite.prepare('SELECT count(*) n FROM intake_assessments').get().n,112);
+  assert.equal(sqlite.prepare("SELECT count(*) n FROM intake_source_identities WHERE state='stored'").get().n,112);
   assert.equal(sqlite.prepare('SELECT count(*) n FROM canonical_colonies').get().n,18);
   assert.equal(sqlite.prepare('SELECT count(*) n FROM field_appointments').get().n,1);
   const candidate=sqlite.prepare("SELECT cat_key FROM canonical_cats WHERE cat_key='CAT-02-ALT'").get();assert.ok(candidate);

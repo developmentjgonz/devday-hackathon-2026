@@ -1,0 +1,40 @@
+.workspace-skip-link {position:fixed;left:16px;top:-100px;padding:12px 18px;background:#fff8e6;color:#123d31;border:2px solid #577a4c;border-radius:9px;z-index:100;text-decoration:none;font-weight:700}
+.workspace-skip-link:focus {top:12px}
+.workspace-visually-hidden {position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.workspace-brand-row {display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.workspace-nav-close {display:none}
+.sidebar .workspace-navigation {display:grid;gap:15px}
+.workspace-navigation>section {display:grid;gap:3px}
+.workspace-navigation h2 {font:700 10px/1.5 var(--font-sans,Arial,sans-serif);letter-spacing:.11em;text-transform:uppercase;color:#b4cdbb;margin:0 12px 5px}
+.workspace-navigation a {color:#c7d9ca;border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;text-align:left;text-decoration:none;font-size:12px;line-height:1.4;transition:background 160ms ease,color 160ms ease;min-height:41px}
+.workspace-navigation a>svg {flex-shrink:0}
+.workspace-navigation a:hover {color:#fff;background:#24564c}
+.workspace-navigation a.active {background:#f5f0df;color:var(--ink);font-weight:650}
+.workspace-navigation a:focus-visible,.workspace-brand-row a:focus-visible {outline:2px solid #e6c47b;outline-offset:3px}
+.app-shell button:focus-visible,.app-shell a:focus-visible,.app-shell input:focus-visible,.app-shell select:focus-visible,.app-shell textarea:focus-visible {outline:3px solid #9c6f29;outline-offset:3px}
+#workspace-main:focus {outline:none}
+.workspace-popover h2 {font-size:1rem;line-height:1.4;margin:0;padding-right:6px}
+.workspace-popover h2:focus {outline:none}
+.workspace-alert.is-unread {border-left:3px solid #b46a43;background:#fff9e9}
+.workspace-alert.is-read {opacity:.82}
+.workspace-alert b {display:flex;align-items:center;justify-content:space-between;gap:8px;text-transform:none}
+.workspace-alert em {font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:#885033;font-style:normal;flex-shrink:0}
+.workspace-mark-read {margin-top:10px}
+.workspace-menu-overlay {display:none}
+.workspace-access-state {max-width:760px;margin:24px auto;padding:28px}
+.workspace-access-state h1 {font-size:clamp(1.6rem,4vw,2.4rem);margin:8px 0 16px}
+.workspace-access-state>p {line-height:1.7;max-width:62ch}
+.workspace-access-state>.primary-button,.workspace-access-state>.secondary-button {margin:8px 10px 8px 0;display:inline-flex;text-decoration:none}
+.workspace-session-notice {padding:12px 16px;border:1px solid #d9c6a0;border-radius:10px;background:#fff8e7;line-height:1.6;color:#634d2d}
+@media(max-width:760px) {
+ .sidebar {max-width:calc(100vw - 38px);height:100dvh;overscroll-behavior:contain;box-sizing:border-box}
+ .workspace-nav-close {display:inline-grid;color:#fff;border-color:#527369;background:transparent;flex-shrink:0}
+ .workspace-brand-row .brand {margin-bottom:22px}
+ .workspace-menu-overlay {display:block;position:fixed;inset:0;width:100%;height:100dvh;background:#102c2970;border:0;border-radius:0;z-index:44;cursor:pointer}
+ .workspace-navigation a {min-height:44px;font-size:13px}
+ .workspace-popover {max-height:calc(100dvh - 100px)}
+ .workspace-popover .secondary-button,.workspace-access-state>.primary-button,.workspace-access-state>.secondary-button {white-space:normal;max-width:100%;line-height:1.5}
+ .topbar .region {min-width:0}
+ .topbar .workspace-tools {flex-shrink:0}
+}
+@media(prefers-reduced-motion:reduce){.workspace-navigation a,.sidebar{transition:none!important}}

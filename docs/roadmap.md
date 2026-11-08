@@ -30,6 +30,10 @@ This is a local-demo roadmap. A checked item means the relevant code is present 
 - [x] Global private search, personal My shift agenda, appointments, supply requests/pledges, and acknowledged daily handoffs.
 - [x] Additional 72-report/four-language synthetic scenario, 18 fictional colonies, new cat-profile catalog, and a generated alternate Marmalade view.
 - [x] Isolated D1/R2 deployment workflow, idempotent hosted seed, and Cloudflare-compatible high-entropy synthetic-demo access codes. Deployment was attempted and remains blocked by D1 authorization.
+- [x] Bulk/chat source identity, conflict detection, atomic pre-inference claims, legacy evidence preservation, and no duplicate assessments/feeding logs on replay.
+- [x] Grouped role-aware navigation, personal volunteer notifications, persistent per-account read state, and stale-request invalidation at account changes.
+- [x] Four-language urgent-source grouping, profile-to-care-review links, strict source timestamps, and contradictory broad-area routing checks.
+- [x] Simulated tracker pause/follow and reduced-motion controls, readable mobile map layers, and displayed audience-specific radii.
 
 ## Before any real pilot or deployment
 

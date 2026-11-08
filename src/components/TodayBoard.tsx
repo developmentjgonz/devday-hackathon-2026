@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowRight, CalendarClock, HeartPulse, LogIn, RefreshCw, ShieldAlert, UsersRound } from "lucide-react";
 import "./TodayBoard.css";
+import { urgentCategory, sourceFlags } from '../lib/urgent-priority';
 
 type Role = "admin" | "coordinator" | "volunteer" | "sponsor";
 type Session = { user: { id: number; email: string; role: Role } };
 type Report = {
   observation_id: string; trace_id: string; source_kind: string; volunteer_alias?: string | null; body_redacted: string; broad_area: string; received_at: string;
   proposed_cat_key?: string | null; canonical_cat_key?: string | null; proposed_colony_key?: string | null; assigned_colony_key?: string | null; assignment_state?: string | null;
-  urgency?: string | null; uncertainty_note?: string | null;
+  urgency?: string | null; uncertainty_note?: string | null; source_flags_json?: string | null;
 };
 type Review = { observation_id: string; review_kind: string; status: string; explanation?: string | null };
 type Assignment = { id: string; colony_key: string; assigned_user_id: number; due_at: string; status: string; overdue?: boolean };
@@ -26,13 +27,8 @@ async function asJson<T>(result: PromiseSettledResult<Response>): Promise<T | nu
 
 function urgencyCategory(report: Report, review?: Review) {
   const text = `${report.body_redacted} ${report.uncertainty_note ?? ""} ${review?.review_kind ?? ""} ${review?.explanation ?? ""}`.toLowerCase();
-  // Demo text can be English, Spanish, Haitian Creole, or Portuguese. These cues label a
-  // queue item only; an open urgent_care review is still required before it is shown.
-  if (/injur|limp|bleed|wound|hurt|cojea|cojear|mancando|ferid|machuc|sangra/.test(text)) return "Injury";
-  if (/pregnan|belly.*larger|preñad|prenad|gestante|grávida|gravida/.test(text)) return "Pregnancy";
-  if (/kitten|gatit|filhote/.test(text)) return "Kittens";
-  if (/feeder.*(gap|lost|available)|no feeder|sin alimentador|sem alimentador/.test(text)) return "Feeder gap";
-  return "Urgent review";
+  // This labels an existing open urgent review; it never creates a care decision.
+  return urgentCategory(text, sourceFlags(report.source_flags_json));
 }
 
 function when(value?: string) {

@@ -32,6 +32,14 @@ function factsFrom(text) {
   return { proposedCatKey, proposedColonyKey, duplicateGroup, flags: [...new Set(flags)] };
 }
 function attachmentsFor(text, attachmentMap, id) { const paths = attachmentMap?.[id] ?? []; if (!Array.isArray(paths) || paths.some((path) => typeof path !== "string" || !path.startsWith("/demo-assets/"))) fail("only local demo attachments are supported"); return paths.map((fixturePath) => ({ kind: "image", fixturePath })); }
+function respectReportedArea(record) {
+  const homes={"COL-02":"Little River","COL-04":"Little Havana","COL-07":"North Miami","COL-11":"Fort Lauderdale","COL-MB-DEMO":"Miami Beach","COL-HL-DEMO":"Hialeah","COL-HM-DEMO":"Homestead"};
+  // A descriptive keyword is weaker evidence than the explicitly reported area.
+  // Keep its cat candidate for human review, but never auto-route across counties
+  // or neighborhoods just because, for example, the message mentions kittens.
+  if(record.proposedColonyKey&&homes[record.proposedColonyKey]!==record.broadArea){record.proposedColonyKey=null;record.colonyConfidence=.42;}
+  return record;
+}
 
 export function parseSyntheticWhatsAppExport({ text, batchId, provenance, defaultBroadArea = null, attachmentMap = {} }) {
   const raw = clean(text, 60_000); if (!/fictional|synthetic|demo/i.test(raw)) fail("WhatsApp export must prominently declare itself synthetic");
@@ -49,7 +57,7 @@ export function parseSyntheticWhatsAppExport({ text, batchId, provenance, defaul
     const colonyArea = facts.proposedColonyKey === "COL-02" ? "Little River" : facts.proposedColonyKey === "COL-04" ? "Little Havana" : facts.proposedColonyKey === "COL-07" ? "North Miami" : facts.proposedColonyKey === "COL-11" ? "Fort Lauderdale" : null;
     const record = { id, sourceKind: "whatsapp_export", volunteerAlias: sender.replace(/[^A-Za-z .'-]/g, "").slice(0, 100) || "Synthetic volunteer", receivedAt: new Date(`${date} ${time} GMT-0500`).toISOString(), broadArea: areaFor(combined, senderAreas.get(senderKey) ?? colonyArea ?? defaultBroadArea), text: body, attachments: attachmentsFor(body, attachmentMap, id), proposedColonyKey: facts.proposedColonyKey, proposedCatKey: facts.proposedCatKey, colonyConfidence: facts.proposedColonyKey ? .76 : .42, count: countFrom(body), feedingConfirmed: /feed complete|fed\s+\d|water refreshed/i.test(body), flags: facts.flags, duplicateGroup: facts.duplicateGroup };
     if (/maybe\s+\d+\s+kittens?/i.test(body)) record.count = { low: 0, high: Number(body.match(/maybe\s+(\d+)/i)?.[1] ?? 3), confidence: .54 };
-    records.push(record); lastReportBySenderTime.set(senderTimeKey, record);
+    records.push(respectReportedArea(record)); lastReportBySenderTime.set(senderTimeKey, record);
   });
   if (!records.length) fail("no parseable WhatsApp fixture records");
   return { schemaVersion: 1, synthetic: true, batchId: safeId(batchId), sourceKind: "whatsapp_export", provenance: String(provenance).trim(), records, parser: { name: "synthetic-whatsapp-export", sourceLines: raw.split(/\r?\n/).length } };
@@ -62,7 +70,7 @@ export function parseSyntheticSmsRelay({ ndjson, batchId, provenance, defaultBro
     if (!/^synthetic|^demo/i.test(String(item.from ?? "")) && !/^demo/i.test(String(item.body ?? ""))) fail("SMS relay record must be marked demo or synthetic");
     const body = clean(item.body); const facts = factsFrom(body); const paths = Array.isArray(item.attachments) ? item.attachments : [];
     const attachments = paths.map((fixturePath) => { if (typeof fixturePath !== "string" || !fixturePath.startsWith("/demo-assets/")) fail("SMS attachment must be a local demo asset"); return { kind: "image", fixturePath }; });
-    return { id: safeId(item.id ?? `sms-${index + 1}`), sourceKind: "sms_relay", volunteerAlias: clean(item.from ?? "Synthetic relay", 100).replace(/^Synthetic\s+/i, "").slice(0, 100), receivedAt: clean(item.received_at, 64), broadArea: areaFor(`${body} ${item.location ?? ""}`, defaultBroadArea), text: body, attachments, proposedColonyKey: facts.proposedColonyKey, proposedCatKey: facts.proposedCatKey, colonyConfidence: facts.proposedColonyKey ? .76 : .42, count: countFrom(body), feedingConfirmed: /fed\s+\d|feeding complete/i.test(body), flags: facts.flags, duplicateGroup: facts.duplicateGroup };
+    return respectReportedArea({ id: safeId(item.id ?? `sms-${index + 1}`), sourceKind: "sms_relay", volunteerAlias: clean(item.from ?? "Synthetic relay", 100).replace(/^Synthetic\s+/i, "").slice(0, 100), receivedAt: clean(item.received_at, 64), broadArea: areaFor(`${body} ${item.location ?? ""}`, defaultBroadArea), text: body, attachments, proposedColonyKey: facts.proposedColonyKey, proposedCatKey: facts.proposedCatKey, colonyConfidence: facts.proposedColonyKey ? .76 : .42, count: countFrom(body), feedingConfirmed: /fed\s+\d|feeding complete/i.test(body), flags: facts.flags, duplicateGroup: facts.duplicateGroup });
   });
   if (!records.length) fail("no SMS relay records");
   return { schemaVersion: 1, synthetic: true, batchId: safeId(batchId), sourceKind: "sms_relay", provenance: String(provenance).trim(), records, parser: { name: "synthetic-sms-relay", sourceLines: records.length } };

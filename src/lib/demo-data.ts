@@ -38,7 +38,7 @@ export const mapRecords: MapRecord[] = [
   { id: "search-2", title: "Under-cover follow-up", area: "Wynwood", position: { lat: 25.8, lng: -80.199 }, layer: "searches", status: "Assigned", detail: "Verified volunteer task", locationSignal: "last-seen", confidence: .64, internalRadiusMeters: 520, observedAt: "Last seen yesterday" },
   { id: "feed-1", title: "Evening feed", area: "Little River", position: { lat: 25.861, lng: -80.207 }, layer: "feeding", status: "Confirmed", detail: "Joel · 6:24 PM", locationSignal: "live-tag", confidence: .98, internalRadiusMeters: 28, observedAt: "Live tag · 2 min ago" },
   { id: "feed-2", title: "Route check", area: "Cutler Bay", position: { lat: 25.591, lng: -80.341 }, layer: "feeding", status: "Confirmed", detail: "Synthetic demo record", locationSignal: "verified-sighting", confidence: .84, internalRadiusMeters: 130, observedAt: "Seen today" },
-  { id: "live-scout", title: "Skipper · demo tracker", area: "Miami Beach", position: { lat: 25.794, lng: -80.133 }, layer: "sightings", status: "Live tag · synthetic", detail: "Updates every six seconds in the demo", locationSignal: "live-tag", confidence: .98, internalRadiusMeters: 26, observedAt: "Live demo ping" },
+  { id: "live-scout", title: "Skipper · demo tracker", area: "Miami Beach", position: { lat: 25.794, lng: -80.133 }, layer: "sightings", status: "Live tag · synthetic", detail: "Fictional tag simulation; use the map controls to pause or follow.", locationSignal: "live-tag", confidence: .98, internalRadiusMeters: 26, observedAt: "Simulated tag context · no physical device" },
 ];
 
 export const demoChats = [

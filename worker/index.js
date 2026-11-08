@@ -7,7 +7,7 @@ import { getRoutingSettings, setRoutingSettings, listIntakeReview, requestClarif
 import { listMissingCases, createMissingCase, decideMissingCase, appendMissingCaseFeedback, saveCaseSearchPlan, getMissingCaseForPlanning } from "./missing-cases.js";
 import { allowLoginAttempt, getSession, loginWithPassword, requireRole, requireSameOrigin, revokeCurrentSession, sessionHeaders } from "./auth.js";
 import { readPrivatePhoto, reviewPrivatePhoto, uploadPrivatePhoto } from "./photos.js";
-import { importSyntheticFixture, validateSyntheticFixtureBatch } from "./intake.js";
+import { importSyntheticFixture, validateSyntheticFixtureBatch, normalizeSourceTime } from "./intake.js";
 import { parseSyntheticSmsRelay, parseSyntheticWhatsAppExport } from "./raw-intake.js";
 import { seedCanonicalCatsFromObservations, materializeCanonicalCensus, applyHumanDedupeDecision, getCanonicalWorkspace } from "./census.js";
 import { getVisionWorkspace, compareCatPhotos, reviewVisionComparison } from "./vision-matching.js";
@@ -31,19 +31,15 @@ async function readLimitedJson(request, limit) {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 
-async function assessFixture(fixture, env) {
+async function ingestFixture(fixture, env, options = {}) {
   const validated = validateSyntheticFixtureBatch(fixture);
   if (fixture.analysisMode != null && !["rules", "agent"].includes(fixture.analysisMode)) throw new Error("Synthetic intake rejected: invalid analysis mode");
   // Large fixture packs stay quick and predictable. A selected single-message
   // replay can opt into live agents; the result always records its real mode.
   const assessmentEnv = fixture.analysisMode === "rules" || (!fixture.analysisMode && validated.records.length > 12) ? { ...env, OPENAI_API_KEY: undefined } : env;
-  const assessments = {};
-  for (const record of validated.records) {
-    const result = await triageReport({ message: record.text, source: record.sourceKind, catCount: record.count?.high, feedingConfirmed: record.feedingConfirmed }, assessmentEnv);
-    assessments[record.id] = result;
-    if (result.urgency === "urgent" && !record.flags.includes("agent_urgent")) record.flags.push("agent_urgent");
-  }
-  return { fixture: validated, assessments };
+  // Source identity is claimed before this callback runs. Derived urgency is
+  // kept in assessment/observation fields, never written into source flags.
+  return importSyntheticFixture({ db: env.DB, fixture: validated, ...options, assessRecord: record => triageReport({ message: record.text, source: record.sourceKind, catCount: record.count?.high, feedingConfirmed: record.feedingConfirmed }, assessmentEnv) });
 }
 
 export default {
@@ -224,16 +220,12 @@ export default {
       if (!(request.headers.get("content-type") ?? "").includes("application/json") || Number(request.headers.get("content-length") || 0) > 250000) return json({ error: "Invalid fixture" }, 400);
       try {
         const input = await readLimitedJson(request, 250000);
-        const fixture = { ...validateSyntheticFixtureBatch(input), analysisMode: input.analysisMode };
-        const stored = await env.DB.prepare("SELECT id FROM intake_import_batches WHERE id=?").bind(fixture.batchId).first();
-        if (stored) return json({ error: "This fixture batch is already imported; existing reviews were preserved.", batchId: stored.id }, 409);
-        const assessed = await assessFixture(fixture, env);
-        const result = await importSyntheticFixture({ db: env.DB, ...assessed });
-        await seedCanonicalCatsFromObservations(env.DB);
-        await materializeCanonicalCensus(env.DB);
-        return json({ persisted: result.persisted, batchId: result.batchId, reportsImported: result.reportsImported, traceIds: result.traceIds, modes: [...new Set(Object.values(assessed.assessments).map((value) => value.mode))] }, 201);
+        const result = await ingestFixture(input, env);
+        if (result.reportsImported) { await seedCanonicalCatsFromObservations(env.DB); await materializeCanonicalCensus(env.DB); }
+        return json({ persisted: result.persisted, batchId: result.batchId, reportsRequested: result.reportsRequested, reportsImported: result.reportsImported, reportsSkipped: result.reportsSkipped, duplicate: result.duplicate, traceIds: result.traceIds, modes: result.modes }, result.reportsImported ? 201 : 200);
       } catch (error) {
         const message = String(error?.message ?? "");
+        if (error?.status === 409) return json({ error: message, code: error.code, retryable: error.code === "IMPORT_IN_PROGRESS" }, 409);
         if (message.startsWith("Synthetic intake rejected:")) return json({ error: message }, 400);
         if (/unique constraint/i.test(message)) return json({ error: "This fixture batch is already imported; existing reviews were preserved." }, 409);
         return json({ error: "Import unavailable" }, 503);
@@ -252,13 +244,12 @@ export default {
         if (existing) return json({ error: "This source was already imported. Stored reviews and census were preserved.", batchId: existing.id }, 409);
         const common = { batchId: input.batchId, provenance: "Deliberately synthetic exported chat fixture; submitted by an authenticated team member." };
         const fixture = input.sourceKind === "whatsapp_export" ? parseSyntheticWhatsAppExport({ ...common, text: input.text }) : parseSyntheticSmsRelay({ ...common, ndjson: input.text });
-        const assessed = await assessFixture({ ...fixture, analysisMode: input.analysisMode }, env);
-        const result = await importSyntheticFixture({ db: env.DB, ...assessed, sourceDigest });
-        await seedCanonicalCatsFromObservations(env.DB);
-        await materializeCanonicalCensus(env.DB);
-        return json({ persisted: true, batchId: result.batchId, reportsImported: result.reportsImported, modes: [...new Set(Object.values(assessed.assessments).map((value) => value.mode))], traceIds: result.traceIds }, 201);
+        const result = await ingestFixture({ ...fixture, analysisMode: input.analysisMode }, env, { sourceDigest });
+        if (result.reportsImported) { await seedCanonicalCatsFromObservations(env.DB); await materializeCanonicalCensus(env.DB); }
+        return json({ persisted: true, batchId: result.batchId, reportsRequested: result.reportsRequested, reportsImported: result.reportsImported, reportsSkipped: result.reportsSkipped, duplicate: result.duplicate, modes: result.modes, traceIds: result.traceIds }, result.reportsImported ? 201 : 200);
       } catch (error) {
         const message = String(error?.message ?? "");
+        if (error?.status === 409) return json({ error: message, code: error.code, retryable: error.code === "IMPORT_IN_PROGRESS" }, 409);
         if (/rejected:|invalid time/i.test(message)) return json({ error: message }, 400);
         if (/unique constraint/i.test(message)) return json({ error: "This source was already imported." }, 409);
         return json({ error: "Raw import unavailable" }, 503);
@@ -274,20 +265,18 @@ export default {
         const areas = { "Little Havana": "COL-04", "Little River": "COL-02", "North Miami": "COL-07", "Fort Lauderdale": "COL-11", "Miami Beach": "COL-MB-DEMO", "Hialeah": "COL-HL-DEMO", "Homestead": "COL-HM-DEMO", "Hollywood / Broward": null };
         if (body.synthetic !== true || !/^[0-9a-f-]{36}$/i.test(body.id) || typeof body.message !== "string" || !body.message.trim() || body.message.length > 2000 || !Object.hasOwn(areas, body.broadArea) || !["/demo-assets/poppy-calico-limp.png", "/demo-assets/marmalade-orange-tabby.png", "/demo-assets/tux-missing-search.png"].includes(body.photo) || (body.count !== null && (!Number.isInteger(body.count) || body.count < 0 || body.count > 200))) return json({ error: "Use a fictional message, supported demo area and photo, and a valid count." }, 400);
         const batchId = "phone-" + body.id;
-        const existing = await env.DB.prepare("SELECT id FROM intake_import_batches WHERE id=?").bind(batchId).first();
-        if (existing) return json({ persisted: true, traceIds: [batchId + ":field"] });
-        const observedAt = body.observedAt === undefined ? new Date().toISOString() : body.observedAt;
+        const existing = await env.DB.prepare("SELECT received_at FROM intake_source_messages WHERE batch_id=? AND source_message_id='field' LIMIT 1").bind(batchId).first();
+        const observedAt = normalizeSourceTime(body.observedAt === undefined ? existing?.received_at ?? new Date().toISOString() : body.observedAt);
         if (!Number.isFinite(Date.parse(observedAt)) || Date.parse(observedAt) > Date.now() + 60_000) return json({ error: "Observation time must be a valid past time." }, 400);
         const fixture = parseSyntheticSmsRelay({ batchId, provenance: "Fictional phone submission with deliberately shared demo area and fixture photo.", defaultBroadArea: body.broadArea, ndjson: JSON.stringify({ id: "field", from: "Synthetic team member " + auth.session.userId, received_at: new Date(observedAt).toISOString(), body: "DEMO: " + body.message, attachments: [body.photo] }) });
         const record = fixture.records[0]; record.sourceKind = "phone_report"; record.proposedColonyKey = areas[body.broadArea]; record.broadArea = body.broadArea; record.colonyConfidence = record.proposedColonyKey ? .95 : .4;
         if (body.count !== null) record.count = { low: body.count, high: body.count, confidence: .85 };
         record.feedingConfirmed = body.feedingConfirmed === true;
         if (body.urgent === true) record.flags.push("agent_urgent");
-        const assessed = await assessFixture(fixture, env);
-        const result = await importSyntheticFixture({ db: env.DB, ...assessed });
-        await seedCanonicalCatsFromObservations(env.DB); await materializeCanonicalCensus(env.DB);
-        return json({ persisted: true, traceIds: result.traceIds }, 201);
-      } catch (error) { return json({ error: /rejected:/i.test(String(error?.message)) ? String(error.message).slice(0, 200) : "Unable to save this field report." }, 400); }
+        const result = await ingestFixture(fixture, env);
+        if (result.reportsImported) { await seedCanonicalCatsFromObservations(env.DB); await materializeCanonicalCensus(env.DB); }
+        return json({ persisted: true, reportsImported: result.reportsImported, reportsSkipped: result.reportsSkipped, duplicate: result.duplicate, traceIds: result.traceIds }, result.reportsImported ? 201 : 200);
+      } catch (error) { return json({ error: error?.status === 409 ? String(error.message).slice(0, 240) : /rejected:/i.test(String(error?.message)) ? String(error.message).slice(0, 200) : "Unable to save this field report.", ...(error?.code ? { code: error.code, retryable: error.code === "IMPORT_IN_PROGRESS" } : {}) }, error?.status === 409 ? 409 : 400); }
     }
 
     if (pathname === "/api/private/census") {
@@ -323,11 +312,19 @@ export default {
       } catch (error) { return json({ error: String(error?.message ?? "Duplicate review failed").slice(0, 300) }, 409); }
     }
 
+    if (pathname === "/api/private/intake/source-duplicates") {
+      if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
+      const auth = await requireRole(request, env, ["admin", "coordinator"]);
+      if (!auth.ok) return auth.response;
+      const result = await env.DB.prepare("SELECT * FROM legacy_fixture_source_duplicates ORDER BY family,source_record_id LIMIT 200").all();
+      return json({ synthetic: true, groups: result.results ?? [], note: "Read-only legacy collision inventory. Original source records, reviews, and human decisions were preserved; no automatic deletion or history merge has occurred." });
+    }
+
     if (pathname === "/api/private/intake") {
       if (request.method !== "GET") return json({ error: "Method not allowed" }, 405, { Allow: "GET" });
       const auth = await requireRole(request, env, ["admin", "coordinator", "volunteer"]);
       if (!auth.ok) return auth.response;
-      const reports = await env.DB.prepare("SELECT m.trace_id,m.source_kind,m.volunteer_alias,m.body_redacted,m.broad_area,m.received_at,m.attachment_manifest_json,o.id AS observation_id,o.proposed_cat_key,o.proposed_colony_key,o.assigned_colony_key,o.assignment_state,o.source_count_low,o.source_count_high,o.source_count_confidence,o.verified_count_low,o.verified_count_high,o.verified_count_confidence,o.colony_confidence,o.duplicate_group,o.urgency,o.uncertainty_note,c.canonical_cat_key,a.mode AS assessment_mode,a.evidence_json AS match_evidence_json FROM intake_source_messages m JOIN intake_observations o ON o.source_message_id=m.id LEFT JOIN canonical_cats c ON c.cat_key=o.proposed_cat_key LEFT JOIN intake_assessments a ON a.observation_id=o.id ORDER BY julianday(m.received_at) DESC LIMIT 200").all();
+      const reports = await env.DB.prepare("SELECT m.trace_id,m.source_kind,m.volunteer_alias,m.body_redacted,m.broad_area,m.received_at,m.attachment_manifest_json,json_extract(m.raw_fixture_json,'$.flags') AS source_flags_json,o.id AS observation_id,o.proposed_cat_key,o.proposed_colony_key,o.assigned_colony_key,o.assignment_state,o.source_count_low,o.source_count_high,o.source_count_confidence,o.verified_count_low,o.verified_count_high,o.verified_count_confidence,o.colony_confidence,o.duplicate_group,o.urgency,o.uncertainty_note,c.canonical_cat_key,a.mode AS assessment_mode,a.evidence_json AS match_evidence_json FROM intake_source_messages m JOIN intake_observations o ON o.source_message_id=m.id LEFT JOIN canonical_cats c ON c.cat_key=o.proposed_cat_key LEFT JOIN intake_assessments a ON a.observation_id=o.id ORDER BY julianday(m.received_at) DESC LIMIT 200").all();
       const reviews = await env.DB.prepare("SELECT id, review_kind, status, explanation, observation_id FROM intake_review_queue ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END,CASE review_kind WHEN 'urgent_care' THEN 0 ELSE 1 END,created_at DESC LIMIT 500").all();
       const feedings = await env.DB.prepare("SELECT o.assigned_colony_key AS colony_key,m.volunteer_alias AS feeder_alias,COALESCE(o.verified_count_high,o.source_count_high) AS headcount,m.received_at AS visited_at,m.trace_id FROM intake_observations o JOIN intake_source_messages m ON m.id=o.source_message_id WHERE o.source_feeding_confirmed=1 AND o.assigned_colony_key IS NOT NULL ORDER BY julianday(m.received_at) DESC LIMIT 200").all();
       return json({ synthetic: true, reports: reports.results ?? [], reviews: reviews.results ?? [], feedings: feedings.results ?? [] });

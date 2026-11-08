@@ -109,6 +109,9 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
   const [googleReady, setGoogleReady] = useState(false);
   const [mapsFailed, setMapsFailed] = useState(false);
   const [trackerTick, setTrackerTick] = useState(0);
+  const [trackerRunning, setTrackerRunning] = useState(true);
+  const [followTracker, setFollowTracker] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.dataset.reduceMotion === 'true');
   const [weather, setWeather] = useState<WeatherSnapshot[]>([]);
   const [weatherFailed, setWeatherFailed] = useState(false);
   const weatherRecords = useMemo<MapRecord[]>(() => weather.map((snapshot, index) => ({
@@ -133,14 +136,26 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
     return {
       ...record,
       position: scope === "public" ? { lat: Math.round(simulatedPosition.lat * 100) / 100, lng: Math.round(simulatedPosition.lng * 100) / 100 } : simulatedPosition,
-      observedAt: record.id === "live-scout" ? "Simulated tracker · updates every 6 sec" : record.observedAt,
+      observedAt: record.id === "live-scout" ? `Simulated tracker · ${trackerRunning && !reducedMotion ? 'updates every 6 sec' : 'paused'}` : record.observedAt,
     };
-  }), [trackerTick, visibleRecords, scope]);
+  }), [trackerTick, visibleRecords, scope, trackerRunning, reducedMotion]);
+
+  const hasTracker = renderedRecords.some(record => record.id === 'live-scout');
 
   useEffect(() => {
+    const preference=window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update=()=>setReducedMotion(preference.matches || document.documentElement.dataset.reduceMotion==='true');
+    const observer=new MutationObserver(update);
+    observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-reduce-motion']});
+    preference.addEventListener('change',update); update();
+    return()=>{observer.disconnect();preference.removeEventListener('change',update);};
+  },[]);
+
+  useEffect(() => {
+    if (!hasTracker || !trackerRunning || reducedMotion) return;
     const interval = window.setInterval(() => setTrackerTick((tick) => tick + 1), 6000);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [hasTracker, trackerRunning, reducedMotion]);
 
   useEffect(() => {
     const tracker = records.find((record) => record.id === "live-scout");
@@ -220,6 +235,11 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
   }, [googleReady, selectedId]);
 
   useEffect(() => {
+    const tracker=renderedRecords.find(record=>record.id==='live-scout');
+    if(googleReady&&followTracker&&tracker)mapInstance.current?.setCenter(tracker.position);
+  },[followTracker,googleReady,renderedRecords]);
+
+  useEffect(() => {
     const map = mapInstance.current;
     if (!map || !window.google?.maps) return;
     overlays.current.forEach((overlay) => overlay.setMap(null));
@@ -251,9 +271,9 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
   }, [googleReady, onSelect, scope, renderedRecords]);
 
   return <div className="field-map" aria-label="Interactive South Florida field map">
-    {googleReady && <button type="button" className="map-overview-button" onClick={() => { mapInstance.current?.setCenter({ lat: 25.83, lng: -80.23 }); mapInstance.current?.setZoom(10); }}>Show South Florida</button>}
+    <div className="field-map-actions">{googleReady && <button type="button" className="map-overview-button" onClick={() => { setFollowTracker(false); mapInstance.current?.setCenter({ lat: 25.83, lng: -80.23 }); mapInstance.current?.setZoom(10); }}>Show South Florida</button>}{hasTracker&&<><button type="button" className="map-overview-button" disabled={reducedMotion} aria-pressed={!trackerRunning||reducedMotion} onClick={()=>setTrackerRunning(value=>!value)}>{reducedMotion?'Tracker paused · reduced motion':trackerRunning?'Pause simulated tracker':'Resume simulated tracker'}</button>{googleReady&&<button type="button" className="map-overview-button" aria-pressed={followTracker} onClick={()=>setFollowTracker(value=>!value)}>{followTracker?'Stop following Skipper':'Follow Skipper'}</button>}</>}</div>
     <div ref={mapHost} className={googleReady ? "google-map active" : "google-map"} aria-hidden={!googleReady} />
-    {!googleReady && <div className="map-fallback" role="img" aria-label="Synthetic South Florida map preview with approximate demo markers">
+    {!googleReady && <div className="map-fallback" role="group" aria-label="Synthetic South Florida map preview with approximate demo markers">
       <div className="fallback-water water-east" /><div className="fallback-water water-west" />
       <span className="fallback-label broward">BROWARD</span><span className="fallback-label miami">MIAMI-DADE</span><span className="fallback-label keys">SOUTH DADE</span>
       {renderedRecords.map((record) => <div key={record.id} className={record.id === "live-scout" ? "fallback-record tracker-ping" : "fallback-record"} style={{ left: `${((record.position.lng + 80.9) / 1.05) * 100}%`, top: `${((26.45 - record.position.lat) / 1.35) * 100}%` }}>

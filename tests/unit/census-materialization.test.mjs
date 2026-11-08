@@ -7,7 +7,7 @@ import { applyHumanDedupeDecision, getCanonicalWorkspace, materializeCanonicalCe
 
 function d1() {
   const sqlite = new DatabaseSync(":memory:");
-  for (const migration of ["0001_synthetic_intake_census.sql", "0002_auth.sql", "0005_canonical_census_and_dedupe.sql", "0006_ingestion_assessments.sql", "0007_care_cases.sql", "0010_intake_confirmations.sql"]) sqlite.exec(readFileSync(new URL(`../../migrations/${migration}`, import.meta.url), "utf8"));
+  for (const migration of ["0001_synthetic_intake_census.sql", "0002_auth.sql", "0005_canonical_census_and_dedupe.sql", "0006_ingestion_assessments.sql", "0007_care_cases.sql", "0010_intake_confirmations.sql", "0014_source_identity.sql"]) sqlite.exec(readFileSync(new URL(`../../migrations/${migration}`, import.meta.url), "utf8"));
   return {
     prepare(sql) { return { bind(...args) { const prepared = sqlite.prepare(sql); return { async run() { const result = prepared.run(...args); return { meta: { changes: Number(result.changes) } }; }, async first() { return prepared.get(...args) ?? null; }, async all() { return { results: prepared.all(...args) }; } }; } }; },
     async batch(statements) { sqlite.exec("BEGIN"); try { const result = []; for (const statement of statements) result.push(await statement.run()); sqlite.exec("COMMIT"); return result; } catch (error) { sqlite.exec("ROLLBACK"); throw error; } },
