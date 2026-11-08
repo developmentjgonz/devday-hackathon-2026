@@ -15,7 +15,7 @@ Store the corrected token as the existing repository Actions secret `CLOUDFLARE_
 - Private R2: `mews-synthetic-demo-photos`, bound as `PHOTOS`; no public bucket access is enabled.
 - All application migrations, an idempotent 112-report synthetic seed, and actual-record census refresh.
 - Four high-entropy demo-account verifiers in encrypted `MEWS_DEMO_USERS_JSON`. Their plaintext access codes stay in the user's private local access document and are not committed or uploaded.
-- Local OpenAI/Maps keys have **not** been uploaded. `MEWS_OPENAI_API_KEY` and `MEWS_GOOGLE_MAPS_BROWSER_KEY` remain optional until the user explicitly approves this repository as their destination. Without them, hosted AI reports unavailable/fallback mode and the map uses its preview.
+- With the user's explicit approval on November 8, 2026, the supplied keys are now stored as encrypted repository Actions secrets `MEWS_OPENAI_API_KEY` and `MEWS_GOOGLE_MAPS_BROWSER_KEY`. Their values were passed through stdin, were not printed, and are not committed. The deployment workflow installs them as Worker secrets after provisioning and deployment succeed. They are not yet verified on a hosted Worker because D1 authorization remains a separate blocker.
 
 ## Retry the tested branch
 
@@ -42,5 +42,5 @@ The workflow does not automatically merge into `main` or `release`. Re-running i
 1. Open the returned URL; use the private hosted access document, **not** the local demo password.
 2. Sign in as admin and verify the stored census and all five new tools. Verify sponsor/public denial of private routes.
 3. Upload a fictional image, refresh its metadata, approve it, and reload its protected preview to exercise R2 write/read.
-4. If keys are configured with approval, compare the two Marmalade views and check the saved `agent` mode; enable Maps JavaScript API/billing and restrict its browser key to the new hosted origin as well as local testing origins.
+4. After the workflow installs the approved keys, compare the two Marmalade views and check the saved `agent` mode; enable Maps JavaScript API/billing and restrict its browser key to the new hosted origin as well as local testing origins.
 5. Restart/reopen on another device to verify hosted persistence. Record the results before describing D1/R2 as fully verified.

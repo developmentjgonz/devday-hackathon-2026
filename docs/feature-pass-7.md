@@ -54,7 +54,7 @@ The Cloudflare account owner must check/replace the repository's `CLOUDFLARE_API
 
 Hosted sign-in is prepared with separate salted verifiers for newly generated 256-bit demo access codes. This avoids Cloudflare's PBKDF2 iteration limit while preserving the existing local password hashes. It is a private synthetic-demo access mechanism, not a general production identity provider.
 
-The existing local OpenAI/Maps keys remain local. Automatic approval review rejected uploading them into this collaborator-owned repository because that destination was not explicitly authorized. A specific permission question is pending. Hosted AI and Google Maps need that approval and configuration after storage authorization is fixed; local integrations continue to work.
+The user explicitly approved this repository as the destination for the supplied OpenAI/Maps keys on November 8, 2026. Both are now stored as encrypted GitHub Actions secrets, with their values passed through stdin and never printed or committed. The workflow can install them as Worker secrets after storage authorization is fixed. Hosted use remains unverified; the local integrations continue to work.
 
 ## New demo sequence
 
