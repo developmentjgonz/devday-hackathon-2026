@@ -41,4 +41,7 @@ export const Error: Story = { args: { error: 'We could not sign in. Try again.' 
 export const ContactAdministrator: Story = { args: { localSignInEnabled: false } }
 export const GoogleSignIn: Story = { args: { localSignInEnabled: false, googleSignInEnabled: true } }
 export const DemoSignIn: Story = { args: { localSignInEnabled: false, demoSignInEnabled: true, googleSignInEnabled: true, users: [{ id: 'story-member', name: 'Sam Rivera', email: 'member@mews.test', role: 'member', status: 'active' }] } }
-export const DemoAdministrator: Story = { args: { ...DemoSignIn.args, demoAdminSignInEnabled: true } }
+export const DemoAdministrator: Story = { args: { ...DemoSignIn.args, demoAdminSignInEnabled: true, users: [
+  { id: 'story-admin', name: 'Alex Morgan', email: 'admin@mews.test', role: 'administrator', status: 'active' },
+  { id: 'story-member', name: 'Sam Rivera', email: 'member@mews.test', role: 'member', status: 'active' },
+] }, parameters: { docs: { description: { story: 'The code-protected administrator has full team, configuration, AI analysis, and autopilot access. The production account requires the private administrator code. Ordinary demo members cannot use AI or become administrators.' } } } }

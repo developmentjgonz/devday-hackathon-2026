@@ -1,6 +1,6 @@
 # Autopilot
 
-Administrators configure autopilot in **Configuration → AI analysis**. Autopilot is off by default. A saved, readable OpenAI key is required to enable it. Removing the key pauses autopilot. Deployed demo accounts cannot enable or run it.
+Administrators configure autopilot in **Configuration → AI analysis**. Autopilot is off by default. A saved, readable OpenAI key is required to enable it. Removing the key pauses autopilot. Ordinary demo members cannot enable or run it; the code-protected administrator can.
 
 The Worker checks for work every five minutes. The Automation page also has a **Run now** action. Runs use a database lease to prevent overlap. A run checks up to five reports, with urgent reports first. Failed or unresolved reports wait one hour before another attempt. Changed report evidence can be checked sooner. Provider requests share the existing workspace AI rate limit.
 

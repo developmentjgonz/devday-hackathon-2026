@@ -32,9 +32,6 @@ export async function changeUserAccess(db: D1Database, id: string, actorId: stri
     WHERE id = ? AND role = ? AND status = ? AND task_assignable = ?
       AND (id <> ? OR (role = ? AND status = ?))
       AND (? <> 'administrator' OR NOT EXISTS (SELECT 1 FROM sign_in_identities demo WHERE demo.user_id = users.id AND demo.provider = 'demo'))
-      AND (NOT EXISTS (SELECT 1 FROM sign_in_identities actor_demo WHERE actor_demo.user_id = ? AND actor_demo.provider = 'demo-admin')
-        OR EXISTS (SELECT 1 FROM sign_in_identities target_demo WHERE target_demo.user_id = users.id AND target_demo.provider = 'demo')
-        OR users.id = ?)
       AND EXISTS (SELECT 1 FROM users AS actor WHERE actor.id = ? AND actor.role = 'administrator' AND actor.status = 'active')
       AND ((? = 'administrator' AND ? = 'active') OR role <> 'administrator' OR status <> 'active'
         OR EXISTS (SELECT 1 FROM sign_in_identities demo_admin WHERE demo_admin.user_id = users.id AND demo_admin.provider = 'demo-admin')
@@ -44,7 +41,7 @@ export async function changeUserAccess(db: D1Database, id: string, actorId: stri
   `).bind(
     change.role, change.status, Number(change.canBeAssignedTasks), change.status, actorId, change.status,
     id, change.expectedRole, change.expectedStatus, Number(change.expectedCanBeAssignedTasks), actorId, change.role, change.status,
-    change.role, actorId, actorId, actorId, change.role, change.status,
+    change.role, actorId, change.role, change.status,
   ).first<ManagedUserRow>()
   return changed ? managedUserFromRow(changed) : null
 }

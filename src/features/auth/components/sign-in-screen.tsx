@@ -45,6 +45,7 @@ export function SignInScreen({ localSignInEnabled, demoSignInEnabled, demoAdminS
           <ul className="mt-8 space-y-3" aria-label="Accounts">
             {users.map((user) => {
               const Icon = user.role === 'administrator' ? ShieldCheck : UserRound
+              const protectedAdministrator = !localSignInEnabled && demoAdminSignInEnabled && user.role === 'administrator'
               return (
                 <li key={user.id}>
                   <Card><CardContent className="flex flex-wrap items-center justify-between gap-4">
@@ -59,24 +60,20 @@ export function SignInScreen({ localSignInEnabled, demoSignInEnabled, demoAdminS
                       </div>
                     </div>
                   </div>
-                  <Button variant="outline" disabled={selected !== null} loading={selected === user.id} onClick={() => onSignIn(user.id)} aria-label={`Sign in as ${user.name}`}>
+                  {protectedAdministrator ? <form className="grid w-full gap-3" onSubmit={submitAdmin}>
+                    <div className="grid gap-2">
+                      <Label htmlFor="demo-admin-code">Administrator code</Label>
+                      <Input id="demo-admin-code" type="password" autoComplete="off" maxLength={128} value={adminCode} onChange={(event) => setAdminCode(event.target.value)} disabled={selected !== null} required />
+                    </div>
+                    <Button type="submit" variant="outline" loading={selected === 'demo-admin'} disabled={selected !== null || !adminCode} aria-label={`Sign in as ${user.name}`}>Sign in <ArrowRight aria-hidden="true" /></Button>
+                  </form> : <Button variant="outline" disabled={selected !== null} loading={selected === user.id} onClick={() => onSignIn(user.id)} aria-label={`Sign in as ${user.name}`}>
                     Sign in <ArrowRight aria-hidden="true" />
-                  </Button>
+                  </Button>}
                   </CardContent></Card>
                 </li>
               )
             })}
           </ul>
-          {demoAdminSignInEnabled ? <Card className="mt-3"><CardContent>
-            <form className="space-y-4" onSubmit={submitAdmin}>
-              <Heading level={2} size="card">Demo administrator</Heading>
-              <div className="grid gap-2">
-                <Label htmlFor="demo-admin-code">Administrator code</Label>
-                <Input id="demo-admin-code" type="password" autoComplete="off" maxLength={128} value={adminCode} onChange={(event) => setAdminCode(event.target.value)} disabled={selected !== null} required />
-              </div>
-              <Button type="submit" variant="outline" loading={selected === 'demo-admin'} disabled={selected !== null || !adminCode}>Sign in as administrator <ArrowRight aria-hidden="true" /></Button>
-            </form>
-          </CardContent></Card> : null}
           {localSignInEnabled ? <div className="mt-8 border-t pt-6">
             <Heading size="card">New to Mews?</Heading>
             <Text size="small" tone="muted" className="mt-2">Request access to join your rescue team.</Text>

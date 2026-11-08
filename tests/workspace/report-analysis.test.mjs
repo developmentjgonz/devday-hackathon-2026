@@ -274,3 +274,24 @@ test('deployed demo sessions cannot spend the workspace OpenAI key', async (t) =
   assert.equal(response.status, 403);
   assert.match((await response.json()).error, /demo accounts/);
 });
+
+test('a code-protected production administrator can use AI analysis', async (t) => {
+  const { sqlite, env, signIn, saveKey } = fixture(t);
+  await saveKey(await signIn('local-admin'));
+  sqlite.exec(readFileSync(new URL('../../seeds/demo-administrator.sql', import.meta.url), 'utf8'));
+  sqlite.exec("UPDATE demo_access SET enabled = 1 WHERE id = 1");
+  const base = 'https://mews.example';
+  const cookie = (await createDemoSession(new Request(base), env.DB, 'demo-administrator', 'demo-admin')).split(';')[0];
+  const workspace = await worker.fetch(new Request(`${base}/api/workspace-data`, { headers: { Cookie: cookie } }), env);
+  assert.equal((await workspace.json()).aiAnalysisEnabled, true);
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls++;
+    return Response.json({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify({ tasks: [], cats: [], colonies: [], duplicates: [] }) }] }] });
+  };
+  const response = await worker.fetch(new Request(`${base}/api/reports/report-injury/analyze`, { method: 'POST', headers: { Origin: base, Cookie: cookie } }), env);
+  assert.equal(response.status, 200);
+  assert.equal(calls, 1);
+});

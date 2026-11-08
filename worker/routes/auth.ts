@@ -45,7 +45,16 @@ authRoutes.get('/photos/:id', requireActiveUser, async (c) => {
 authRoutes.get('/options', async (c) => {
   const enabled = localSignInEnabled(c.req.raw, c.env)
   const demo = new URL(c.req.url).protocol === 'https:' && await demoAccessEnabled(c.env.DB)
-  const options: SignInOptions = { localSignInEnabled: enabled, demoSignInEnabled: demo, demoAdminSignInEnabled: demo && demoAdminCodeConfigured(c.env.DEMO_ADMIN_CODE) && Boolean(c.env.DEMO_ADMIN_RATE_LIMITER), googleSignInEnabled: Boolean(googleConfig(c.env)), users: enabled ? await listLocalUsers(c.env.DB) : demo ? await listDemoUsers(c.env.DB) : [] }
+  const adminEnabled = demo && demoAdminCodeConfigured(c.env.DEMO_ADMIN_CODE) && Boolean(c.env.DEMO_ADMIN_RATE_LIMITER)
+  const [users, administrator] = await Promise.all([
+    enabled ? listLocalUsers(c.env.DB) : demo ? listDemoUsers(c.env.DB) : Promise.resolve([]),
+    adminEnabled && !enabled ? findDemoAdministrator(c.env.DB) : Promise.resolve(null),
+  ])
+  if (administrator) {
+    const { id, name, email, role, status } = administrator
+    users.unshift({ id, name, email, role, status })
+  }
+  const options: SignInOptions = { localSignInEnabled: enabled, demoSignInEnabled: demo, demoAdminSignInEnabled: Boolean(administrator), googleSignInEnabled: Boolean(googleConfig(c.env)), users }
   return c.json(options)
 })
 

@@ -59,7 +59,7 @@ test('demo access is opt-in, limited to designated members, and separate from Go
   assert.equal((await request('/api/configuration/demo-access', { method: 'POST', cookie: admin, body: { enabled: true } })).status, 200)
   const options = await (await request('/api/auth/options')).json()
   assert.equal(options.demoSignInEnabled, true)
-  assert.deepEqual(new Set(options.users.map((user) => user.id)), new Set(['local-admin', 'local-member', 'local-pending', 'local-suspended']))
+  assert.deepEqual(new Set(options.users.map((user) => user.id)), new Set(['demo-administrator', 'local-admin', 'local-member', 'local-pending', 'local-suspended']))
   assert.equal((await signIn('real-admin')).status, 404)
   assert.equal((await signIn('local-member', { origin: 'https://other.example' })).status, 403)
   assert.equal((await signIn('local-member', { host: 'http://mews.example' })).status, 404)
@@ -129,7 +129,7 @@ test('the demo administrator requires a code and a working rate limiter', async 
   assert.equal((await (await request('/api/auth/options')).json()).demoAdminSignInEnabled, false)
 })
 
-test('the demo administrator can view admin screens but cannot change real accounts', async (t) => {
+test('the code-protected administrator can manage real accounts while keeping the last Google administrator', async (t) => {
   const { sqlite, request, adminSession } = fixture(t)
   const admin = await adminSession()
   await request('/api/configuration/demo-access', { method: 'POST', cookie: admin, body: { enabled: true } })
@@ -141,7 +141,10 @@ test('the demo administrator can view admin screens but cannot change real accou
   const demoAdmin = response.headers.get('set-cookie').split(';')[0]
   assert.equal((await request('/api/users', { cookie: demoAdmin })).status, 200)
   assert.equal((await request('/api/configuration', { cookie: demoAdmin })).status, 200)
-  const demote = await request('/api/users/real-admin/access', { method: 'POST', cookie: demoAdmin, body: { role: 'member', status: 'suspended', canBeAssignedTasks: true, expectedCanBeAssignedTasks: true, expectedRole: 'administrator', expectedStatus: 'active' } })
+  const updateRealAccount = await request('/api/users/real-admin/access', { method: 'POST', cookie: demoAdmin, body: { role: 'administrator', status: 'active', canBeAssignedTasks: false, expectedCanBeAssignedTasks: true, expectedRole: 'administrator', expectedStatus: 'active' } })
+  assert.equal(updateRealAccount.status, 200)
+  assert.equal(sqlite.prepare("SELECT task_assignable FROM users WHERE id='real-admin'").get().task_assignable, 0)
+  const demote = await request('/api/users/real-admin/access', { method: 'POST', cookie: demoAdmin, body: { role: 'member', status: 'suspended', canBeAssignedTasks: false, expectedCanBeAssignedTasks: false, expectedRole: 'administrator', expectedStatus: 'active' } })
   assert.equal(demote.status, 409)
   assert.equal(sqlite.prepare("SELECT role FROM users WHERE id='real-admin'").get().role, 'administrator')
   const approve = await request('/api/users/local-pending/access', { method: 'POST', cookie: demoAdmin, body: { role: 'member', status: 'active', canBeAssignedTasks: true, expectedCanBeAssignedTasks: true, expectedRole: 'member', expectedStatus: 'pending' } })

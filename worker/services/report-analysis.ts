@@ -10,7 +10,7 @@ export type AnalysisReport = { title: string; message: string; submittedAt: stri
 
 export async function reportAnalysisAllowed(request: Request, env: Bindings, userId: string): Promise<boolean> {
   if (localSignInEnabled(request, env)) return true
-  const demo = await env.DB.prepare("SELECT 1 FROM sign_in_identities WHERE user_id = ? AND provider IN ('demo', 'demo-admin') LIMIT 1").bind(userId).first()
+  const demo = await env.DB.prepare("SELECT 1 FROM sign_in_identities WHERE user_id = ? AND provider = 'demo' LIMIT 1").bind(userId).first()
   return !demo
 }
 
