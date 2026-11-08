@@ -7,7 +7,7 @@ type CompleteVariants<All, Cases extends readonly string[]> =
     ? Cases[number] extends NonNullable<All> ? Cases : never
     : never
 
-const buttonCases = ['default', 'outline', 'secondary', 'ghost', 'destructive', 'link', 'selection', 'media', 'account', 'table-header'] as const
+const buttonCases = ['default', 'outline', 'secondary', 'ghost', 'destructive', 'link', 'selection', 'media', 'account', 'table-header', 'view-switcher'] as const
 const badgeCases = ['default', 'secondary', 'outline', 'destructive', 'success', 'warning', 'ghost', 'link'] as const
 
 // New or removed production variants must update the browser fixtures too.
@@ -17,6 +17,8 @@ export const badgeStateVariants: CompleteVariants<ComponentProps<typeof Badge>['
 // Each shared source must have browser coverage or a reason it has no own states.
 // The coverage test compares this list with the source directory.
 export const sharedStateCoverage = {
+  'record-avatar.tsx': 'Passive photo with cat and colony fallback; photo failure is checked in record-avatar.spec.ts.',
+  'view-switcher.tsx': 'Selection, hover, and keyboard focus are checked in view-switcher.spec.ts.',
   'toaster.tsx': 'Sonner owns notification stacking, dismissal, and announcements; Feedback/Notifications demonstrates success and error. Report action checks cover emitted confirmations.',
   'attachment-list.tsx': 'Attachment actions compose the shared Button; attachment stories cover photos, audio, documents, and unavailable previews.',
   'data-table-toolbar.tsx': 'Search, colony filtering, clear filters, and selection actions in data-table.spec.ts; compact fields compose the tested shared Input and SelectField.',

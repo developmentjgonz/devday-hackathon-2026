@@ -9,8 +9,8 @@ const meta = {
   component: Button,
   args: { children: 'Log visit', variant: 'default', size: 'default', disabled: false, loading: false },
   argTypes: {
-    variant: { control: 'select', options: ['default', 'secondary', 'outline', 'ghost', 'destructive', 'link', 'selection', 'media', 'account', 'table-header'] },
-    size: { control: 'select', options: ['xs', 'sm', 'default', 'lg', 'icon', 'icon-xs', 'icon-sm', 'icon-lg', 'content', 'media', 'account'] },
+    variant: { control: 'select', options: ['default', 'secondary', 'outline', 'ghost', 'destructive', 'link', 'selection', 'media', 'account', 'table-header', 'view-switcher'] },
+    size: { control: 'select', options: ['xs', 'sm', 'segment', 'default', 'lg', 'icon', 'icon-xs', 'icon-sm', 'icon-lg', 'content', 'media', 'account'] },
     children: { control: 'text' },
   },
 } satisfies Meta<typeof Button>

@@ -24,12 +24,14 @@ const buttonVariants = cva(
         media: 'overflow-hidden bg-card p-0 hover:bg-muted',
         account: 'justify-start text-left font-sans font-normal hover:bg-muted aria-expanded:border-ring data-popup-open:border-ring data-popup-open:bg-muted',
         'table-header': 'justify-start rounded-sm font-sans font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
+        'view-switcher': 'bg-transparent hover:bg-card/60 aria-pressed:border-border aria-pressed:bg-card aria-pressed:hover:bg-card',
       },
       size: {
         default:
           'h-(--control-height) gap-2 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3',
         xs: "h-(--control-height-xs) gap-1 rounded-control px-2 text-xs in-data-[slot=button-group]:rounded-control has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
         sm: "h-(--control-height-sm) gap-1 rounded-control px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-control has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
+        segment: "h-(--control-height-xs) gap-1 rounded-control px-2.5 text-[0.8rem] [&_svg:not([class*='size-'])]:size-3.5",
         lg: 'h-(--control-height-lg) gap-2.5 px-5 has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4',
         icon: 'size-(--control-height)',
         content: 'h-auto gap-3 p-4',
