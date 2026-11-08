@@ -29,7 +29,7 @@ Resource identifiers in the configuration are not API credentials. Wrangler uses
 
 The Worker serves the app and its public and authenticated API routes. `GET /api/health` executes `SELECT 1 AS ok` through the database binding and returns a no-cache JSON response indicating connectivity. Database failures return 503, unsupported health methods return 405, and unknown `/api` paths return JSON 404.
 
-The live Google sign-in and administrator account were verified in Chrome. A disposable colony, cat, report, and task remained available after refresh; the test records were then removed. Google OAuth is in testing mode and only listed test users can sign in.
+The live Google sign-in and administrator account were verified in Chrome. A disposable colony, cat, report, and task remained available after refresh. A disposable report attachment was saved, retrieved, and blocked without a session. The test records and attachment were then removed. Google OAuth is in testing mode and only listed test users can sign in.
 
 On November 7, 2026, both live URLs returned HTTP 200. The health response was:
 
