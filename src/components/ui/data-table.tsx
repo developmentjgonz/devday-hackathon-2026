@@ -71,6 +71,10 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
   const mobileRows = selection || table.options.manualPagination ? undefined : renderMobileRow
 
   useLayoutEffect(() => {
+    viewport.current?.scrollTo({ top: 0 })
+  }, [table.state.pagination.pageIndex, table.state.pagination.pageSize])
+
+  useLayoutEffect(() => {
     const scrollArea = viewport.current
     const footer = pagination.current
     const parent = container.current?.parentElement
@@ -151,7 +155,7 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
           </div> : null}
         </>}
       </div>
-      <DataTablePagination ref={pagination} table={table} label={label} itemName={itemName} request={request} onPageChange={() => viewport.current?.scrollTo({ top: 0 })} />
+      <DataTablePagination ref={pagination} table={table} label={label} itemName={itemName} request={request} />
       </Card>
       {mobileRows ? <div className="md:hidden" aria-busy={busy || undefined}>
         {request?.status === 'error' ? <EmptyState
