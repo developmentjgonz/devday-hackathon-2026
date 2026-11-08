@@ -62,7 +62,7 @@ export const CatPrints: Story = {
 export const CommunityIllustration: Story = {
   render: () => <CommunityCat className="w-full max-w-xl" />,
   parameters: {
-    docs: { description: { story: 'Original, responsive brand artwork shared by the landing and About pages. Colors use the same theme tokens as the component library.' } },
+    docs: { description: { story: 'Responsive brand artwork featuring a cat and kitten, shared by the landing and About pages. Colors use the same theme tokens as the component library.' } },
   },
 }
 
