@@ -1,7 +1,7 @@
 import type { Cat, Colony, Coordinates, Directory } from '../../shared/types/directory.ts'
 import type { ValidCatInput } from '../../shared/schemas/directory.ts'
 
-type ColonyRow = { id: string; name: string; photoUrl: string | null; longitude: number | null; latitude: number | null }
+type ColonyRow = { id: string; name: string; photoUrl: string | null; longitude: number | null; latitude: number | null; address: string | null }
 type CatRow = { id: string; name: string; colonyId: string; photoUrl: string | null; birthDate: string | null; birthDateEstimated: number; description: string; photoRevision: string | null }
 
 function catFromRow(row: CatRow): Cat {
@@ -13,12 +13,13 @@ function catFromRow(row: CatRow): Cat {
   }
 }
 const catSelect = 'SELECT c.id, c.colony_id AS colonyId, c.name, c.photo_url AS photoUrl, c.birth_date AS birthDate, c.birth_date_estimated AS birthDateEstimated, c.description, p.revision AS photoRevision FROM cats c LEFT JOIN cat_photos p ON p.cat_id = c.id'
-const colonySelect = 'id, name, photo_url AS photoUrl, longitude, latitude'
+const colonySelect = 'id, name, photo_url AS photoUrl, longitude, latitude, address'
 
-function colonyFromRow({ photoUrl, longitude, latitude, ...colony }: ColonyRow): Colony {
+function colonyFromRow({ photoUrl, longitude, latitude, address, ...colony }: ColonyRow): Colony {
   return { ...colony,
     ...(photoUrl ? { photoUrl } : {}),
     ...(longitude !== null && latitude !== null ? { coordinates: [longitude, latitude] as Coordinates } : {}),
+    ...(address ? { address } : {}),
   }
 }
 
@@ -33,15 +34,15 @@ export async function listDirectory(db: D1Database): Promise<Directory> {
   }
 }
 
-export async function insertColony(db: D1Database, name: string, userId: string, coordinates?: Coordinates): Promise<Colony> {
-  const colony: Colony = { id: crypto.randomUUID(), name, ...(coordinates ? { coordinates } : {}) }
-  await db.prepare('INSERT INTO colonies (id, name, longitude, latitude, created_by) VALUES (?, ?, ?, ?, ?)').bind(colony.id, name, coordinates?.[0] ?? null, coordinates?.[1] ?? null, userId).run()
+export async function insertColony(db: D1Database, name: string, userId: string, coordinates?: Coordinates, address = ''): Promise<Colony> {
+  const colony: Colony = { id: crypto.randomUUID(), name, ...(coordinates ? { coordinates } : {}), ...(address ? { address } : {}) }
+  await db.prepare('INSERT INTO colonies (id, name, longitude, latitude, address, created_by) VALUES (?, ?, ?, ?, ?, ?)').bind(colony.id, name, coordinates?.[0] ?? null, coordinates?.[1] ?? null, address || null, userId).run()
   return colony
 }
 
-export async function updateColonyLocation(db: D1Database, id: string, coordinates: Coordinates | null): Promise<Colony | null> {
-  const row = await db.prepare(`UPDATE colonies SET longitude = ?, latitude = ? WHERE id = ? RETURNING ${colonySelect}`)
-    .bind(coordinates?.[0] ?? null, coordinates?.[1] ?? null, id).first<ColonyRow>()
+export async function updateColonyLocation(db: D1Database, id: string, coordinates: Coordinates | null, address: string): Promise<Colony | null> {
+  const row = await db.prepare(`UPDATE colonies SET longitude = ?, latitude = ?, address = ? WHERE id = ? RETURNING ${colonySelect}`)
+    .bind(coordinates?.[0] ?? null, coordinates?.[1] ?? null, address || null, id).first<ColonyRow>()
   return row ? colonyFromRow(row) : null
 }
 

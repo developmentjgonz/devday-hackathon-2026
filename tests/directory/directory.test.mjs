@@ -7,7 +7,7 @@ import worker from '../../worker/index.ts';
 function fixture(t) {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec('PRAGMA foreign_keys = ON');
-  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../seeds/local.sql']) {
+  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0013_colony_addresses.sql', '../../seeds/local.sql']) {
     sqlite.exec(readFileSync(new URL(file, import.meta.url), 'utf8'));
   }
   t.after(() => sqlite.close());
@@ -124,6 +124,28 @@ test('colony location changes validate coordinates and require active, same-orig
   assert.equal((await request(path, { method: 'PATCH', cookie, origin: 'https://other.example', body: { coordinates: [-80, 25] } })).status, 403);
   assert.equal((await request('/api/directory/colonies/missing/location', { method: 'PATCH', cookie, body: { coordinates: [-80, 25] } })).status, 404);
 });
+
+
+test('a colony address is saved with its location and can be updated or cleared', async (t) => {
+  const { request, signIn } = fixture(t);
+  const cookie = await signIn('local-admin');
+  const created = await request('/api/directory/colonies', { method: 'POST', cookie, body: { name: 'Garden', coordinates: [-80.2, 25.8], address: '  701 Brickell Avenue, Miami  ' } });
+  assert.equal(created.status, 201);
+  const { colony } = await created.json();
+  assert.equal(colony.address, '701 Brickell Avenue, Miami');
+  let directory = await (await request('/api/directory', { cookie })).json();
+  assert.equal(directory.colonies.find((item) => item.id === colony.id).address, '701 Brickell Avenue, Miami');
+  const path = `/api/directory/colonies/${colony.id}/location`;
+  const moved = await request(path, { method: 'PATCH', cookie, body: { coordinates: [-80.21, 25.81], address: 'Near the garden' } });
+  assert.equal((await moved.json()).colony.address, 'Near the garden');
+  const cleared = await request(path, { method: 'PATCH', cookie, body: { coordinates: null } });
+  assert.equal(cleared.status, 200);
+  directory = await (await request('/api/directory', { cookie })).json();
+  assert.equal(directory.colonies.find((item) => item.id === colony.id).address, undefined);
+  assert.equal((await request(path, { method: 'PATCH', cookie, body: { coordinates: null, address: 'No pin' } })).status, 400);
+  assert.equal((await request(path, { method: 'PATCH', cookie, body: { coordinates: [-80, 25], address: 'x'.repeat(501) } })).status, 400);
+});
+
 
 
 test('cat details and photos can be created, edited, read and removed', async (t) => {
