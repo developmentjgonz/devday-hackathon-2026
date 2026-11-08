@@ -10,6 +10,7 @@ import { workspaceDataRoutes } from './routes/workspace-data.ts'
 import { userRoutes } from './routes/users.ts'
 import { publicContentRoutes } from './routes/public-content.ts'
 import { configurationRoutes } from './routes/configuration.ts'
+import { publicReportRoutes } from './routes/public-reports.ts'
 
 const app = new Hono<AppEnv>()
 const api = new Hono<AppEnv>()
@@ -29,6 +30,7 @@ api.route('/directory', directoryRoutes)
 api.route('/', workspaceDataRoutes)
 api.route('/users', userRoutes)
 api.route('/public-content', publicContentRoutes)
+api.route('/public-reports', publicReportRoutes)
 api.route('/configuration', configurationRoutes)
 api.notFound((c) => c.json({ error: 'Not found' }, 404))
 

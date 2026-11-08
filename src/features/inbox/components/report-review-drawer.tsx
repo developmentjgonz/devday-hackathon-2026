@@ -146,7 +146,7 @@ export function ReportReviewDrawer({ report, reports, data, open, onClose, onNot
             {draft.urgent ? <Text size="caption" tone="danger" weight="medium">Urgent</Text> : null}
             <Text size="caption" tone="muted">{reportStatusLabels[report.status]}</Text>
           </div>
-          <DialogDescription className="flex flex-wrap gap-x-3">{justSubmitted ? <span>Report added.</span> : null}<span>Reported by {report.reporter}</span><time dateTime={report.submittedAt}>{dateFormat.format(new Date(report.submittedAt))}</time></DialogDescription>
+          <DialogDescription className="flex flex-wrap gap-x-3">{justSubmitted ? <span>Report added.</span> : null}<span>{report.anonymous ? 'Submitted anonymously' : `Reported by ${report.reporter}`}</span><time dateTime={report.submittedAt}>{dateFormat.format(new Date(report.submittedAt))}</time></DialogDescription>
         </DrawerHeader>
         <DrawerBody key={report.id}>
           <fieldset disabled={saving} className="min-w-0 space-y-6">
@@ -193,7 +193,7 @@ export function ReportReviewDrawer({ report, reports, data, open, onClose, onNot
           {isProcessed ? <Button variant="outline" loading={saving} onClick={reopen}><RotateCcw aria-hidden="true" />Reopen report</Button> : <>
             {finishHint ? <Text id="review-finish-hint" size="caption" tone="muted" role="status">{finishHint}</Text> : null}
             <div className="grid gap-2 min-[360px]:grid-cols-2">
-              <Button variant="outline" disabled={saving} onClick={() => { setError(''); setAction('question') }}>Ask for details</Button>
+              {report.anonymous ? <Text size="caption" tone="muted">The sender cannot receive questions.</Text> : <Button variant="outline" disabled={saving} onClick={() => { setError(''); setAction('question') }}>Ask for details</Button>}
               <Button onClick={finishReview} loading={saving} disabled={!draft.colonyId || !draft.careNote.trim()} aria-describedby={finishHint ? 'review-finish-hint' : undefined}><Check aria-hidden="true" />Save and finish</Button>
             </div>
           </>}

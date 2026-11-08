@@ -3,7 +3,7 @@ import type { CreateReportInput, FinishReportInput, TaskInput } from '../../shar
 import type { Report, ReportAttachment, ReportEntry, Task, TaskAssociation, TaskStatus, WorkspaceMember, WorkspaceSnapshot } from '../../shared/types/workspace.ts'
 import type { SessionUser } from '../../shared/types/auth.ts'
 
-type ReportRow = { id: string; title: string; message: string; category: string; reporter: string; submittedAt: string; colonyId: string | null; catId: string | null; careNote: string; urgent: number; unread: number; status: Report['status']; possibleDuplicateOf: string | null; duplicateOf: string | null }
+type ReportRow = { id: string; title: string; message: string; category: string; reporter: string; anonymous: number; submittedAt: string; colonyId: string | null; catId: string | null; careNote: string; urgent: number; unread: number; status: Report['status']; possibleDuplicateOf: string | null; duplicateOf: string | null }
 type AttachmentRow = { id: string; reportId: string; name: string; mimeType: string; size: number }
 type EntryRow = ReportEntry & { reportId: string }
 type HistoryRow = { reportId: string; text: string }
@@ -19,11 +19,11 @@ function groupBy<T>(items: T[], key: (item: T) => string): Map<string, T[]> {
 
 export async function listReports(db: D1Database, userId: string, reportId: string | null = null): Promise<Report[]> {
   const [reports, attachments, entries, history] = await Promise.all([
-    db.prepare(`SELECT r.id, r.title, r.message, r.category, u.name AS reporter, r.submitted_at AS submittedAt,
+    db.prepare(`SELECT r.id, r.title, r.message, r.category, COALESCE(u.name, 'Anonymous') AS reporter, (r.reporter_id IS NULL) AS anonymous, r.submitted_at AS submittedAt,
       r.colony_id AS colonyId, r.cat_id AS catId, r.care_note AS careNote, r.urgent, r.status,
       r.possible_duplicate_id AS possibleDuplicateOf, r.duplicate_of AS duplicateOf,
       CASE WHEN rr.user_id IS NULL THEN 1 ELSE 0 END AS unread
-      FROM reports r JOIN users u ON u.id = r.reporter_id
+      FROM reports r LEFT JOIN users u ON u.id = r.reporter_id
       LEFT JOIN report_reads rr ON rr.report_id = r.id AND rr.user_id = ?
       WHERE (? IS NULL OR r.id = ?) ORDER BY r.submitted_at DESC, r.id`).bind(userId, reportId, reportId).all<ReportRow>(),
     db.prepare('SELECT id, report_id AS reportId, name, mime_type AS mimeType, size FROM report_attachments WHERE (? IS NULL OR report_id = ?) ORDER BY rowid').bind(reportId, reportId).all<AttachmentRow>(),
@@ -35,7 +35,7 @@ export async function listReports(db: D1Database, userId: string, reportId: stri
   const messages = groupBy(entries.results, (item) => item.reportId)
   const events = groupBy(history.results, (item) => item.reportId)
   return reports.results.map((row) => ({
-    id: row.id, title: row.title, reporter: row.reporter, submittedAt: row.submittedAt, message: row.message, category: row.category,
+    id: row.id, title: row.title, reporter: row.reporter, ...(row.anonymous ? { anonymous: true } : {}), submittedAt: row.submittedAt, message: row.message, category: row.category,
     colonyId: row.colonyId ?? '', catId: row.catId ?? '', careNote: row.careNote, urgent: Boolean(row.urgent), unread: Boolean(row.unread), status: row.status,
     ...(row.possibleDuplicateOf ? { possibleDuplicateOf: row.possibleDuplicateOf } : {}),
     ...(row.duplicateOf ? { duplicateOf: row.duplicateOf } : {}),
@@ -74,8 +74,8 @@ function historyStatement(db: D1Database, reportId: string, actor: SessionUser, 
 }
 
 async function requireReport(db: D1Database, id: string) {
-  const report = await db.prepare('SELECT id, status, colony_id AS colonyId, duplicate_of AS duplicateOf FROM reports WHERE id = ?')
-    .bind(id).first<{ id: string; status: Report['status']; colonyId: string | null; duplicateOf: string | null }>()
+  const report = await db.prepare('SELECT id, status, colony_id AS colonyId, duplicate_of AS duplicateOf, reporter_id AS reporterId FROM reports WHERE id = ?')
+    .bind(id).first<{ id: string; status: Report['status']; colonyId: string | null; duplicateOf: string | null; reporterId: string | null }>()
   if (!report) throw new HTTPException(404, { message: 'Report not found.' })
   return report
 }
@@ -120,6 +120,7 @@ export async function reopenReport(db: D1Database, id: string, actor: SessionUse
 export async function addQuestion(db: D1Database, id: string, actor: SessionUser, text: string): Promise<Report> {
   const report = await requireReport(db, id)
   if (report.status === 'processed') throw new HTTPException(409, { message: 'Reopen this report before asking for details.' })
+  if (!report.reporterId) throw new HTTPException(409, { message: 'Anonymous reports cannot receive questions.' })
   await db.batch([
     db.prepare("UPDATE reports SET status = 'waiting' WHERE id = ?").bind(id),
     db.prepare('INSERT INTO report_entries (id, report_id, author_id, text, created_at) VALUES (?, ?, ?, ?, ?)').bind(crypto.randomUUID(), id, actor.id, text, new Date().toISOString()),

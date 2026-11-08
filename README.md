@@ -30,6 +30,7 @@ Storybook runs locally and is not deployed. The live database has the current mi
 - [Decision records](docs/decisions/README.md): significant choices and their reasons.
 - [Component library](docs/component-library.md): where components and theme tokens live, and how to extend the gallery.
 - [Map motion](docs/map-motion.md): how map selection handles pointer, keyboard, and reduced-motion input.
+- [Public reporting](docs/public-reporting.md): anonymous submissions and team review.
 - [Infrastructure](docs/infrastructure.md): dedicated Cloudflare resources, deployment, and health checks.
 - [Local accounts](docs/local-accounts.md): seeded users, signup, sessions, and approval checks.
 - [Google sign-in](docs/google-sign-in.md): live identity, Cloudflare secrets, and deployment setup.

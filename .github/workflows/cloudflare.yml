@@ -39,6 +39,9 @@ jobs:
       - name: Check local account and access rules
         run: npm run test:auth
 
+      - name: Check anonymous public reports
+        run: node --test tests/workspace/public-reports.test.mjs
+
       - name: Build Storybook
         run: npm run build-storybook
 

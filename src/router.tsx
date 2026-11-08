@@ -7,6 +7,7 @@ import { LandingPage } from '@/features/landing/pages/landing-page'
 import { AboutPage } from '@/features/about/pages/about-page'
 import { PrivacyPage, TermsPage } from '@/features/legal/pages/legal-page'
 import { CommunityPage } from '@/features/community/pages/community-page'
+import { PublicReportPage } from '@/features/public-reports/pages/public-report-page'
 import { OverviewPage } from '@/features/overview/pages/overview-page'
 import { InboxPage } from '@/features/inbox/pages/inbox-page'
 import { MyTasksPage } from '@/features/tasks/pages/my-tasks-page'
@@ -40,6 +41,7 @@ export const router = createBrowserRouter([
           { index: true, Component: LandingPage },
           { path: 'about', Component: AboutPage },
           { path: 'community', Component: CommunityPage },
+          { path: 'report', Component: PublicReportPage },
           { path: 'privacy', Component: PrivacyPage },
           { path: 'terms', Component: TermsPage },
           { path: '*', Component: NotFoundPage },

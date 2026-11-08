@@ -21,6 +21,7 @@ export type Report = {
   id: string
   title: string
   reporter: string
+  anonymous?: boolean
   submittedAt: string
   message: string
   category: string

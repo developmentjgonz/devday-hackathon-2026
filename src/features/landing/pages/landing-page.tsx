@@ -1,3 +1,4 @@
+import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Heading, HeadingAccent, Text } from '@/components/ui/typography'
 import { CareSticker, CatPawPrint } from '@/components/brand-assets'
@@ -17,6 +18,7 @@ export function LandingPage({ initialContent }: { initialContent?: PublicContent
           <Text size="lead" tone="muted" className="mt-6 max-w-sm">Feeding visits, cat records, and care needs in one shared place.</Text>
           <div className="landing-hero-actions">
             <Button size="lg" render={<a href="#tracker" />}>View colony activity <CatPawPrint /></Button>
+            <Button variant="outline" size="lg" render={<Link to="/report" />}>Report a cat</Button>
           </div>
         </div>
         <div className="landing-illustration">

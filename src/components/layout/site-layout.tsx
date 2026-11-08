@@ -8,7 +8,7 @@ import '@/styles/landing.css'
 
 export function SiteLayout() {
   const pathname = useLocation().pathname
-  const publicPage = ['/', '/about', '/community', '/privacy', '/terms'].includes(pathname)
+  const publicPage = ['/', '/about', '/community', '/report', '/privacy', '/terms'].includes(pathname)
   return (
     <div className="flex min-h-svh flex-col bg-brand-background">
       <header className={publicPage ? 'landing-site-header' : 'border-b'}>
@@ -22,7 +22,7 @@ export function SiteLayout() {
       <footer className={publicPage ? undefined : 'border-t'}>
         <div className="landing-width landing-site-footer">
           <Brand to="/" />
-          {publicPage ? <nav aria-label="Footer navigation"><TextLink size="sm" render={<Link to="/about" />}>About Mews</TextLink><TextLink size="sm" render={<Link to="/app" />}>Volunteer sign in</TextLink><TextLink size="sm" render={<NavLink to="/privacy" />}>Privacy Policy</TextLink><TextLink size="sm" render={<NavLink to="/terms" />}>Terms</TextLink></nav> : <Text size="small" tone="muted">Community cat care</Text>}
+          {publicPage ? <nav aria-label="Footer navigation"><TextLink size="sm" render={<Link to="/about" />}>About Mews</TextLink><TextLink size="sm" render={<Link to="/report" />}>Report a cat</TextLink><TextLink size="sm" render={<Link to="/app" />}>Volunteer sign in</TextLink><TextLink size="sm" render={<NavLink to="/privacy" />}>Privacy Policy</TextLink><TextLink size="sm" render={<NavLink to="/terms" />}>Terms</TextLink></nav> : <Text size="small" tone="muted">Community cat care</Text>}
         </div>
       </footer>
     </div>
