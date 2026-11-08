@@ -105,6 +105,9 @@ for (const width of [390, 1440]) {
     await expect(page.locator('[data-sonner-toast]')).toHaveCount(0)
     await page.getByRole('button', { name: 'Save and finish', exact: true }).click()
     await expect(page.locator('[data-slot="drawer-content"]')).toHaveCount(0)
+    await expect(page.locator('[data-sonner-toast]')).toContainText('Find it under Processed. Linked care tasks remain open.')
+    await page.getByRole('combobox', { name: 'Filter by status', exact: true }).selectOption('processed')
+    await expect(page.getByRole('button', { name: `Review ${injury}`, exact: true })).toBeVisible()
   })
 }
 

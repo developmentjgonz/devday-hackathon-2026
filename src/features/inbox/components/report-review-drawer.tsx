@@ -70,7 +70,7 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
     if (!report || !draft || !draft.colonyId || !draft.careNote.trim()) return
     onUpdate(report.id, (item) => ({ ...item, ...draft, careNote: draft.careNote.trim(), status: 'processed', history: [...item.history, `${currentUser} saved the confirmed report details and finished the review.`] }))
     setDrafts((items) => { const next = { ...items }; delete next[report.id]; return next })
-    onNotice(`Review finished: ${report.title}.${report.tasks.some((task) => task.status === 'open') ? ' Linked care tasks remain open.' : ''}`)
+    onNotice(`Review finished: ${report.title}. Find it under Processed.${report.tasks.some((task) => task.status === 'open') ? ' Linked care tasks remain open.' : ''}`)
     onClose()
   }
 
