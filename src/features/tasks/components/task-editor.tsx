@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent, type RefObject } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Alert } from '@/components/ui/alert'
@@ -11,7 +11,7 @@ import { useInbox } from '@/features/inbox/inbox-context'
 import type { Task, TaskAssociation } from '@/features/inbox/types'
 import { emptyAssociationDraft, pendingAssociation, TaskAssociations } from './task-associations'
 
-export function TaskEditor({ currentUser, task, initialAssociation, onCreated }: { currentUser: string; task?: Task; initialAssociation?: TaskAssociation; onCreated?: () => void }) {
+export function TaskEditor({ currentUser, task, initialAssociation, onCreated, fallbackFocus }: { currentUser: string; task?: Task; initialAssociation?: TaskAssociation; onCreated?: () => void; fallbackFocus?: RefObject<HTMLElement | null> }) {
   const { data, members, createTask, editTask } = useInbox()
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
@@ -42,12 +42,13 @@ export function TaskEditor({ currentUser, task, initialAssociation, onCreated }:
       if (task) { await editTask(task.id, input); toast.success('Task updated', { description: title.trim() }) }
       else { await createTask(input); toast.success('Task created', { description: title.trim() }); onCreated?.() }
       setOpen(false)
+      requestAnimationFrame(() => { if (!trigger.current?.isConnected) fallbackFocus?.current?.focus({ preventScroll: true }) })
     } catch (error) { setError(error instanceof Error ? error.message : 'Could not save the task. Try again.') }
     finally { setSaving(false) }
   }
   return <>
     <Button ref={trigger} size="sm" variant={task ? 'ghost' : 'default'} onClick={begin} aria-label={task ? `Edit task: ${task.title}` : undefined}>{task ? 'Edit' : <><Plus aria-hidden="true" />New task</>}</Button>
-    <Dialog open={open} onOpenChange={(next) => { if (!saving) setOpen(next) }}><DialogContent layout="scroll" closeDisabled={saving} finalFocus={() => trigger.current}>
+    <Dialog open={open} onOpenChange={(next) => { if (!saving) setOpen(next) }}><DialogContent layout="scroll" closeDisabled={saving} finalFocus={() => trigger.current?.isConnected ? trigger.current : fallbackFocus?.current ?? null}>
       <form onSubmit={save} className="flex min-h-0 flex-col">
         <DialogHeader><DialogTitle>{task ? 'Edit task' : 'New task'}</DialogTitle><DialogDescription>{task?.reportId ? 'Update the task and its related items. The report remains linked.' : 'Add a task and any related items.'}</DialogDescription></DialogHeader>
         <DialogBody><fieldset disabled={saving} className="grid min-w-0 gap-5">

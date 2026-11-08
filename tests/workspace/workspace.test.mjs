@@ -111,6 +111,39 @@ test('tasks use member IDs and persist with related records and report history',
   assert.equal((await request(`/api/tasks/${otherTask.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } })).status, 403);
 });
 
+test('record history follows task and report changes across linked cats and colonies', async (t) => {
+  const { request, signIn, reportForm } = fixture(t);
+  const admin = await signIn('local-admin');
+  const member = await signIn('local-member');
+  const createdReport = await request('/api/reports', { method: 'POST', cookie: admin, form: reportForm({ title: 'Food check', message: 'Food is needed.', colonyId: 'canal', catId: 'miso', urgent: false }) });
+  const { report } = await createdReport.json();
+  const createdTask = await request('/api/tasks', { method: 'POST', cookie: admin, body: { title: 'Bring food', ownerId: 'local-member', due: '', associations: [{ type: 'cat', id: 'miso' }] } });
+  const { task } = await createdTask.json();
+  const history = async (type, id, cookie = admin) => (await (await request(`/api/directory/${type}/${id}/activity`, { cookie })).json()).activity;
+  assert.ok((await history('cats', 'miso')).some((event) => event.summary === 'Report submitted: Food check' && event.reportId === report.id));
+  assert.ok((await history('colonies', 'canal')).some((event) => event.summary === 'Task created: Bring food'));
+  const beforeUnchanged = (await history('cats', 'miso')).length;
+  assert.equal((await request(`/api/tasks/${task.id}/edit`, { method: 'POST', cookie: member, body: { title: 'Bring food', ownerId: 'local-member', due: '', associations: [{ type: 'cat', id: 'miso' }] } })).status, 200);
+  assert.equal((await history('cats', 'miso')).length, beforeUnchanged);
+  const reviewed = await request(`/api/reports/${report.id}/finish`, { method: 'POST', cookie: admin, body: { colonyId: 'riverside', catId: 'pepper', careNote: 'Food delivered.', urgent: false } });
+  assert.equal(reviewed.status, 200);
+  for (const id of ['miso', 'pepper']) assert.ok((await history('cats', id)).some((event) => event.summary === 'Report reviewed: Food check' && event.changes.some((change) => change.field === 'Cat' && change.before === 'Miso' && change.after === 'Pepper')));
+  const edited = await request(`/api/tasks/${task.id}/edit`, { method: 'POST', cookie: member, body: { title: 'Bring wet food', ownerId: 'local-member', due: '2026-11-12', associations: [{ type: 'cat', id: 'pepper' }] } });
+  assert.equal(edited.status, 200);
+  assert.ok((await history('cats', 'miso')).some((event) => event.summary === 'Task updated: Bring wet food' && event.changes.some((change) => change.field === 'Title' && change.before === 'Bring food')));
+  assert.ok((await history('cats', 'pepper')).some((event) => event.summary === 'Task updated: Bring wet food'));
+  assert.ok((await history('colonies', 'riverside')).some((event) => event.summary === 'Task updated: Bring wet food'));
+  assert.equal((await request(`/api/tasks/${task.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } })).status, 200);
+  assert.ok((await history('cats', 'pepper', member)).some((event) => event.summary === 'Task completed: Bring wet food' && event.actorName === 'Sam Rivera'));
+  const before = (await history('cats', 'pepper')).length;
+  assert.equal((await request(`/api/tasks/${task.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } })).status, 200);
+  assert.equal((await history('cats', 'pepper')).length, before);
+  const adminTask = (await (await request('/api/tasks', { method: 'POST', cookie: admin, body: { title: 'Admin check', ownerId: 'local-admin', due: '', associations: [{ type: 'cat', id: 'pepper' }] } })).json()).task;
+  const beforeRejected = (await history('cats', 'pepper')).length;
+  assert.equal((await request(`/api/tasks/${adminTask.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } })).status, 403);
+  assert.equal((await history('cats', 'pepper')).length, beforeRejected);
+});
+
 test('invalid and unauthorized operations do not create records or leave files', async (t) => {
   const { objects, request, signIn, reportForm } = fixture(t);
   const admin = await signIn('local-admin');

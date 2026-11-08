@@ -2,6 +2,8 @@ import { HTTPException } from 'hono/http-exception'
 import type { CreateReportInput, FinishReportInput, TaskInput } from '../../shared/schemas/workspace.ts'
 import type { Report, ReportAttachment, ReportEntry, Task, TaskAssociation, TaskStatus, WorkspaceMember, WorkspaceSnapshot } from '../../shared/types/workspace.ts'
 import type { SessionUser } from '../../shared/types/auth.ts'
+import type { ActivityChange } from '../../shared/types/record-activity.ts'
+import { reportActivityStatement, taskActivityStatement } from './record-activity.ts'
 
 type ReportRow = { id: string; title: string; message: string; category: string; reporter: string; submittedAt: string; colonyId: string | null; catId: string | null; careNote: string; urgent: number; unread: number; status: Report['status']; possibleDuplicateOf: string | null; duplicateOf: string | null }
 type AttachmentRow = { id: string; reportId: string; name: string; mimeType: string; size: number }
@@ -74,8 +76,8 @@ function historyStatement(db: D1Database, reportId: string, actor: SessionUser, 
 }
 
 async function requireReport(db: D1Database, id: string) {
-  const report = await db.prepare('SELECT id, status, colony_id AS colonyId, duplicate_of AS duplicateOf FROM reports WHERE id = ?')
-    .bind(id).first<{ id: string; status: Report['status']; colonyId: string | null; duplicateOf: string | null }>()
+  const report = await db.prepare('SELECT id, title, status, colony_id AS colonyId, cat_id AS catId, care_note AS careNote, urgent, duplicate_of AS duplicateOf FROM reports WHERE id = ?')
+    .bind(id).first<{ id: string; title: string; status: Report['status']; colonyId: string | null; catId: string | null; careNote: string; urgent: number; duplicateOf: string | null }>()
   if (!report) throw new HTTPException(404, { message: 'Report not found.' })
   return report
 }
@@ -92,6 +94,7 @@ export async function insertReport(db: D1Database, id: string, actor: SessionUse
     VALUES (?, ?, ?, 'Field report', ?, ?, ?, ?, ?)`).bind(id, input.title, input.message, actor.id, new Date().toISOString(), input.colonyId || null, input.catId || null, Number(input.urgent))]
   for (const file of files) statements.push(db.prepare('INSERT INTO report_attachments (id, report_id, storage_key, name, mime_type, size) VALUES (?, ?, ?, ?, ?, ?)')
     .bind(file.id, id, file.key, file.name, file.mimeType, file.size))
+  statements.push(reportActivityStatement(db, id, { operationId: crypto.randomUUID(), actor, kind: 'report', summary: `Report submitted: ${input.title}`, occurredAt: new Date().toISOString(), reportId: id }))
   await db.batch(statements)
 }
 
@@ -99,9 +102,21 @@ export async function finishReport(db: D1Database, id: string, actor: SessionUse
   const report = await requireReport(db, id)
   if (report.status === 'processed') throw new HTTPException(409, { message: 'This report has already been processed.' })
   await validateLocation(db, input.colonyId, input.catId)
+  const changes: ActivityChange[] = [{ field: 'Status', before: report.status === 'waiting' ? 'Waiting for details' : 'Pending', after: 'Processed' }]
+  async function recordName(table: 'cats' | 'colonies', recordId: string | null) {
+    if (!recordId) return ''
+    return (await db.prepare(`SELECT name FROM ${table} WHERE id = ?`).bind(recordId).first<{ name: string }>())?.name ?? recordId
+  }
+  if (report.colonyId !== input.colonyId) changes.push({ field: 'Colony', before: await recordName('colonies', report.colonyId), after: await recordName('colonies', input.colonyId) })
+  if ((report.catId ?? '') !== input.catId) changes.push({ field: 'Cat', before: await recordName('cats', report.catId), after: await recordName('cats', input.catId || null) })
+  if (report.careNote !== input.careNote) changes.push({ field: 'Care note', before: report.careNote, after: input.careNote })
+  if (Boolean(report.urgent) !== input.urgent) changes.push({ field: 'Urgent', before: report.urgent ? 'Yes' : 'No', after: input.urgent ? 'Yes' : 'No' })
+  const event = { operationId: crypto.randomUUID(), actor, kind: 'report' as const, summary: `Report reviewed: ${report.title}`, changes, occurredAt: new Date().toISOString(), reportId: id }
   await db.batch([
+    reportActivityStatement(db, id, event),
     db.prepare("UPDATE reports SET colony_id = ?, cat_id = ?, care_note = ?, urgent = ?, status = 'processed' WHERE id = ?")
       .bind(input.colonyId, input.catId || null, input.careNote, Number(input.urgent), id),
+    reportActivityStatement(db, id, event),
     historyStatement(db, id, actor, 'saved the confirmed report details and finished the review.'),
   ])
   return (await listReports(db, actor.id, id))[0]!
@@ -113,6 +128,7 @@ export async function reopenReport(db: D1Database, id: string, actor: SessionUse
   await db.batch([
     db.prepare("UPDATE reports SET status = 'pending', duplicate_of = NULL WHERE id = ?").bind(id),
     historyStatement(db, id, actor, 'reopened the report for review.'),
+    reportActivityStatement(db, id, { operationId: crypto.randomUUID(), actor, kind: 'report', summary: `Report reopened: ${report.title}`, changes: [{ field: 'Status', before: 'Processed', after: 'Pending' }], occurredAt: new Date().toISOString(), reportId: id }),
   ])
   return (await listReports(db, actor.id, id))[0]!
 }
@@ -124,6 +140,7 @@ export async function addQuestion(db: D1Database, id: string, actor: SessionUser
     db.prepare("UPDATE reports SET status = 'waiting' WHERE id = ?").bind(id),
     db.prepare('INSERT INTO report_entries (id, report_id, author_id, text, created_at) VALUES (?, ?, ?, ?, ?)').bind(crypto.randomUUID(), id, actor.id, text, new Date().toISOString()),
     historyStatement(db, id, actor, 'requested more details.'),
+    reportActivityStatement(db, id, { operationId: crypto.randomUUID(), actor, kind: 'report', summary: `More details requested: ${report.title}`, changes: report.status === 'waiting' ? [] : [{ field: 'Status', before: 'Pending', after: 'Waiting for details' }], occurredAt: new Date().toISOString(), reportId: id }),
   ])
   return (await listReports(db, actor.id, id))[0]!
 }
@@ -138,6 +155,7 @@ export async function linkDuplicate(db: D1Database, id: string, targetId: string
   await db.batch([
     db.prepare("UPDATE reports SET status = 'processed', duplicate_of = ? WHERE id = ?").bind(targetId, id),
     historyStatement(db, id, actor, 'linked this duplicate to an existing report.'),
+    reportActivityStatement(db, id, { operationId: crypto.randomUUID(), actor, kind: 'report', summary: `Duplicate report linked: ${report.title}`, changes: [{ field: 'Duplicate of', before: '', after: target.title }, { field: 'Status', before: report.status === 'waiting' ? 'Waiting for details' : 'Pending', after: 'Processed' }], occurredAt: new Date().toISOString(), reportId: id }),
   ])
   return (await listReports(db, actor.id, id))[0]!
 }
@@ -164,6 +182,15 @@ function associationStatements(db: D1Database, taskId: string, associations: Tas
     .bind(taskId, index, item.type, 'id' in item ? item.id : null, 'label' in item ? item.label : null))
 }
 
+async function describeAssociations(db: D1Database, items: TaskAssociation[]) {
+  return (await Promise.all(items.map(async (item) => {
+    if ('label' in item) return `${item.type}: ${item.label}`
+    const table = item.type === 'cat' ? 'cats' : 'colonies'
+    const record = await db.prepare(`SELECT name FROM ${table} WHERE id = ?`).bind(item.id).first<{ name: string }>()
+    return `${item.type}: ${record?.name ?? item.id}`
+  }))).join(', ')
+}
+
 async function requireEditableTask(db: D1Database, id: string, actor: SessionUser) {
   const task = await db.prepare('SELECT id, owner_id AS ownerId, report_id AS reportId FROM tasks WHERE id = ?')
     .bind(id).first<{ id: string; ownerId: string; reportId: string | null }>()
@@ -175,9 +202,15 @@ async function requireEditableTask(db: D1Database, id: string, actor: SessionUse
 export async function createTask(db: D1Database, actor: SessionUser, input: TaskInput): Promise<Task> {
   await validateTask(db, input)
   const id = crypto.randomUUID()
+  const owner = await db.prepare('SELECT name FROM users WHERE id = ?').bind(input.ownerId).first<{ name: string }>()
+  const related = await describeAssociations(db, input.associations)
+  const changes: ActivityChange[] = [{ field: 'Assignee', before: '', after: owner?.name ?? input.ownerId },
+    ...(input.due ? [{ field: 'Due date', before: '', after: input.due }] : []),
+    ...(related ? [{ field: 'Related items', before: '', after: related }] : [])]
   const statements = [db.prepare('INSERT INTO tasks (id, title, owner_id, report_id, due, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
     .bind(id, input.title, input.ownerId, input.reportId ?? null, input.due, actor.id, new Date().toISOString()), ...associationStatements(db, id, input.associations)]
   if (input.reportId) statements.push(historyStatement(db, input.reportId, actor, `created a task: ${input.title}.`))
+  statements.push(taskActivityStatement(db, id, { operationId: crypto.randomUUID(), actor, kind: 'task', summary: `Task created: ${input.title}`, changes, occurredAt: new Date().toISOString(), reportId: input.reportId }))
   await db.batch(statements)
   return (await listTasks(db, id))[0]!
 }
@@ -186,10 +219,21 @@ export async function editTask(db: D1Database, id: string, actor: SessionUser, i
   const existing = await requireEditableTask(db, id, actor)
   if ((input.reportId ?? null) !== existing.reportId) throw new HTTPException(400, { message: 'The linked report cannot be changed.' })
   await validateTask(db, input)
+  const previous = (await listTasks(db, id))[0]!
+  const newOwner = await db.prepare('SELECT name FROM users WHERE id = ?').bind(input.ownerId).first<{ name: string }>()
+  const changes: ActivityChange[] = []
+  function changed(field: string, before: string, after: string) { if (before !== after) changes.push({ field, before, after }) }
+  changed('Title', previous.title, input.title)
+  changed('Assignee', previous.owner, newOwner?.name ?? input.ownerId)
+  changed('Due date', previous.due, input.due)
+  if (JSON.stringify(previous.associations) !== JSON.stringify(input.associations)) changes.push({ field: 'Related items', before: await describeAssociations(db, previous.associations), after: await describeAssociations(db, input.associations) })
+  const event = { operationId: crypto.randomUUID(), actor, kind: 'task' as const, summary: `Task updated: ${input.title}`, changes, occurredAt: new Date().toISOString(), reportId: existing.reportId ?? undefined }
   await db.batch([
+    ...(changes.length ? [taskActivityStatement(db, id, event)] : []),
     db.prepare('UPDATE tasks SET title = ?, owner_id = ?, due = ? WHERE id = ?').bind(input.title, input.ownerId, input.due, id),
     db.prepare('DELETE FROM task_associations WHERE task_id = ?').bind(id),
     ...associationStatements(db, id, input.associations),
+    ...(changes.length ? [taskActivityStatement(db, id, event)] : []),
     ...(existing.reportId ? [historyStatement(db, existing.reportId, actor, `updated a task: ${input.title}.`)] : []),
   ])
   return (await listTasks(db, id))[0]!
@@ -202,6 +246,7 @@ export async function changeTaskStatus(db: D1Database, id: string, actor: Sessio
   await db.batch([
     db.prepare('UPDATE tasks SET status = ? WHERE id = ?').bind(status, id),
     ...(existing.reportId ? [historyStatement(db, existing.reportId, actor, `${status === 'completed' ? 'completed' : 'reopened'} task: ${task.title}.`)] : []),
+    taskActivityStatement(db, id, { operationId: crypto.randomUUID(), actor, kind: 'task', summary: `Task ${status === 'completed' ? 'completed' : 'reopened'}: ${task.title}`, changes: [{ field: 'Status', before: task.status === 'open' ? 'Open' : 'Completed', after: status === 'open' ? 'Open' : 'Completed' }], occurredAt: new Date().toISOString(), reportId: existing.reportId ?? undefined }),
   ])
   return (await listTasks(db, id))[0]!
 }

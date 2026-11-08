@@ -9,17 +9,19 @@ import type { TaskStatus } from '@/features/inbox/types'
 import type { AssignedTask } from './task-data'
 
 /** Keep task confirmation, feedback, and focus behavior the same on every task surface. */
-export function useTaskActions(currentUser: string, fallbackFocus: RefObject<HTMLElement | null>) {
+export function useTaskActions(currentUser: string, fallbackFocus: RefObject<HTMLElement | null>, canManageOthers = false) {
   const { changeTaskStatus: saveStatus } = useInbox()
   const [completion, setCompletion] = useState<AssignedTask | null>(null)
   const [open, setOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [reopeningTaskIds, setReopeningTaskIds] = useState<ReadonlySet<string>>(() => new Set())
+  const reopening = useRef(new Set<string>())
   const [error, setError] = useState('')
   const triggerRef = useRef<HTMLButtonElement | null>(null)
   const cancelRef = useRef<HTMLButtonElement>(null)
 
   const changeTaskStatus = useCallback((task: AssignedTask, next: TaskStatus, trigger: HTMLButtonElement) => {
-    if (task.ownerId !== currentUser) return
+    if (task.ownerId !== currentUser && !canManageOthers) return
     if (next === 'completed') {
       triggerRef.current = trigger
       setCompletion(task)
@@ -27,11 +29,17 @@ export function useTaskActions(currentUser: string, fallbackFocus: RefObject<HTM
       setOpen(true)
       return
     }
+    if (reopening.current.has(task.id)) return
+    reopening.current.add(task.id)
+    setReopeningTaskIds((current) => new Set(current).add(task.id))
     void saveStatus(task.id, 'open').then(() => {
       toast.success('Task reopened', { description: task.title })
       requestAnimationFrame(() => { if (!trigger.isConnected) fallbackFocus.current?.focus({ preventScroll: true }) })
-    }).catch(() => toast.error('Could not reopen the task. Try again.'))
-  }, [currentUser, saveStatus, fallbackFocus])
+    }).catch(() => toast.error('Could not reopen the task. Try again.')).finally(() => {
+      reopening.current.delete(task.id)
+      setReopeningTaskIds((current) => { const next = new Set(current); next.delete(task.id); return next })
+    })
+  }, [currentUser, canManageOthers, saveStatus, fallbackFocus])
 
   async function confirmCompletion() {
     if (!completion || !open || saving) return
@@ -76,5 +84,5 @@ export function useTaskActions(currentUser: string, fallbackFocus: RefObject<HTM
     </DialogContent>
   </Dialog>
 
-  return { changeTaskStatus, completionDialog }
+  return { changeTaskStatus, completionDialog, reopeningTaskIds }
 }

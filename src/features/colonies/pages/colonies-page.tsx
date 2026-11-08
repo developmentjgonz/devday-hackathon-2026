@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutGrid, List, Map as MapIcon, Search } from 'lucide-react'
+import { Cat, ClipboardList, LayoutGrid, List, Map as MapIcon, Search, Soup } from 'lucide-react'
 import { Link } from 'react-router'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -19,18 +19,40 @@ type Summary = ReturnType<typeof colonySummary>
 
 function ColonyRecord({ summary, view }: { summary: Summary; view: string }) {
   const { colony, catCount, urgentCount, taskCount, feedingReport } = summary
+  if (view === 'cards') return <Card size="sm" interactive render={<Link to={`/app/colonies/${encodeURIComponent(colony.id)}`} />} aria-label={colony.name}>
+    <CardHeader>
+      <div className="flex flex-wrap items-center gap-3">
+        <RecordAvatar name={colony.name} kind="colony" src={colony.photoUrl} size="lg" fallback="illustration" />
+        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-2">
+          <Heading level={2} size="card" className="min-w-0 wrap-anywhere">{colony.name}</Heading>
+          {urgentCount > 0 ? <Badge variant="destructive">{urgentCount} urgent {urgentCount === 1 ? 'report' : 'reports'}</Badge> : null}
+        </div>
+      </div>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex items-center gap-2"><Cat aria-hidden="true" className="size-5 shrink-0" /><Text size="small">{catCount} known {catCount === 1 ? 'cat' : 'cats'}</Text></div>
+        <div className="flex items-center gap-2"><ClipboardList aria-hidden="true" className="size-5 shrink-0" /><Text size="small">{taskCount} open {taskCount === 1 ? 'task' : 'tasks'}</Text></div>
+      </div>
+      <Card size="sm" tone="subtle"><CardContent className="flex items-center gap-3">
+        <Soup aria-hidden="true" className="size-5 shrink-0" />
+        <div className="min-w-0"><Text size="caption" tone="muted">Latest feeding report</Text><Text size="small" weight="medium">{feedingReport ? `${formatReportTime(feedingReport.submittedAt)} · ${reportStatusLabels[feedingReport.status]}` : 'No feeding reports'}</Text></div>
+      </CardContent></Card>
+    </CardContent>
+  </Card>
+
   return <Card size="sm" interactive render={<Link to={`/app/colonies/${encodeURIComponent(colony.id)}`} />} aria-label={colony.name}>
     <CardHeader>
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-        <div className="flex min-w-0 items-center gap-3"><RecordAvatar name={colony.name} kind="colony" src={colony.photoUrl} size={view === 'cards' ? 'default' : 'sm'} /><Heading level={2} size="card">{colony.name}</Heading></div>
+        <div className="flex min-w-0 items-center gap-3"><RecordAvatar name={colony.name} kind="colony" src={colony.photoUrl} size="sm" /><Heading level={2} size="card" className="wrap-anywhere">{colony.name}</Heading></div>
         {urgentCount > 0 ? <Badge variant="destructive">{urgentCount} urgent {urgentCount === 1 ? 'report' : 'reports'}</Badge> : null}
       </div>
     </CardHeader>
     <CardContent>
-      <dl className={view === 'list' ? 'grid grid-cols-2 gap-4 sm:grid-cols-3' : 'grid grid-cols-2 gap-4'}>
+      <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <div><Text render={<dt />} size="caption" tone="muted">Known cats</Text><Text render={<dd />} size="small" weight="medium">{catCount}</Text></div>
         <div><Text render={<dt />} size="caption" tone="muted">Open tasks</Text><Text render={<dd />} size="small" weight="medium">{taskCount}</Text></div>
-        <div className={view === 'list' ? 'col-span-2 sm:col-span-1' : 'col-span-2'}><Text render={<dt />} size="caption" tone="muted">Latest feeding report</Text><Text render={<dd />} size="small">{feedingReport ? `${formatReportTime(feedingReport.submittedAt)} · ${reportStatusLabels[feedingReport.status]}` : 'No feeding reports'}</Text></div>
+        <div className="col-span-2 sm:col-span-1"><Text render={<dt />} size="caption" tone="muted">Latest feeding report</Text><Text render={<dd />} size="small">{feedingReport ? `${formatReportTime(feedingReport.submittedAt)} · ${reportStatusLabels[feedingReport.status]}` : 'No feeding reports'}</Text></div>
       </dl>
     </CardContent>
   </Card>

@@ -7,7 +7,7 @@ import worker from '../../worker/index.ts';
 function fixture(t) {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec('PRAGMA foreign_keys = ON');
-  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0012_user_photos.sql', '../../migrations/0013_colony_addresses.sql', '../../seeds/local.sql']) {
+  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0012_user_photos.sql', '../../migrations/0013_colony_addresses.sql', '../../migrations/0015_record_activity.sql', '../../seeds/local.sql']) {
     sqlite.exec(readFileSync(new URL(file, import.meta.url), 'utf8'));
   }
   t.after(() => sqlite.close());
@@ -137,6 +137,8 @@ test('a colony address is saved with its location and can be updated or cleared'
   const path = `/api/directory/colonies/${colony.id}/location`;
   const moved = await request(path, { method: 'PATCH', cookie, body: { coordinates: [-80.21, 25.81], address: 'Near the garden' } });
   assert.equal((await moved.json()).colony.address, 'Near the garden');
+  const activity = (await (await request(`/api/directory/colonies/${colony.id}/activity`, { cookie })).json()).activity;
+  assert.ok(activity.some((event) => event.summary === 'Location updated' && event.changes.some((change) => change.field === 'Location' && change.before.includes('701 Brickell Avenue') && change.after.includes('Near the garden'))));
   const cleared = await request(path, { method: 'PATCH', cookie, body: { coordinates: null } });
   assert.equal(cleared.status, 200);
   directory = await (await request('/api/directory', { cookie })).json();
@@ -189,4 +191,49 @@ test('cat profile changes validate dates and images and require the same origin'
   assert.equal((await request('/api/directory/cats/pepper', { method: 'PATCH', cookie, origin: 'https://elsewhere.example', body: input })).status, 403);
   assert.equal((await request('/api/directory/cats/missing', { method: 'PATCH', cookie, body: input })).status, 404);
   assert.equal((await request('/api/directory/cats/pepper', { method: 'PATCH', body: input })).status, 401);
+});
+
+test('cat and colony history records profile changes and moves with an actor', async (t) => {
+  const { request, signIn } = fixture(t);
+  const cookie = await signIn('local-admin');
+  const created = await request('/api/directory/cats', { method: 'POST', cookie, body: { name: 'Poppy', colonyId: 'canal', description: 'White paws' } });
+  const { cat } = await created.json();
+  const updated = await request(`/api/directory/cats/${cat.id}`, { method: 'PATCH', cookie, body: { name: 'Poppy Rose', colonyId: 'riverside', birthDate: '2021-03-12', birthDateEstimated: true, description: 'White paws and tail' } });
+  assert.equal(updated.status, 200);
+  const path = `/api/directory/cats/${cat.id}/activity`;
+  assert.equal((await request(path)).status, 401);
+  const response = await request(path, { cookie });
+  assert.equal(response.status, 200);
+  const history = (await response.json()).activity;
+  assert.deepEqual(history.map((entry) => entry.summary), ['Cat profile updated', 'Cat created']);
+  assert.equal(history[0].actorName, 'Alex Morgan');
+  assert.ok(history[0].changes.some((change) => change.field === 'Name' && change.before === 'Poppy' && change.after === 'Poppy Rose'));
+  assert.ok(history[0].changes.some((change) => change.field === 'Colony' && change.before === 'Canal' && change.after === 'Riverside'));
+  assert.ok(history[0].changes.some((change) => change.field === 'Birth date type' && change.before === '' && change.after === 'Estimated'));
+  assert.ok((await (await request('/api/directory/colonies/canal/activity', { cookie })).json()).activity.some((entry) => entry.summary === 'Cat moved out: Poppy'));
+  assert.ok((await (await request('/api/directory/colonies/riverside/activity', { cookie })).json()).activity.some((entry) => entry.summary === 'Cat moved in: Poppy Rose'));
+  assert.equal((await request('/api/directory/cats/missing/activity', { cookie })).status, 404);
+  await request(`/api/directory/cats/${cat.id}`, { method: 'PATCH', cookie, body: { name: 'Poppy Rose', colonyId: 'riverside', birthDate: '2021-03-12', birthDateEstimated: true, description: 'White paws and tail' } });
+  assert.equal((await (await request(path, { cookie })).json()).activity.length, history.length);
+});
+
+test('the activity migration preserves known creation metadata without inventing old edits', (t) => {
+  const sqlite = new DatabaseSync(':memory:');
+  t.after(() => sqlite.close());
+  sqlite.exec('PRAGMA foreign_keys = ON');
+  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0012_user_photos.sql', '../../migrations/0013_colony_addresses.sql', '../../seeds/local.sql', '../../migrations/0015_record_activity.sql']) sqlite.exec(readFileSync(new URL(file, import.meta.url), 'utf8'));
+  const events = sqlite.prepare("SELECT summary, actor_name, occurred_at FROM record_activity WHERE record_type = 'cat' AND record_id = 'miso'").all();
+  assert.equal(events.length, 1);
+  assert.equal(events[0].summary, 'Cat created');
+  assert.equal(events[0].actor_name, 'Alex Morgan');
+  assert.ok(!Number.isNaN(Date.parse(events[0].occurred_at)));
+});
+
+test('a failed activity write rolls back the cat creation', async (t) => {
+  const { sqlite, request, signIn } = fixture(t);
+  const cookie = await signIn('local-admin');
+  sqlite.exec('DROP TABLE record_activity');
+  const response = await request('/api/directory/cats', { method: 'POST', cookie, body: { name: 'No partial cat', colonyId: 'canal' } });
+  assert.equal(response.status, 503);
+  assert.equal(sqlite.prepare("SELECT count(*) AS count FROM cats WHERE name = 'No partial cat'").get().count, 0);
 });
