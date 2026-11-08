@@ -4,8 +4,9 @@ import { CareSticker, CatPawPrint } from '@/components/brand-assets'
 import { CommunityCat } from '@/components/illustrations/community-cat'
 import { CommunityTracker } from '../components/community-tracker'
 import '@/styles/landing.css'
+import type { PublicContent } from '../../../../shared/types/public'
 
-export function LandingPage() {
+export function LandingPage({ initialContent }: { initialContent?: PublicContent } = {}) {
   return (
     <div className="landing">
       <title>Mews · Every cat counts.</title>
@@ -23,7 +24,7 @@ export function LandingPage() {
           <div className="landing-sticker"><CareSticker /></div>
         </div>
       </section>
-      <CommunityTracker />
+      <CommunityTracker initialContent={initialContent} />
     </div>
   )
 }

@@ -19,49 +19,48 @@ Select **Sign in** beside an account. Active users can enter `/app`. Pending and
 
 Select **Create a test user** to try signup. Name and email are required; phone is optional. The server always assigns the member role and pending status. Signup cannot grant administrator access or sign in to an existing account.
 
-New users persist and appear on the sign-in page after sign-out. Re-running the seed adds missing fixtures without changing saved profiles or statuses.
+New users persist and appear on the sign-in page after sign-out. Re-running the seed adds missing fictional accounts, colonies, and cats without changing existing records.
 
-The administrator role is reserved for full application access. Additional roles and rescue permissions remain open. Administrator management screens are not included.
+The administrator role includes management of workspace accounts. Additional roles and rescue permissions remain open.
 
 ## Test approval
 
-Approve the pending fixture in the local database:
+Sign in as Alex Morgan, open **Team**, and review Jordan Lee's request. Select **Approve access**. Jordan can then select **Check access** on the account status page. Team also supports role changes and suspending or restoring access.
 
-```sh
-npx wrangler d1 execute DB --local --command "UPDATE users SET status = 'active', approved_by = 'local-admin', approved_at = unixepoch() WHERE id = 'local-pending'"
-```
-
-Select **Check access** on the account status page. To restore the pending fixture:
+To restore the pending fixture for another test:
 
 ```sh
 npx wrangler d1 execute DB --local --command "UPDATE users SET status = 'pending', approved_by = NULL, approved_at = NULL WHERE id = 'local-pending'"
 ```
 
-Use a new user's exact local ID to test their approval. Keep `--local` on these commands.
+Keep `--local` on this command. See [Team management](team-management.md) for the account rules and interface states.
 
 ## Implementation
 
 - `migrations/0001_accounts.sql`: users, provider identities, and sessions.
+- `migrations/0002_colonies_and_cats.sql`: persistent workspace colonies and cats.
 - `seeds/local.sql`: fictional fixtures, outside production migrations.
 - `worker/routes/auth.ts`: Hono routes for local sign-in, signup, session lookup, and sign-out.
+- `worker/routes/users.ts`: administrator-only team account reads and access changes.
 - `worker/middleware/auth.ts`: local-only, same-origin, and active-account checks.
 - `worker/middleware/validation.ts` and `shared/schemas/auth.ts`: JSON size limits and Zod input validation.
 - `worker/services/`: account creation and server session operations.
 - `worker/db/`: typed D1 queries for accounts and sessions.
 - `src/features/auth/`: account pages and route loaders.
-- `/api/workspace`: protected workspace entry. Future private endpoints must use the same server check.
+- `/api/workspace` and `/api/directory`: protected workspace entry and directory. Directory writes also require the configured origin. Future private endpoints must use the same server check.
 
 Sessions expire after 12 hours. D1 stores token hashes; the browser receives an HttpOnly, SameSite cookie. HTTPS responses also use Secure cookies. Protected requests read the current user, so approval, suspension, and role changes take effect within an existing session.
 
 Test sign-in requires `LOCAL_TEST_SIGN_IN=true` and an HTTP localhost request. The development command supplies the flag; deployment configuration does not. Public hostnames cannot expose local sign-in even if the flag is set by mistake. Mutations must come from `APP_ORIGIN`.
 
-Google sign-in, public production signup, invitations, administrator screens, and production administrator setup are deferred. A future Google provider can connect through `sign_in_identities` while retaining the same users and approval checks.
+Google sign-in, public production signup, invitations, and production administrator setup are deferred. A future Google provider can connect through `sign_in_identities` while retaining the same users and approval checks.
 
 ## Other commands
 
 ```sh
 npm run local:setup  # Apply local migrations and seed missing accounts
 npm run test:auth    # Check signup, sessions, and access rules
+npm run test:directory # Check directory persistence and access rules
 npm run build       # Check TypeScript and production build
 ```
 

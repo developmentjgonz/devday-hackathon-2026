@@ -7,6 +7,7 @@ import { AboutPage } from '@/features/about/pages/about-page'
 import { PrivacyPage, TermsPage } from '@/features/legal/pages/legal-page'
 import { CommunityPage } from '@/features/community/pages/community-page'
 import { NotFoundPage } from '@/pages/not-found-page'
+import { storyPublicContent } from './fixtures/public-content'
 
 // The app uses ScrollRestoration; the isolated stories use a memory router.
 function StoryScroll() {
@@ -24,9 +25,9 @@ function PublicPages({ initialPath = '/' }: { initialPath?: string }) {
       <StoryScroll />
       <Routes>
         <Route element={<SiteLayout />}>
-          <Route index element={<LandingPage />} />
+          <Route index element={<LandingPage initialContent={storyPublicContent} />} />
           <Route path="about" element={<AboutPage />} />
-          <Route path="community" element={<CommunityPage />} />
+          <Route path="community" element={<CommunityPage initialContent={storyPublicContent} />} />
           <Route path="privacy" element={<PrivacyPage />} />
           <Route path="terms" element={<TermsPage />} />
           <Route path="*" element={<NotFoundPage />} />

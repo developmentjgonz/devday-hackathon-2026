@@ -5,6 +5,10 @@ import { handleError } from './lib/errors.ts'
 import { authRoutes } from './routes/auth.ts'
 import { healthRoutes } from './routes/health.ts'
 import { workspaceRoutes } from './routes/workspace.ts'
+import { directoryRoutes } from './routes/directory.ts'
+import { workspaceDataRoutes } from './routes/workspace-data.ts'
+import { userRoutes } from './routes/users.ts'
+import { publicContentRoutes } from './routes/public-content.ts'
 
 const app = new Hono<AppEnv>()
 const api = new Hono<AppEnv>()
@@ -20,6 +24,10 @@ api.use('*', methodNotAllowed({
 api.route('/auth', authRoutes)
 api.route('/health', healthRoutes)
 api.route('/workspace', workspaceRoutes)
+api.route('/directory', directoryRoutes)
+api.route('/', workspaceDataRoutes)
+api.route('/users', userRoutes)
+api.route('/public-content', publicContentRoutes)
 api.notFound((c) => c.json({ error: 'Not found' }, 404))
 
 app.route('/api', api)

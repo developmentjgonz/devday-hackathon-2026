@@ -8,19 +8,21 @@ function Card({
   className,
   size = 'default',
   padding = 'default',
+  tone = 'default',
   interactive = false,
   render,
   ...props
-}: useRender.ComponentProps<'div'> & { size?: 'default' | 'sm'; padding?: 'default' | 'none'; interactive?: boolean }) {
+}: useRender.ComponentProps<'div'> & { size?: 'default' | 'sm'; padding?: 'default' | 'none'; tone?: 'default' | 'note'; interactive?: boolean }) {
   return useRender({
     defaultTagName: 'div', render,
     props: { ...mergeProps<'div'>({
       className: cn(
-        'group/card flex flex-col overflow-hidden rounded-surface border border-border bg-card text-sm leading-6 text-card-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring [--card-spacing:--spacing(6)] data-[size=sm]:[--card-spacing:--spacing(4)]',
-        interactive && 'cursor-pointer transition-colors duration-(--duration-fast) hover:bg-muted/50',
+        'group/card flex flex-col overflow-hidden border text-sm leading-6 text-card-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring [--card-spacing:--spacing(6)] data-[size=sm]:[--card-spacing:--spacing(4)]',
+        tone === 'note' ? 'rounded-control border-note-border bg-note shadow-sm' : 'rounded-surface border-border bg-card',
+        interactive && (tone === 'note' ? 'cursor-pointer transition-colors duration-(--duration-fast) hover:bg-note/80' : 'cursor-pointer transition-colors duration-(--duration-fast) hover:bg-muted/50'),
         padding === 'none' ? 'gap-0 py-0' : 'gap-(--card-spacing) py-(--card-spacing) has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0', className,
       ),
-    }, props), 'data-slot': 'card', 'data-size': size },
+    }, props), 'data-slot': 'card', 'data-size': size, 'data-tone': tone },
   })
 }
 

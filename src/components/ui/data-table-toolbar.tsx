@@ -8,6 +8,7 @@ import { Text } from './typography'
 import { cn } from '@/lib/utils'
 
 export type DataTableToolbarProps = {
+  label?: string
   search?: { label: string; placeholder?: string; value: string; onValueChange: (value: string) => void }
   filters?: { id: string; label: string; value: string; options: { value: string; label: string }[]; onValueChange: (value: string) => void }[]
   onReset?: () => void
@@ -15,10 +16,10 @@ export type DataTableToolbarProps = {
   selection?: { count: number; actions: ReactNode; onClear: () => void }
 }
 
-export function DataTableToolbar({ search, filters = [], onReset, actions, selection }: DataTableToolbarProps) {
+export function DataTableToolbar({ label = 'Table controls', search, filters = [], onReset, actions, selection }: DataTableToolbarProps) {
   const searchId = useId()
   const filterId = useId()
-  return <div role="region" aria-label="Table controls" className={cn('flex min-h-(--control-height-sm) flex-wrap items-center gap-3', selection?.count ? 'justify-between' : 'justify-start')}>
+  return <div role="region" aria-label={label} className={cn('flex min-h-(--control-height-sm) flex-wrap items-center gap-3', selection?.count ? 'justify-between' : 'justify-start')}>
     {selection?.count ? <>
       <Text size="small" weight="medium" aria-live="polite">{selection.count} selected</Text>
       <div className="flex flex-wrap items-center gap-2">{selection.actions}<Button variant="ghost" size="sm" onClick={selection.onClear}>Clear selection</Button></div>
@@ -34,7 +35,7 @@ export function DataTableToolbar({ search, filters = [], onReset, actions, selec
         </div>)}
         {onReset ? <Button variant="ghost" size="sm" onClick={onReset}>Clear filters</Button> : null}
       </div>
-      {actions ? <div className="ml-auto flex shrink-0 items-center gap-2">{actions}</div> : null}
+      {actions ? <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">{actions}</div> : null}
     </>}
   </div>
 }

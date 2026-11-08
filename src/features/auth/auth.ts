@@ -1,5 +1,7 @@
 import { redirect } from 'react-router'
 import type { SessionUser, SignInOptions } from '../../../shared/types/auth'
+import type { Directory, WorkspaceData } from '../../../shared/types/directory'
+import type { WorkspaceSnapshot } from '../../../shared/types/workspace'
 
 export async function authRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -39,11 +41,20 @@ export async function accountStatusLoader({ request }: { request: Request }) {
   return user
 }
 
-export async function workspaceLoader({ request }: { request: Request }) {
-  const response = await fetch('/api/workspace', { credentials: 'same-origin', cache: 'no-store', signal: request.signal })
+export async function workspaceLoader({ request }: { request: Request }): Promise<WorkspaceData> {
+  const options: RequestInit = { credentials: 'same-origin', cache: 'no-store', signal: request.signal }
+  const [response, directoryResponse, workspaceResponse] = await Promise.all([fetch('/api/workspace', options), fetch('/api/directory', options), fetch('/api/workspace-data', options)])
   if (response.status === 401) throw redirect('/sign-in')
   if (response.status === 403) throw redirect('/account-status')
+  if (directoryResponse.status === 401) throw redirect('/sign-in')
+  if (directoryResponse.status === 403) throw redirect('/account-status')
+  if (workspaceResponse.status === 401) throw redirect('/sign-in')
+  if (workspaceResponse.status === 403) throw redirect('/account-status')
   if (!response.ok) throw new Error('The workspace is unavailable. Try again.')
+  if (!directoryResponse.ok) throw new Error('The directory is unavailable. Try again.')
+  if (!workspaceResponse.ok) throw new Error('The workspace is unavailable. Try again.')
   const { user } = await response.json() as { user: SessionUser }
-  return user
+  const directory = await directoryResponse.json() as Directory
+  const workspace = await workspaceResponse.json() as WorkspaceSnapshot
+  return { user, directory, workspace }
 }

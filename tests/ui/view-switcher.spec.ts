@@ -27,3 +27,31 @@ test('the selected view stays visible on hover and keyboard focus', async ({ pag
   expect(await fill(list)).toBe(newSelectedFill)
 })
 
+test('selected corners follow the track at both ends', async ({ page }, info) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/iframe.html?id=actions-view-switcher--cards-and-map&viewMode=story')
+  await page.evaluate((dark) => document.documentElement.classList.toggle('dark', dark), info.project.name === 'dark')
+  const group = page.getByRole('group', { name: 'Cat view' })
+
+  for (const [label, edge] of [['Cards', 'left'], ['Map', 'right']] as const) {
+    const button = group.getByRole('button', { name: label })
+    await button.click()
+    await expect(button).toHaveAttribute('aria-pressed', 'true')
+    const corners = await button.evaluate((element, edge) => {
+      const track = element.parentElement!
+      const trackBox = track.getBoundingClientRect()
+      const buttonBox = element.getBoundingClientRect()
+      const trackStyle = getComputedStyle(track)
+      const buttonStyle = getComputedStyle(element)
+      return {
+        horizontalInset: edge === 'left' ? buttonBox.left - trackBox.left : trackBox.right - buttonBox.right,
+        verticalInset: buttonBox.top - trackBox.top,
+        outerRadius: parseFloat(edge === 'left' ? trackStyle.borderTopLeftRadius : trackStyle.borderTopRightRadius),
+        innerRadius: parseFloat(edge === 'left' ? buttonStyle.borderTopLeftRadius : buttonStyle.borderTopRightRadius),
+      }
+    }, edge)
+    expect(corners.horizontalInset).toBeCloseTo(corners.verticalInset, 1)
+    expect(corners.innerRadius + corners.verticalInset).toBeCloseTo(corners.outerRadius, 1)
+  }
+})
+

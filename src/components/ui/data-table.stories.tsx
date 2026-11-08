@@ -16,7 +16,7 @@ const records = Array.from({ length: 36 }, (_, index) => ({
   title: `${localInboxData.reports[index % 5]!.title} · ${index + 1}`,
 }))
 
-function DataTableExample({ mode = 'ready' }: { mode?: 'ready' | 'loading' | 'error' | 'delayed' | 'empty' }) {
+function DataTableExample({ mode = 'ready', scrollMode = 'contained' }: { mode?: 'ready' | 'loading' | 'error' | 'delayed' | 'empty'; scrollMode?: 'contained' | 'page' }) {
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
   const [opened, setOpened] = useState<InboxReport | null>(null)
   const [data, setData] = useState(mode === 'empty' || mode === 'error' || mode === 'loading' ? [] : mode === 'delayed' ? records.slice(0, 10) : records)
@@ -50,7 +50,7 @@ function DataTableExample({ mode = 'ready' }: { mode?: 'ready' | 'loading' | 'er
   })
 
   return <>
-    <DataTable table={table} label="Reports" itemName="report" request={request} columnClassName={inboxColumnClassName}
+    <DataTable table={table} label="Reports" itemName="report" request={request} columnClassName={inboxColumnClassName} scrollMode={scrollMode}
       onOpenRow={(report, trigger) => { returnFocus.current = trigger; setOpened(report) }} activeRowId={opened?.id}
       selection={{ getLabel: (report) => report.title, actions: (selected) => <Button variant="outline" size="sm" onClick={() => {
         const ids = new Set(selected.map((row) => row.id))
@@ -79,6 +79,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 export const Reports: Story = {}
+export const PageScroll: Story = { args: { scrollMode: 'page' }, parameters: { docs: { description: { story: 'The page scrolls naturally through the current set of rows. Horizontal table overflow remains scrollable.' } } } }
 export const Loading: Story = { args: { mode: 'loading' } }
 export const ErrorAndRetry: Story = { args: { mode: 'error' } }
 export const DelayedPages: Story = { args: { mode: 'delayed' } }

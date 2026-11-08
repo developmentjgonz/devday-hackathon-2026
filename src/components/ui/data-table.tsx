@@ -51,25 +51,18 @@ type DataTableProps<T extends RowData> = {
   onOpenRow?: (row: T, trigger: HTMLButtonElement | null) => void
   selection?: { getLabel: (row: T) => string; actions: (rows: T[]) => ReactNode }
   columnClassName?: (columnId: string) => string | undefined
+  /** Let the page scroll naturally, or keep the table in a bounded viewport. */
+  scrollMode?: 'contained' | 'page'
   ref?: Ref<HTMLDivElement>
   toolbar?: Omit<DataTableToolbarProps, 'selection'>
 }
 
-export function DataTable<T extends RowData>({ table, label, itemName = 'record', emptyState, request, activeRowId, onOpenRow, selection, columnClassName, ref, toolbar }: DataTableProps<T>) {
-  const pageSizeId = useId()
+export function DataTable<T extends RowData>({ table, label, itemName = 'record', emptyState, request, activeRowId, onOpenRow, selection, columnClassName, scrollMode = 'contained', ref, toolbar }: DataTableProps<T>) {
   const viewport = useRef<HTMLDivElement>(null)
   const rows = table.getRowModel().rows
-  const total = table.getRowCount()
-  const { pageIndex, pageSize } = table.state.pagination
   const selected = table.getSelectedRowModel().rows
   const busy = request?.status === 'loading' || request?.status === 'refreshing'
   const pages = Math.max(1, table.getPageCount())
-
-  function changePage(direction: 'previous' | 'next') {
-    if (direction === 'previous') table.previousPage()
-    else table.nextPage()
-    viewport.current?.scrollTo({ top: 0 })
-  }
 
   return (
     <div className="space-y-3">
@@ -83,7 +76,7 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
           <LoadingIndicator label={`Loading ${label.toLowerCase()}`} />
           <Text size="small" tone="muted">Loading {label.toLowerCase()}…</Text>
         </div> : <>
-          <div ref={viewport} className={cn('mews-table-scroll overflow-auto overscroll-contain', pages > 1 ? 'h-[65svh]' : 'max-h-[65svh]')} inert={busy || undefined}>
+          <div ref={viewport} className={cn('mews-table-scroll overflow-auto overscroll-contain', scrollMode === 'contained' && (pages > 1 ? 'h-[65svh]' : 'max-h-[65svh]'))} inert={busy || undefined}>
             <Table aria-label={label} density="compact">
               <caption className="sr-only">{label}{onOpenRow ? '. Activate a row title to open its details.' : ''}</caption>
               <thead className="sticky top-0 z-10 bg-card">
@@ -132,25 +125,48 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
           </div> : null}
         </>}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
-        <div className="flex flex-wrap items-center gap-2" aria-live="polite">
-          <Text size="caption" tone="muted">{total > pageSize ? `${pageIndex * pageSize + 1}–${Math.min((pageIndex + 1) * pageSize, total)} of ${total}` : total} {itemName}{total === 1 ? '' : 's'}</Text>
-        </div>
-        {total > 10 || pages > 1 ? <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Label htmlFor={pageSizeId}>Rows</Label>
-            <SelectField id={pageSizeId} aria-label="Rows per page" className="w-20" value={pageSize} disabled={busy} onChange={(event) => { table.setPagination({ pageIndex: 0, pageSize: Number(event.target.value) }); viewport.current?.scrollTo({ top: 0 }) }}>
-              {[10, 25, 50].map((size) => <option key={size} value={size}>{size}</option>)}
-            </SelectField>
-          </div>
-          <nav aria-label={`${label} pagination`} className="flex items-center gap-1">
-            <Button variant="ghost" size="icon-sm" aria-label="Previous page" loading={request?.status === 'refreshing' && request.action === 'previous'} disabled={!table.getCanPreviousPage() || busy || request?.status === 'error'} onClick={() => changePage('previous')}><ChevronLeft aria-hidden="true" /></Button>
-            <Text size="caption" className="min-w-20 text-center" aria-live="polite">Page {pageIndex + 1} of {pages}</Text>
-            <Button variant="ghost" size="icon-sm" aria-label="Next page" loading={request?.status === 'refreshing' && request.action === 'next'} disabled={!table.getCanNextPage() || busy || request?.status === 'error'} onClick={() => changePage('next')}><ChevronRight aria-hidden="true" /></Button>
-          </nav>
-        </div> : null}
-      </div>
+      <DataTablePagination table={table} label={label} itemName={itemName} request={request} onPageChange={() => viewport.current?.scrollTo({ top: 0 })} />
       </Card>
     </div>
   )
+}
+
+/** Shared count and pagination for table and card presentations of the same data. */
+export function DataTablePagination<T extends RowData>({ table, label, itemName = 'record', request, onPageChange, presentation = 'table' }: {
+  table: DataTableInstance<T>
+  label: string
+  itemName?: string
+  request?: DataTableRequest
+  onPageChange?: () => void
+  presentation?: 'table' | 'cards'
+}) {
+  const pageSizeId = useId()
+  const total = table.getRowCount()
+  const { pageIndex, pageSize } = table.state.pagination
+  const pages = Math.max(1, table.getPageCount())
+  const busy = request?.status === 'loading' || request?.status === 'refreshing'
+  const pageSizeLabel = presentation === 'cards' ? 'Cards' : 'Rows'
+  function changePage(direction: 'previous' | 'next') {
+    if (direction === 'previous') table.previousPage()
+    else table.nextPage()
+    onPageChange?.()
+  }
+  return <div className={cn('flex flex-wrap items-center justify-between gap-3 py-3', presentation === 'table' ? 'border-t px-4' : 'px-1')}>
+    <div className="flex flex-wrap items-center gap-2" aria-live="polite">
+      <Text size="caption" tone="muted">{total > pageSize ? `${pageIndex * pageSize + 1}–${Math.min((pageIndex + 1) * pageSize, total)} of ${total}` : total} {itemName}{total === 1 ? '' : 's'}</Text>
+    </div>
+    {total > 10 || pages > 1 ? <div className="flex flex-wrap items-center gap-4">
+      <div className="flex items-center gap-2">
+        <Label htmlFor={pageSizeId}>{pageSizeLabel}</Label>
+        <SelectField id={pageSizeId} aria-label={`${pageSizeLabel} per page`} className="w-20" value={pageSize} disabled={busy} onChange={(event) => { table.setPagination({ pageIndex: 0, pageSize: Number(event.target.value) }); onPageChange?.() }}>
+          {[10, 25, 50].map((size) => <option key={size} value={size}>{size}</option>)}
+        </SelectField>
+      </div>
+      <nav aria-label={`${label} pagination`} className="flex items-center gap-1">
+        <Button variant="ghost" size="icon-sm" aria-label="Previous page" loading={request?.status === 'refreshing' && request.action === 'previous'} disabled={!table.getCanPreviousPage() || busy || request?.status === 'error'} onClick={() => changePage('previous')}><ChevronLeft aria-hidden="true" /></Button>
+        <Text size="caption" className="min-w-20 text-center" aria-live="polite">Page {pageIndex + 1} of {pages}</Text>
+        <Button variant="ghost" size="icon-sm" aria-label="Next page" loading={request?.status === 'refreshing' && request.action === 'next'} disabled={!table.getCanNextPage() || busy || request?.status === 'error'} onClick={() => changePage('next')}><ChevronRight aria-hidden="true" /></Button>
+      </nav>
+    </div> : null}
+  </div>
 }

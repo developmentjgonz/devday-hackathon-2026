@@ -1,0 +1,175 @@
+.report-task-story {
+  width: min(720px, calc(100vw - 32px));
+  max-width: 100%;
+}
+
+.report-task-story-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.mews-stage-loading {
+  display: grid;
+  min-height: 440px;
+  place-items: center;
+}
+
+.mews-stage .ss-stage {
+  overflow: hidden;
+  background: var(--background);
+  --ss-font: 'Geist Variable', sans-serif;
+  --ss-accent: var(--primary);
+  --ss-surface: var(--card);
+  --ss-raised: var(--popover);
+  --ss-radius-lg: var(--surface-radius);
+}
+
+.mews-stage-window {
+  position: absolute;
+  box-shadow: var(--ss-shadow-hero);
+}
+
+.mews-stage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+}
+
+.mews-stage-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mews-stage-content {
+  padding: 20px 20px 0;
+  background: var(--background);
+}
+
+.mews-stage-views {
+  position: relative;
+  min-height: 240px;
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--surface-radius);
+  background: var(--card);
+}
+
+.mews-stage-view {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity 120ms var(--ease-out), transform 120ms var(--ease-out), visibility 0s 120ms;
+  will-change: transform;
+}
+
+.mews-stage-view[data-active] {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: opacity 160ms var(--ease-out) 100ms, transform 160ms var(--ease-out) 100ms, visibility 0s;
+}
+
+.mews-stage-panel {
+  display: grid;
+  padding: 16px;
+  --ss-popover-bg: var(--popover);
+}
+
+.mews-stage-panel-view {
+  grid-area: 1 / 1;
+  align-self: start;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 120ms var(--ease-out), visibility 0s 120ms;
+}
+
+.mews-stage-panel-view[data-active] {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 160ms var(--ease-out) 100ms, visibility 0s;
+}
+
+.mews-stage-review {
+  display: grid;
+  gap: 4px;
+}
+
+.mews-stage-section {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.mews-stage-original {
+  gap: 0;
+}
+
+.mews-stage-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mews-stage-task {
+  padding-top: 4px;
+}
+
+.mews-stage-task-space {
+  min-height: 48px;
+}
+
+.mews-stage-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.mews-stage-dialog {
+  display: grid;
+  gap: 4px;
+}
+
+.mews-stage-field {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.mews-stage-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.mews-stage-menu {
+  --ss-popover-bg: var(--popover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mews-stage-view {
+    transform: none;
+    transition: none;
+  }
+}
+
+@media (max-width: 599px) {
+  .mews-stage-loading {
+    min-height: 340px;
+  }
+}

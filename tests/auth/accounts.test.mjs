@@ -6,12 +6,16 @@ import worker from '../../worker/index.ts';
 import { hashToken } from '../../worker/services/session.ts';
 
 const migration = readFileSync(new URL('../../migrations/0001_accounts.sql', import.meta.url), 'utf8');
+const directoryMigration = readFileSync(new URL('../../migrations/0002_colonies_and_cats.sql', import.meta.url), 'utf8');
+const profilesMigration = readFileSync(new URL('../../migrations/0003_cat_profiles.sql', import.meta.url), 'utf8');
 const seeds = readFileSync(new URL('../../seeds/local.sql', import.meta.url), 'utf8');
 
 function fixture(t, overrides = {}) {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec('PRAGMA foreign_keys = ON');
   sqlite.exec(migration);
+  sqlite.exec(directoryMigration);
+  sqlite.exec(profilesMigration);
   sqlite.exec(seeds);
   t.after(() => sqlite.close());
   // Run the actual SQL through SQLite with the D1 statement interface.

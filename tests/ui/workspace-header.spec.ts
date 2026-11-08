@@ -47,8 +47,15 @@ for (const width of [320, 1440]) {
     await page.goto('/iframe.html?id=pages-reports--busy-inbox&viewMode=story')
     const header = page.getByRole('banner', { name: 'Workspace header' })
     await expect(header.getByRole('heading', { name: 'Reports', exact: true })).toBeVisible()
-    await page.evaluate(() => window.scrollTo(0, 1200))
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+    const pageCanScroll = await page.evaluate(() => document.documentElement.scrollHeight > innerHeight)
+    if (pageCanScroll) {
+      await page.evaluate(() => window.scrollTo(0, 1200))
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+    } else {
+      const tableViewport = page.locator('.mews-table-scroll')
+      await tableViewport.evaluate((element) => { element.scrollTop = element.scrollHeight })
+      await expect.poll(() => tableViewport.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+    }
     await expect.poll(async () => (await header.boundingBox())?.y).toBe(0)
     await expect(header.getByRole('button', { name: 'New report', exact: true })).toHaveCount(0)
     await expect(header.getByRole('button', { name: /Urgent reports/ })).toBeInViewport()

@@ -1,31 +1,50 @@
-import type { InboxColony, InboxReport, ReportTask, TaskStatus } from '@/features/inbox/types'
+import type { InboxData, InboxReport, Task, TaskAssociation } from '@/features/inbox/types'
 
-export type AssignedTask = ReportTask & { reportId: string; reportTitle: string; colony: string }
+export type RelatedItem = { type: TaskAssociation['type']; label: string; id?: string }
+export type AssignedTask = Task & { reportTitle: string; related: RelatedItem[]; colony: string; catName: string }
 
-export function getAssignedTasks(reports: InboxReport[], colonies: InboxColony[], currentUser: string): AssignedTask[] {
-  const colonyNames = new Map(colonies.map((colony) => [colony.id, colony.name]))
-  return reports.flatMap((report) => report.tasks
-    .filter((task) => task.owner === currentUser)
-    .map((task) => ({ ...task, reportId: report.id, reportTitle: report.title, colony: colonyNames.get(report.colonyId) ?? 'Colony unknown' })))
-    .sort((a, b) => (a.due || '9999-12-31').localeCompare(b.due || '9999-12-31') || a.title.localeCompare(b.title) || a.id.localeCompare(b.id))
-}
-
-/** Update only the current assignee's task. Report review status stays unchanged. */
-export function setAssignedTaskStatus(reports: InboxReport[], reportId: string, taskId: string, currentUser: string, status: TaskStatus): InboxReport[] {
-  return reports.map((report) => {
-    if (report.id !== reportId) return report
-    const task = report.tasks.find((item) => item.id === taskId && item.owner === currentUser)
-    if (!task || task.status === status) return report
-    return {
-      ...report,
-      tasks: report.tasks.map((item) => item === task ? { ...item, status } : item),
-      history: [...report.history, `${currentUser} ${status === 'completed' ? 'completed' : 'reopened'} care task: ${task.title}.`],
+/** Resolve direct associations and the current details of a linked report. */
+export function resolveTasks(tasks: Task[], reports: InboxReport[], data: Pick<InboxData, 'colonies' | 'cats'>): AssignedTask[] {
+  const reportsById = new Map(reports.map((report) => [report.id, report]))
+  const colonies = new Map(data.colonies.map((colony) => [colony.id, colony]))
+  const cats = new Map(data.cats.map((cat) => [cat.id, cat]))
+  return tasks.map((task) => {
+    const report = task.reportId ? reportsById.get(task.reportId) : undefined
+    const related: RelatedItem[] = []
+    function add(item: RelatedItem) {
+      if (!related.some((existing) => existing.type === item.type && (item.id ? existing.id === item.id : existing.label.toLocaleLowerCase() === item.label.toLocaleLowerCase()))) related.push(item)
     }
+    function addColony(id: string) {
+      const colony = colonies.get(id)
+      if (colony) add({ type: 'colony', id: colony.id, label: colony.name })
+    }
+    function addCat(id: string) {
+      const cat = cats.get(id)
+      if (cat) { add({ type: 'cat', id: cat.id, label: cat.name }); addColony(cat.colonyId) }
+    }
+    if (report) { addColony(report.colonyId); addCat(report.catId) }
+    for (const association of task.associations) {
+      if (association.type === 'cat') addCat(association.id)
+      else if (association.type === 'colony') addColony(association.id)
+      else if ('label' in association) add({ type: association.type, label: association.label })
+    }
+    const colony = related.filter((item) => item.type === 'colony').map((item) => item.label).join(', ')
+    const catName = related.filter((item) => item.type === 'cat').map((item) => item.label).join(', ')
+    return { ...task, reportTitle: report?.title ?? '', related, colony: colony || (report ? 'Colony unknown' : ''), catName }
   })
 }
 
-const dueFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+export function getAssignedTasks(tasks: Task[], reports: InboxReport[], data: Pick<InboxData, 'colonies' | 'cats'>, currentUser: string): AssignedTask[] {
+  return resolveTasks(tasks.filter((task) => task.ownerId === currentUser), reports, data)
+    .sort((a, b) => (a.due || '9999-12-31').localeCompare(b.due || '9999-12-31') || a.title.localeCompare(b.title) || a.id.localeCompare(b.id))
+}
 
+export function openTasksForRecord(tasks: AssignedTask[], type: 'cat' | 'colony', id: string) {
+  return tasks.filter((task) => task.status === 'open' && task.related.some((item) => item.type === type && item.id === id))
+    .sort((a, b) => (a.due || '9999-12-31').localeCompare(b.due || '9999-12-31') || a.title.localeCompare(b.title))
+}
+
+const dueFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 export function formatTaskDue(due: string) {
   if (!due) return 'No due date'
   const date = new Date(`${due}T00:00:00Z`)

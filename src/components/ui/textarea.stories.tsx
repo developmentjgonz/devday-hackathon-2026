@@ -12,6 +12,7 @@ const meta = {
   title: 'Forms/Textarea',
   component: Textarea,
   args: { placeholder: '8 cats seen. Food and water bowls refilled. Miso and Pepper were both present.', rows: 3, disabled: false },
+  parameters: { docs: { description: { component: 'Empty hints use the same placeholder foreground token as Input. Entered notes keep the normal foreground, with a persistent label outside the field.' } } },
   render: (args) => <TextareaPreview {...args} />,
 } satisfies Meta<typeof Textarea>
 
@@ -20,3 +21,4 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 export const Disabled: Story = { args: { disabled: true } }
+export const EnteredValue: Story = { args: { defaultValue: 'Food and fresh water are available.' } }

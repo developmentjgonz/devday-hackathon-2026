@@ -1,0 +1,212 @@
+import { HTTPException } from 'hono/http-exception'
+import type { CreateReportInput, FinishReportInput, TaskInput } from '../../shared/schemas/workspace.ts'
+import type { Report, ReportAttachment, ReportEntry, Task, TaskAssociation, TaskStatus, WorkspaceMember, WorkspaceSnapshot } from '../../shared/types/workspace.ts'
+import type { SessionUser } from '../../shared/types/auth.ts'
+
+type ReportRow = { id: string; title: string; message: string; category: string; reporter: string; submittedAt: string; colonyId: string | null; catId: string | null; careNote: string; urgent: number; unread: number; status: Report['status']; possibleDuplicateOf: string | null; duplicateOf: string | null }
+type AttachmentRow = { id: string; reportId: string; name: string; mimeType: string; size: number }
+type EntryRow = ReportEntry & { reportId: string }
+type HistoryRow = { reportId: string; text: string }
+type TaskRow = { id: string; title: string; ownerId: string; owner: string; due: string; status: TaskStatus; reportId: string | null }
+type AssociationRow = { taskId: string; type: TaskAssociation['type']; recordId: string | null; label: string | null }
+export type StoredAttachment = { id: string; key: string; name: string; mimeType: string; size: number }
+
+function groupBy<T>(items: T[], key: (item: T) => string): Map<string, T[]> {
+  const result = new Map<string, T[]>()
+  for (const item of items) { const group = key(item); result.set(group, [...(result.get(group) ?? []), item]) }
+  return result
+}
+
+export async function listReports(db: D1Database, userId: string, reportId: string | null = null): Promise<Report[]> {
+  const [reports, attachments, entries, history] = await Promise.all([
+    db.prepare(`SELECT r.id, r.title, r.message, r.category, u.name AS reporter, r.submitted_at AS submittedAt,
+      r.colony_id AS colonyId, r.cat_id AS catId, r.care_note AS careNote, r.urgent, r.status,
+      r.possible_duplicate_id AS possibleDuplicateOf, r.duplicate_of AS duplicateOf,
+      CASE WHEN rr.user_id IS NULL THEN 1 ELSE 0 END AS unread
+      FROM reports r JOIN users u ON u.id = r.reporter_id
+      LEFT JOIN report_reads rr ON rr.report_id = r.id AND rr.user_id = ?
+      WHERE (? IS NULL OR r.id = ?) ORDER BY r.submitted_at DESC, r.id`).bind(userId, reportId, reportId).all<ReportRow>(),
+    db.prepare('SELECT id, report_id AS reportId, name, mime_type AS mimeType, size FROM report_attachments WHERE (? IS NULL OR report_id = ?) ORDER BY rowid').bind(reportId, reportId).all<AttachmentRow>(),
+    db.prepare(`SELECT e.id, e.report_id AS reportId, u.name AS author, e.text FROM report_entries e
+      JOIN users u ON u.id = e.author_id WHERE (? IS NULL OR e.report_id = ?) ORDER BY e.created_at, e.rowid`).bind(reportId, reportId).all<EntryRow>(),
+    db.prepare('SELECT report_id AS reportId, text FROM report_history WHERE (? IS NULL OR report_id = ?) ORDER BY created_at, rowid').bind(reportId, reportId).all<HistoryRow>(),
+  ])
+  const files = groupBy(attachments.results, (item) => item.reportId)
+  const messages = groupBy(entries.results, (item) => item.reportId)
+  const events = groupBy(history.results, (item) => item.reportId)
+  return reports.results.map((row) => ({
+    id: row.id, title: row.title, reporter: row.reporter, submittedAt: row.submittedAt, message: row.message, category: row.category,
+    colonyId: row.colonyId ?? '', catId: row.catId ?? '', careNote: row.careNote, urgent: Boolean(row.urgent), unread: Boolean(row.unread), status: row.status,
+    ...(row.possibleDuplicateOf ? { possibleDuplicateOf: row.possibleDuplicateOf } : {}),
+    ...(row.duplicateOf ? { duplicateOf: row.duplicateOf } : {}),
+    attachments: (files.get(row.id) ?? []).map((item): ReportAttachment => ({ id: item.id, name: item.name, mimeType: item.mimeType, size: item.size, url: `/api/attachments/${encodeURIComponent(item.id)}` })),
+    thread: (messages.get(row.id) ?? []).map(({ id, author, text }) => ({ id, author, text })),
+    history: (events.get(row.id) ?? []).map((item) => item.text),
+  }))
+}
+
+export async function listTasks(db: D1Database, taskId: string | null = null): Promise<Task[]> {
+  const [tasks, associations] = await Promise.all([
+    db.prepare(`SELECT t.id, t.title, t.owner_id AS ownerId, u.name AS owner, t.due, t.status, t.report_id AS reportId
+      FROM tasks t JOIN users u ON u.id = t.owner_id WHERE (? IS NULL OR t.id = ?) ORDER BY t.created_at, t.id`).bind(taskId, taskId).all<TaskRow>(),
+    db.prepare('SELECT task_id AS taskId, type, record_id AS recordId, label FROM task_associations WHERE (? IS NULL OR task_id = ?) ORDER BY position').bind(taskId, taskId).all<AssociationRow>(),
+  ])
+  const links = groupBy(associations.results, (item) => item.taskId)
+  return tasks.results.map((task) => ({
+    id: task.id, title: task.title, ownerId: task.ownerId, owner: task.owner, due: task.due, status: task.status,
+    ...(task.reportId ? { reportId: task.reportId } : {}),
+    associations: (links.get(task.id) ?? []).map((item): TaskAssociation => item.type === 'cat' || item.type === 'colony'
+      ? { type: item.type, id: item.recordId! } : { type: item.type, label: item.label! }),
+  }))
+}
+
+export async function listWorkspace(db: D1Database, userId: string): Promise<WorkspaceSnapshot> {
+  const [reports, tasks, members] = await Promise.all([
+    listReports(db, userId), listTasks(db),
+    db.prepare("SELECT id, name FROM users WHERE status = 'active' ORDER BY name COLLATE NOCASE, id").all<WorkspaceMember>(),
+  ])
+  return { reports, tasks, members: members.results }
+}
+
+function historyStatement(db: D1Database, reportId: string, actor: SessionUser, text: string) {
+  return db.prepare('INSERT INTO report_history (id, report_id, actor_id, text, created_at) VALUES (?, ?, ?, ?, ?)')
+    .bind(crypto.randomUUID(), reportId, actor.id, `${actor.name} ${text}`, new Date().toISOString())
+}
+
+async function requireReport(db: D1Database, id: string) {
+  const report = await db.prepare('SELECT id, status, colony_id AS colonyId, duplicate_of AS duplicateOf FROM reports WHERE id = ?')
+    .bind(id).first<{ id: string; status: Report['status']; colonyId: string | null; duplicateOf: string | null }>()
+  if (!report) throw new HTTPException(404, { message: 'Report not found.' })
+  return report
+}
+
+async function validateLocation(db: D1Database, colonyId: string, catId: string) {
+  if (!colonyId && catId) throw new HTTPException(400, { message: 'Choose a colony for the cat.' })
+  if (colonyId && !await db.prepare('SELECT id FROM colonies WHERE id = ?').bind(colonyId).first()) throw new HTTPException(404, { message: 'Colony not found.' })
+  if (catId && !await db.prepare('SELECT id FROM cats WHERE id = ? AND colony_id = ?').bind(catId, colonyId).first()) throw new HTTPException(400, { message: 'Choose a cat in the selected colony.' })
+}
+
+export async function insertReport(db: D1Database, id: string, actor: SessionUser, input: CreateReportInput, files: StoredAttachment[]): Promise<void> {
+  await validateLocation(db, input.colonyId, input.catId)
+  const statements = [db.prepare(`INSERT INTO reports (id, title, message, category, reporter_id, submitted_at, colony_id, cat_id, urgent)
+    VALUES (?, ?, ?, 'Field report', ?, ?, ?, ?, ?)`).bind(id, input.title, input.message, actor.id, new Date().toISOString(), input.colonyId || null, input.catId || null, Number(input.urgent))]
+  for (const file of files) statements.push(db.prepare('INSERT INTO report_attachments (id, report_id, storage_key, name, mime_type, size) VALUES (?, ?, ?, ?, ?, ?)')
+    .bind(file.id, id, file.key, file.name, file.mimeType, file.size))
+  await db.batch(statements)
+}
+
+export async function finishReport(db: D1Database, id: string, actor: SessionUser, input: FinishReportInput): Promise<Report> {
+  const report = await requireReport(db, id)
+  if (report.status === 'processed') throw new HTTPException(409, { message: 'This report has already been processed.' })
+  await validateLocation(db, input.colonyId, input.catId)
+  await db.batch([
+    db.prepare("UPDATE reports SET colony_id = ?, cat_id = ?, care_note = ?, urgent = ?, status = 'processed' WHERE id = ?")
+      .bind(input.colonyId, input.catId || null, input.careNote, Number(input.urgent), id),
+    historyStatement(db, id, actor, 'saved the confirmed report details and finished the review.'),
+  ])
+  return (await listReports(db, actor.id, id))[0]!
+}
+
+export async function reopenReport(db: D1Database, id: string, actor: SessionUser): Promise<Report> {
+  const report = await requireReport(db, id)
+  if (report.status !== 'processed') throw new HTTPException(409, { message: 'This report is already open.' })
+  await db.batch([
+    db.prepare("UPDATE reports SET status = 'pending', duplicate_of = NULL WHERE id = ?").bind(id),
+    historyStatement(db, id, actor, 'reopened the report for review.'),
+  ])
+  return (await listReports(db, actor.id, id))[0]!
+}
+
+export async function addQuestion(db: D1Database, id: string, actor: SessionUser, text: string): Promise<Report> {
+  const report = await requireReport(db, id)
+  if (report.status === 'processed') throw new HTTPException(409, { message: 'Reopen this report before asking for details.' })
+  await db.batch([
+    db.prepare("UPDATE reports SET status = 'waiting' WHERE id = ?").bind(id),
+    db.prepare('INSERT INTO report_entries (id, report_id, author_id, text, created_at) VALUES (?, ?, ?, ?, ?)').bind(crypto.randomUUID(), id, actor.id, text, new Date().toISOString()),
+    historyStatement(db, id, actor, 'requested more details.'),
+  ])
+  return (await listReports(db, actor.id, id))[0]!
+}
+
+export async function linkDuplicate(db: D1Database, id: string, targetId: string, actor: SessionUser): Promise<Report> {
+  const [report, target] = await Promise.all([requireReport(db, id), requireReport(db, targetId)])
+  if (id === targetId || !report.colonyId || report.colonyId !== target.colonyId || report.status === 'processed' || target.duplicateOf) {
+    throw new HTTPException(400, { message: 'Choose an existing report in the same colony.' })
+  }
+  const incoming = await db.prepare('SELECT id FROM reports WHERE duplicate_of = ? LIMIT 1').bind(id).first()
+  if (incoming) throw new HTTPException(409, { message: 'This report already has linked duplicates.' })
+  await db.batch([
+    db.prepare("UPDATE reports SET status = 'processed', duplicate_of = ? WHERE id = ?").bind(targetId, id),
+    historyStatement(db, id, actor, 'linked this duplicate to an existing report.'),
+  ])
+  return (await listReports(db, actor.id, id))[0]!
+}
+
+export async function setReadState(db: D1Database, userId: string, ids: string[], unread: boolean) {
+  const unique = [...new Set(ids)]
+  const statements = unique.map((id) => unread
+    ? db.prepare('DELETE FROM report_reads WHERE report_id = ? AND user_id = ?').bind(id, userId)
+    : db.prepare('INSERT OR IGNORE INTO report_reads (report_id, user_id) SELECT id, ? FROM reports WHERE id = ?').bind(userId, id))
+  await db.batch(statements)
+}
+
+async function validateTask(db: D1Database, input: TaskInput) {
+  if (!await db.prepare("SELECT id FROM users WHERE id = ? AND status = 'active'").bind(input.ownerId).first()) throw new HTTPException(400, { message: 'Choose an active team member.' })
+  if (input.reportId) await requireReport(db, input.reportId)
+  for (const item of input.associations) {
+    if (item.type === 'cat' && !await db.prepare('SELECT id FROM cats WHERE id = ?').bind(item.id).first()) throw new HTTPException(400, { message: 'A related cat was not found.' })
+    if (item.type === 'colony' && !await db.prepare('SELECT id FROM colonies WHERE id = ?').bind(item.id).first()) throw new HTTPException(400, { message: 'A related colony was not found.' })
+  }
+}
+
+function associationStatements(db: D1Database, taskId: string, associations: TaskAssociation[]) {
+  return associations.map((item, index) => db.prepare('INSERT INTO task_associations (task_id, position, type, record_id, label) VALUES (?, ?, ?, ?, ?)')
+    .bind(taskId, index, item.type, 'id' in item ? item.id : null, 'label' in item ? item.label : null))
+}
+
+async function requireEditableTask(db: D1Database, id: string, actor: SessionUser) {
+  const task = await db.prepare('SELECT id, owner_id AS ownerId, report_id AS reportId FROM tasks WHERE id = ?')
+    .bind(id).first<{ id: string; ownerId: string; reportId: string | null }>()
+  if (!task) throw new HTTPException(404, { message: 'Task not found.' })
+  if (task.ownerId !== actor.id && actor.role !== 'administrator') throw new HTTPException(403, { message: 'Only the assignee can update this task.' })
+  return task
+}
+
+export async function createTask(db: D1Database, actor: SessionUser, input: TaskInput): Promise<Task> {
+  await validateTask(db, input)
+  const id = crypto.randomUUID()
+  const statements = [db.prepare('INSERT INTO tasks (id, title, owner_id, report_id, due, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .bind(id, input.title, input.ownerId, input.reportId ?? null, input.due, actor.id, new Date().toISOString()), ...associationStatements(db, id, input.associations)]
+  if (input.reportId) statements.push(historyStatement(db, input.reportId, actor, `created a task: ${input.title}.`))
+  await db.batch(statements)
+  return (await listTasks(db, id))[0]!
+}
+
+export async function editTask(db: D1Database, id: string, actor: SessionUser, input: TaskInput): Promise<Task> {
+  const existing = await requireEditableTask(db, id, actor)
+  if ((input.reportId ?? null) !== existing.reportId) throw new HTTPException(400, { message: 'The linked report cannot be changed.' })
+  await validateTask(db, input)
+  await db.batch([
+    db.prepare('UPDATE tasks SET title = ?, owner_id = ?, due = ? WHERE id = ?').bind(input.title, input.ownerId, input.due, id),
+    db.prepare('DELETE FROM task_associations WHERE task_id = ?').bind(id),
+    ...associationStatements(db, id, input.associations),
+    ...(existing.reportId ? [historyStatement(db, existing.reportId, actor, `updated a task: ${input.title}.`)] : []),
+  ])
+  return (await listTasks(db, id))[0]!
+}
+
+export async function changeTaskStatus(db: D1Database, id: string, actor: SessionUser, status: TaskStatus): Promise<Task> {
+  const existing = await requireEditableTask(db, id, actor)
+  const task = (await listTasks(db, id))[0]!
+  if (task.status === status) return task
+  await db.batch([
+    db.prepare('UPDATE tasks SET status = ? WHERE id = ?').bind(status, id),
+    ...(existing.reportId ? [historyStatement(db, existing.reportId, actor, `${status === 'completed' ? 'completed' : 'reopened'} task: ${task.title}.`)] : []),
+  ])
+  return (await listTasks(db, id))[0]!
+}
+
+export async function findAttachment(db: D1Database, id: string) {
+  return db.prepare('SELECT storage_key AS key, name, mime_type AS mimeType FROM report_attachments WHERE id = ?').bind(id)
+    .first<{ key: string; name: string; mimeType: string }>()
+}

@@ -10,6 +10,13 @@ import { CommunityPage } from '@/features/community/pages/community-page'
 import { OverviewPage } from '@/features/overview/pages/overview-page'
 import { InboxPage } from '@/features/inbox/pages/inbox-page'
 import { MyTasksPage } from '@/features/tasks/pages/my-tasks-page'
+import { ColoniesPage } from '@/features/colonies/pages/colonies-page'
+import { ColonyPage } from '@/features/colonies/pages/colony-page'
+import { CatsPage } from '@/features/cats/pages/cats-page'
+import { CatPage } from '@/features/cats/pages/cat-page'
+import { UsersPage } from '@/features/users/pages/users-page'
+import type { InboxData } from '@/features/inbox/types'
+import type { Params } from 'react-router'
 import { NotFoundPage } from '@/pages/not-found-page'
 import { RouteErrorPage } from '@/pages/route-error-page'
 import { RouteLoadingPage } from '@/pages/route-loading-page'
@@ -51,8 +58,17 @@ export const router = createBrowserRouter([
         Component: AppLayout,
         children: [
           { index: true, Component: OverviewPage, handle: { breadcrumb: 'Overview' } },
+          { path: 'colonies', handle: { breadcrumb: 'Colonies' }, children: [
+            { index: true, Component: ColoniesPage },
+            { path: ':colonyId', Component: ColonyPage, handle: { breadcrumb: (params: Params, data: InboxData) => data.colonies.find((colony) => colony.id === params.colonyId)?.name ?? 'Colony not found' } },
+          ] },
+          { path: 'cats', handle: { breadcrumb: 'Cats' }, children: [
+            { index: true, Component: CatsPage },
+            { path: ':catId', Component: CatPage, handle: { breadcrumb: (params: Params, data: InboxData) => data.cats.find((cat) => cat.id === params.catId)?.name ?? 'Cat not found' } },
+          ] },
           { path: 'tasks', Component: MyTasksPage, handle: { breadcrumb: 'My Tasks' } },
           { path: 'reports', Component: InboxPage, handle: { breadcrumb: 'Reports' } },
+          { path: 'team', Component: UsersPage, handle: { breadcrumb: 'Team' } },
           { path: '*', element: <NotFoundPage homePath="/app" /> },
         ],
       },

@@ -34,7 +34,10 @@ export const WithAction: Story = {}
 export const EdgeToEdgeList: Story = {
   render: () => <Card padding="none" className="w-80 max-w-full"><CardHeader className="py-6"><Heading size="card">Care updates</Heading></CardHeader><Separator /><CardList>{['Fresh water added', 'Morning feeding complete'].map((update) => <li key={update} className="px-6 py-4"><Text size="small">{update}</Text></li>)}</CardList></Card>,
 }
-
+export const Note: Story = {
+  render: () => <Card tone="note" size="sm" className="w-80 max-w-full"><CardContent className="space-y-3"><Text size="caption" tone="muted">Riverside</Text><Heading size="card" level={3}>Arrange a care check</Heading><Text size="caption" tone="muted">Due Nov 8, 2026</Text></CardContent></Card>,
+  parameters: { docs: { description: { story: 'The note tone is a warm, understated surface for short pieces of work. It supports light and dark themes.' } } },
+}
 export const Interactive: Story = {
   render: () => <Card interactive size="sm" render={<a href="#colony" />} className="w-80 max-w-full"><CardContent className="space-y-1"><Heading size="card">Canal colony</Heading><Text size="caption" tone="muted">8 known cats</Text></CardContent></Card>,
   parameters: { docs: { description: { story: 'An interactive card is a single link with a shared hover and focus state. Use it when the entire card opens one record.' } } },

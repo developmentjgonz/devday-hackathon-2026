@@ -2,29 +2,31 @@
 
 Status: the local React frontend has separate public and workspace shells with placeholder rescue content, local test sign-in, and server sessions. Storybook is the separate local component workspace. A dedicated Cloudflare Worker serves the last deployed frontend with a D1 health endpoint. The account work has not been deployed.
 
-Rescue-specific folders still reserve responsibilities. Account tables and endpoints are implemented locally. Rescue features, their database tables, Google sign-in, and AI integrations remain open.
+Account, colony, cat, report, task, and published public-content tables and endpoints are implemented locally. Report attachments use private R2 storage. Google sign-in, outbound messaging, and AI integrations remain open.
 
 ## System
 
-The frontend uses Vite, React, TypeScript, React Router in Data Mode, Tailwind CSS v4, and shadcn/ui. The installed shadcn components use Base UI primitives. The local backend uses Hono and strict TypeScript on Cloudflare Workers, with Zod for input validation and D1 for account data. The deployed Worker serves `dist/` and `/api/health`. R2 remains a future storage direction; no bucket is provisioned.
+The frontend uses Vite, React, TypeScript, React Router in Data Mode, Tailwind CSS v4, and shadcn/ui. The installed shadcn components use Base UI primitives. The local backend uses Hono and strict TypeScript on Cloudflare Workers, with Zod for input validation and D1 for application records. The deployed Worker serves `dist/` and `/api/health`. The local Worker emulates the private R2 upload bucket; the remote bucket is not yet provisioned.
 
 `src/router.tsx` defines frontend routes with `createBrowserRouter`. `src/main.tsx` renders its `RouterProvider`. The root `App` component owns shared route behavior: the skip link, focus on the main region after a path change, and scroll restoration. Layouts own their separate headers and navigation. See [the routing decision](decisions/0001-react-router.md) and [the layout decision](decisions/0002-public-and-workspace-layouts.md).
 
 | Route | Layout | Current content |
 | --- | --- | --- |
-| `/` | `SiteLayout` | Landing placeholder with links to the workspace |
-| `/community` | `SiteLayout` | Three sample volunteer openings and three sample news posts; fictional content in `src/features/community/data/sample-posts.ts`, with no live feed or publishing workflow |
+| `/` | `SiteLayout` | Landing page with a tracker of published, broad area summaries. |
+| `/community` | `SiteLayout` | Published volunteer openings and news from D1. Local seeds are fictional; an editing workflow is not implemented. |
 | `/privacy` | `SiteLayout` | Privacy Policy page shell; policy text is not yet supplied |
 | `/terms` | `SiteLayout` | Terms page shell; terms text is not yet supplied |
 | `/sign-in` | `AccountLayout` | Local test account picker |
 | `/sign-up` | `AccountLayout` | Local signup with optional phone; creates a pending member |
 | `/account-status` | `AccountLayout` | Pending approval or suspended access |
-| `/app` | `AppLayout` | Personal overview greeting |
-| `/app/reports` | `AppLayout` | Interactive local inbox with fictional reports; review, questions, duplicates, and linked care tasks remain in component memory. See [inbox scope](inbox.md). |
+| `/app` | `AppLayout` | Personal and team overview from saved records. |
+| `/app/colonies`, `/app/cats` | `AppLayout` | Protected directories and detail pages backed by D1. |
+| `/app/tasks` | `AppLayout` | Saved tasks, including tasks linked to reports. |
+| `/app/reports` | `AppLayout` | Saved reports, review state, questions, duplicates, and linked tasks. See [inbox scope](inbox.md). |
 | `/app/*` when unmatched | `AppLayout` | Not-found page with a link to `/app` |
 | Other unmatched paths | `SiteLayout` | Not-found page with a link to `/` |
 
-The root route has loading and error boundaries. Page components set their document title. The `/app` loader requests `/api/workspace`, which checks the server session and requires an active account. Signed-out users return to `/sign-in`; pending or suspended users return to `/account-status`. Future protected APIs must perform their own server check.
+The root route has loading and error boundaries. Page components set their document title. The `/app` loader requests `/api/workspace`, `/api/directory`, and `/api/workspace-data`. Each requires an active account. Signed-out users return to `/sign-in`; pending or suspended users return to `/account-status`. Write endpoints also check request origin and validate input. Public content is limited to explicitly published area summaries and posts.
 
 Account users, provider identities, and hashed session tokens are stored in D1. Roles are separate from account status. Test sign-in requires an explicit server flag and an HTTP localhost address. Seed fixtures live outside migrations. See [the account decision](decisions/0003-local-accounts.md) and [local setup](local-accounts.md).
 
@@ -32,7 +34,7 @@ Browser requests go through the Worker for protected application operations. Wor
 
 ## Code boundaries
 
-- `src/features/<area>/pages/` owns feature page content. Landing and overview are the first implemented areas. Feature components, hooks, and local types stay in their feature folder as they are introduced. Colony, cat, and report folders remain reserved.
+- `src/features/<area>/pages/` owns feature page content. Feature components, hooks, and local types stay in their feature folder.
 - `src/components/` owns UI reused across feature areas. `src/lib/` owns frontend infrastructure such as the API client.
 - `src/components/layout/` owns `SiteLayout`, `AppLayout`, the app sidebar, and the skip link. `src/components/brand.tsx` and `src/components/page-header.tsx` provide shared composition. Keep the public and app layouts separate instead of using mode flags on one layout.
 - `src/pages/` owns cross-feature not-found, route-loading, and route-error pages.
@@ -58,7 +60,7 @@ Browser requests go through the Worker for protected application operations. Wor
 
 `index.html`, `src/main.tsx`, `src/App.tsx`, `package.json`, `package-lock.json`, `vite.config.ts`, and TypeScript configuration now support the frontend. `components.json` records shadcn's component paths, aliases, and default preset.
 
-`worker/index.ts` serves static assets, account routes, a protected workspace endpoint, and the D1 health check. `wrangler.jsonc` names the Worker, asset binding, and database. It contains resource identifiers, not credentials. `migrations/0001_accounts.sql` defines the account schema; no rescue data model has been created. See [infrastructure.md](infrastructure.md).
+`worker/index.ts` serves static assets, account and directory routes, authenticated report and task endpoints, published public content, and the D1 health check. `wrangler.jsonc` names the Worker, asset, database, and private upload bucket bindings. It contains resource identifiers, not credentials. Ordered migrations define the application tables. See [infrastructure.md](infrastructure.md).
 
 `tsconfig.worker.json` checks all Worker and shared code with `strict` and `noUncheckedIndexedAccess`. `npm run cf:typegen` generates binding and runtime declarations from Wrangler configuration into the ignored `worker/worker-configuration.d.ts`. Development, type checks, and app builds run this command automatically. Use Workers runtime types in the backend, rather than browser DOM or Node.js globals. See the [backend decision](decisions/0004-hono-typescript-backend.md).
 

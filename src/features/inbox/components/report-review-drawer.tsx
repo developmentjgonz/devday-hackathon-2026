@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Check, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
 import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -12,27 +13,31 @@ import { SelectField } from '@/components/ui/select-field'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { Heading, Text } from '@/components/ui/typography'
-import { reportStatusLabels, type InboxData, type InboxReport, type ReportAttachment } from '../types'
+import { reportStatusLabels, type InboxData, type InboxReport, type ReportAttachment, type TaskAssociation } from '../types'
+import { useInbox } from '../inbox-context'
+import { associationLabel, emptyAssociationDraft, pendingAssociation, TaskAssociations, type AssociationDraft } from '@/features/tasks/components/task-associations'
 import { ReportAttachments } from './report-attachments'
 import { useReportComposer } from './report-composer'
 
 type ReviewDraft = Pick<InboxReport, 'colonyId' | 'catId' | 'careNote' | 'urgent'>
 type Action = 'question' | 'task' | 'duplicate'
-type ActionDraft = { question: string; taskTitle: string; taskOwner: string; taskDue: string; duplicateId: string }
+type ActionDraft = { question: string; taskTitle: string; taskOwner: string; taskDue: string; taskAssociations: TaskAssociation[]; taskAssociationDraft: AssociationDraft; duplicateId: string }
 const dateFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })
 const dueFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 
-export function ReportReviewDrawer({ report, reports, data, currentUser, open, onClose, onUpdate, onNotice, finalFocus }: {
+export function ReportReviewDrawer({ report, reports, data, open, onClose, onNotice, finalFocus }: {
   report: InboxReport | null
   reports: InboxReport[]
   data: InboxData
-  currentUser: string
   open: boolean
   onClose: () => void
-  onUpdate: (id: string, update: (report: InboxReport) => InboxReport) => void
   onNotice: (notice: string) => void
   finalFocus: () => HTMLElement | null
 }) {
+  const { tasks, members, finishReport, reopenReport, askQuestion, linkDuplicate, createTask } = useInbox()
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const reportTasks = tasks.filter((task) => task.reportId === report?.id)
   // Keep drafts by report, including unfinished follow-up dialogs.
   const [drafts, setDrafts] = useState<Record<string, ReviewDraft>>({})
   const [actionDrafts, setActionDrafts] = useState<Record<string, ActionDraft>>({})
@@ -43,11 +48,11 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
   const drawerRef = useRef<HTMLDivElement>(null)
   const draft = report ? drafts[report.id] ?? report : null
   const actionDraft = report ? actionDrafts[report.id] ?? {
-    question: '', taskTitle: report.category === 'Care concern' ? 'Arrange a care check' : '', taskOwner: '', taskDue: '', duplicateId: report.possibleDuplicateOf ?? '',
+    question: '', taskTitle: report.category === 'Care concern' ? 'Arrange a care check' : '', taskOwner: '', taskDue: '', taskAssociations: [], taskAssociationDraft: emptyAssociationDraft(), duplicateId: report.possibleDuplicateOf ?? '',
   } : null
   const isProcessed = report?.status === 'processed'
   const matchingCats = data.cats.filter((cat) => cat.colonyId === draft?.colonyId)
-  const duplicateTargets = reports.filter((candidate) => candidate.id !== report?.id && !candidate.duplicateOf && Boolean(draft?.colonyId) && candidate.colonyId === draft?.colonyId && !reports.some((item) => item.duplicateOf === report?.id))
+  const duplicateTargets = reports.filter((candidate) => candidate.id !== report?.id && !candidate.duplicateOf && Boolean(report?.colonyId) && candidate.colonyId === report?.colonyId && !reports.some((item) => item.duplicateOf === report?.id))
   const duplicateChoice = duplicateTargets.find((candidate) => candidate.id === actionDraft?.duplicateId)
   const duplicateTarget = reports.find((candidate) => candidate.id === report?.duplicateOf)
   const suggestedDuplicate = duplicateTargets.find((candidate) => candidate.id === report?.possibleDuplicateOf)
@@ -57,6 +62,7 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
 
   useEffect(() => {
     setTaskNotice(null)
+    setError('')
   }, [open, report?.id])
 
   useEffect(() => {
@@ -70,22 +76,27 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
 
   function editActionDraft(update: Partial<ActionDraft>) {
     if (!report || !actionDraft) return
-    setActionDrafts((items) => ({ ...items, [report.id]: { ...actionDraft, ...update } }))
+    setActionDrafts((items) => ({ ...items, [report.id]: { ...(items[report.id] ?? actionDraft), ...update } }))
   }
 
-  function finishReview() {
-    if (!report || !draft || !draft.colonyId || !draft.careNote.trim()) return
-    onUpdate(report.id, (item) => ({ ...item, ...draft, careNote: draft.careNote.trim(), status: 'processed', history: [...item.history, `${currentUser} saved the confirmed report details and finished the review.`] }))
-    setDrafts((items) => { const next = { ...items }; delete next[report.id]; return next })
-    onNotice(`Review finished: ${report.title}. Find it under Processed.${report.tasks.some((task) => task.status === 'open') ? ' Linked care tasks remain open.' : ''}`)
-    closeReview()
+  async function finishReview() {
+    if (!report || !draft || !draft.colonyId || !draft.careNote.trim() || saving) return
+    setSaving(true); setError('')
+    try {
+      await finishReport(report.id, { ...draft, careNote: draft.careNote.trim() })
+      setDrafts((items) => { const next = { ...items }; delete next[report.id]; return next })
+      onNotice(`Review finished: ${report.title}. Find it under Processed.${reportTasks.some((task) => task.status === 'open') ? ' Linked care tasks remain open.' : ''}`)
+      closeReview()
+    } catch (error) { setError(error instanceof Error ? error.message : 'Could not save the review. Try again.') }
+    finally { setSaving(false) }
   }
 
-  function reopen() {
-    if (!report) return
-    onUpdate(report.id, (item) => ({ ...item, status: 'pending', duplicateOf: undefined, history: [...item.history, `${currentUser} reopened the report for review.`] }))
-    onNotice('Report returned to Pending.')
-    closeReview()
+  async function reopen() {
+    if (!report || saving) return
+    setSaving(true); setError('')
+    try { await reopenReport(report.id); onNotice('Report returned to Pending.'); closeReview() }
+    catch (error) { setError(error instanceof Error ? error.message : 'Could not reopen the report. Try again.') }
+    finally { setSaving(false) }
   }
 
   function closeReview() {
@@ -99,29 +110,34 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
     return false
   }
 
-  function submitAction(event: FormEvent) {
+  async function submitAction(event: FormEvent) {
     event.preventDefault()
-    if (!report || !actionDraft) return
+    if (!report || !actionDraft || saving) return
+    setSaving(true); setError('')
+    try {
     if (action === 'question' && actionDraft.question.trim()) {
-      onUpdate(report.id, (item) => ({ ...item, status: 'waiting', thread: [...item.thread, { id: crypto.randomUUID(), author: currentUser, text: actionDraft.question.trim() }], history: [...item.history, `${currentUser} requested more details.`] }))
+      await askQuestion(report.id, actionDraft.question.trim())
       editActionDraft({ question: '' })
       onNotice('Question added. Report moved to Waiting for details.')
       closeReview()
     } else if (action === 'task' && actionDraft.taskTitle.trim() && actionDraft.taskOwner) {
-      onUpdate(report.id, (item) => ({ ...item, tasks: [...item.tasks, { id: crypto.randomUUID(), title: actionDraft.taskTitle.trim(), owner: actionDraft.taskOwner, due: actionDraft.taskDue, status: 'open' }], history: [...item.history, `${currentUser} created a care task assigned to ${actionDraft.taskOwner}.`] }))
-      editActionDraft({ taskTitle: '', taskOwner: '', taskDue: '' })
-      const count = report.tasks.length + 1
+      const pending = pendingAssociation(actionDraft.taskAssociationDraft, actionDraft.taskAssociations, data)
+      await createTask({ reportId: report.id, title: actionDraft.taskTitle.trim(), ownerId: actionDraft.taskOwner, due: actionDraft.taskDue, associations: pending ? [...actionDraft.taskAssociations, pending] : actionDraft.taskAssociations })
+      editActionDraft({ taskTitle: '', taskOwner: '', taskDue: '', taskAssociations: [], taskAssociationDraft: emptyAssociationDraft() })
+      const count = reportTasks.length + 1
       setTaskNotice({ reportId: report.id, text: `Care task created. ${count} ${count === 1 ? 'task' : 'tasks'} linked to this report.` })
     } else if (action === 'duplicate' && duplicateChoice) {
-      onUpdate(report.id, (item) => ({ ...item, status: 'processed', duplicateOf: duplicateChoice.id, history: [...item.history, `${currentUser} linked this duplicate to an existing report.`] }))
+      await linkDuplicate(report.id, duplicateChoice.id)
       onNotice('Duplicate linked. Both original submissions have been kept.')
       closeReview()
     } else return
     setAction(null)
+    } catch (error) { setError(error instanceof Error ? error.message : 'Could not save the change. Try again.') }
+    finally { setSaving(false) }
   }
 
-  return <Drawer open={open && report !== null} onOpenChange={(next) => { if (!next) closeReview() }}>
-    <DrawerContent ref={drawerRef} closeLabel="Close report" motion={justSubmitted ? 'none' : 'default'} finalFocus={restoreFocus} initialFocus={drawerRef}>
+  return <Drawer open={open && report !== null} onOpenChange={(next) => { if (!next && !saving) closeReview() }}>
+    <DrawerContent ref={drawerRef} closeDisabled={saving} closeLabel="Close report" motion={justSubmitted ? 'none' : 'default'} finalFocus={restoreFocus} initialFocus={drawerRef}>
       {report && draft ? <>
         <DrawerHeader density="compact">
           <DialogTitle size="card" className="flex min-h-11 items-center">{report.title}</DialogTitle>
@@ -133,6 +149,7 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
           <DialogDescription className="flex flex-wrap gap-x-3">{justSubmitted ? <span>Report added.</span> : null}<span>Reported by {report.reporter}</span><time dateTime={report.submittedAt}>{dateFormat.format(new Date(report.submittedAt))}</time></DialogDescription>
         </DrawerHeader>
         <DrawerBody key={report.id}>
+          <fieldset disabled={saving} className="min-w-0 space-y-6">
           <section aria-labelledby="original-report-title" className="space-y-3">
             <Heading id="original-report-title" level={3} size="compact">Original report</Heading>
             <Text size="small" className="whitespace-pre-wrap wrap-anywhere">{report.message}</Text>
@@ -158,38 +175,41 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
               <div className="flex items-center gap-3"><Checkbox id="report-urgent" checked={draft.urgent} onCheckedChange={(checked) => editDraft({ urgent: checked === true })} /><Label htmlFor="report-urgent">Needs urgent attention</Label></div>
             </>}
           </section>
-          {report.tasks.length || !isProcessed ? <>
+          {reportTasks.length || !isProcessed ? <>
             <Separator />
             <section aria-labelledby="care-tasks-title" className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2"><Heading id="care-tasks-title" level={3} size="compact">Care tasks{report.tasks.length ? ` (${report.tasks.length})` : ''}</Heading>{!isProcessed ? <Button variant="outline" size="sm" onClick={() => setAction('task')}>Create task</Button> : null}</div>
-              {report.tasks.length ? <ul className="space-y-4">{report.tasks.map((task) => <li key={task.id} className="space-y-1"><Text size="small" weight="medium" className="wrap-anywhere">{task.title}</Text><Text size="caption" tone="muted">{task.status === 'completed' ? 'Completed task' : 'Open task'} assigned to {task.owner}</Text>{task.due ? <Text size="caption" tone="muted">Due {dueFormat.format(new Date(`${task.due}T00:00:00Z`))}</Text> : null}</li>)}</ul> : null}
+              <div className="flex flex-wrap items-center justify-between gap-2"><Heading id="care-tasks-title" level={3} size="compact">Care tasks{reportTasks.length ? ` (${reportTasks.length})` : ''}</Heading>{!isProcessed ? <Button variant="outline" size="sm" onClick={() => setAction('task')}>Create task</Button> : null}</div>
+              {reportTasks.length ? <ul className="space-y-4">{reportTasks.map((task) => <li key={task.id} className="space-y-1"><Text size="small" weight="medium" className="wrap-anywhere">{task.title}</Text><Text size="caption" tone="muted">{task.status === 'completed' ? 'Completed task' : 'Open task'} assigned to {task.owner}</Text>{task.due ? <Text size="caption" tone="muted">Due {dueFormat.format(new Date(`${task.due}T00:00:00Z`))}</Text> : null}{task.associations.map((item, index) => <Text key={`${item.type}-${index}`} size="caption" tone="muted" className="wrap-anywhere">{item.type[0]!.toUpperCase() + item.type.slice(1)}: {associationLabel(item, data)}</Text>)}</li>)}</ul> : null}
               <Text role="status" size="small" className={taskNotice?.reportId === report.id ? undefined : 'sr-only'}>{taskNotice?.reportId === report.id ? taskNotice.text : ''}</Text>
             </section>
           </> : null}
           {report.thread.length ? <><Separator /><section aria-labelledby="conversation-title" className="space-y-4"><Heading id="conversation-title" level={3} size="compact">Conversation</Heading><ol className="space-y-4">{report.thread.map((entry) => <li key={entry.id} className="space-y-1"><Text size="small" weight="medium">{entry.author}</Text><Text size="small" className="whitespace-pre-wrap wrap-anywhere">{entry.text}</Text></li>)}</ol></section></> : null}
           {!isProcessed && duplicateTargets.length ? <><Separator /><div className="space-y-2">{suggestedDuplicate ? <><Text size="label">Possible duplicate</Text><Text size="small">{suggestedDuplicate.title}</Text></> : null}<Button variant="link" size="sm" onClick={() => setAction('duplicate')}>{suggestedDuplicate ? 'Compare and link reports' : 'Link as a duplicate'}</Button></div></> : null}
           {report.history.length ? <><Separator /><Disclosure title="Review history"><ol className="space-y-3">{report.history.map((entry, index) => <li key={`${index}-${entry}`}><Text size="small" tone="muted">{entry}</Text></li>)}</ol></Disclosure></> : null}
+          </fieldset>
         </DrawerBody>
         <DrawerFooter>
-          {isProcessed ? <Button variant="outline" onClick={reopen}><RotateCcw aria-hidden="true" />Reopen report</Button> : <>
+          {error && !action ? <Alert>{error}</Alert> : null}
+          {isProcessed ? <Button variant="outline" loading={saving} onClick={reopen}><RotateCcw aria-hidden="true" />Reopen report</Button> : <>
             {finishHint ? <Text id="review-finish-hint" size="caption" tone="muted" role="status">{finishHint}</Text> : null}
             <div className="grid gap-2 min-[360px]:grid-cols-2">
-              <Button variant="outline" onClick={() => setAction('question')}>Ask for details</Button>
-              <Button onClick={finishReview} disabled={!draft.colonyId || !draft.careNote.trim()} aria-describedby={finishHint ? 'review-finish-hint' : undefined}><Check aria-hidden="true" />Save and finish</Button>
+              <Button variant="outline" disabled={saving} onClick={() => { setError(''); setAction('question') }}>Ask for details</Button>
+              <Button onClick={finishReview} loading={saving} disabled={!draft.colonyId || !draft.careNote.trim()} aria-describedby={finishHint ? 'review-finish-hint' : undefined}><Check aria-hidden="true" />Save and finish</Button>
             </div>
           </>}
         </DrawerFooter>
       </> : null}
     </DrawerContent>
-    <Dialog open={action !== null} onOpenChange={(next) => { if (!next) setAction(null) }}>
-      <DialogContent>
+    <Dialog open={action !== null} onOpenChange={(next) => { if (!next && !saving) { setAction(null); setError('') } }}>
+      <DialogContent closeDisabled={saving}>
         <form onSubmit={submitAction} className="grid gap-5">
           <DialogHeader><DialogTitle>{action === 'question' ? 'Ask for details' : action === 'task' ? 'Create a care task' : 'Link duplicate report'}</DialogTitle><DialogDescription>{action === 'question' ? `Add a question for ${report?.reporter}. This moves the report to Waiting for details.` : action === 'task' ? 'Assign the next care action. The task stays open after the review is finished.' : 'Compare the reports before linking. Both original submissions will be kept.'}</DialogDescription></DialogHeader>
           {action === 'question' ? <div className="grid gap-2"><Label htmlFor="report-question">Question</Label><Textarea id="report-question" required maxLength={2000} value={actionDraft?.question ?? ''} onChange={(event) => editActionDraft({ question: event.target.value })} placeholder="What do you need to know?" /></div> : null}
           {action === 'task' ? <>
-            <div className="grid gap-2"><Label htmlFor="task-title">What needs to happen?</Label><Input id="task-title" required maxLength={160} value={actionDraft?.taskTitle ?? ''} onChange={(event) => editActionDraft({ taskTitle: event.target.value })} /></div>
-            <div className="grid gap-2"><Label htmlFor="task-owner">Assign to</Label><SelectField id="task-owner" required value={actionDraft?.taskOwner ?? ''} onChange={(event) => editActionDraft({ taskOwner: event.target.value })}><option value="">Choose a team member</option>{data.members.map((member) => <option key={member} value={member}>{member}</option>)}</SelectField></div>
-            <div className="grid gap-2"><Label htmlFor="task-due">Due date (optional)</Label><Input id="task-due" type="date" value={actionDraft?.taskDue ?? ''} onChange={(event) => editActionDraft({ taskDue: event.target.value })} /></div>
+            <div className="grid gap-2"><Label htmlFor="task-title">What needs to happen?</Label><Input id="task-title" disabled={saving} required maxLength={160} value={actionDraft?.taskTitle ?? ''} onChange={(event) => editActionDraft({ taskTitle: event.target.value })} /></div>
+            <div className="grid gap-2"><Label htmlFor="task-owner">Assign to</Label><SelectField id="task-owner" disabled={saving} required value={actionDraft?.taskOwner ?? ''} onChange={(event) => editActionDraft({ taskOwner: event.target.value })}><option value="">Choose a team member</option>{members.map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</SelectField></div>
+            <div className="grid gap-2"><Label htmlFor="task-due">Due date (optional)</Label><Input id="task-due" disabled={saving} type="date" value={actionDraft?.taskDue ?? ''} onChange={(event) => editActionDraft({ taskDue: event.target.value })} /></div>
+            <TaskAssociations disabled={saving} value={actionDraft?.taskAssociations ?? []} onChange={(taskAssociations) => editActionDraft({ taskAssociations })} data={data} draft={actionDraft?.taskAssociationDraft ?? emptyAssociationDraft()} onDraftChange={(taskAssociationDraft) => editActionDraft({ taskAssociationDraft })} />
           </> : null}
           {action === 'duplicate' ? <>
             <div className="grid gap-2"><Label htmlFor="duplicate-report">Existing report</Label><SelectField id="duplicate-report" required value={duplicateChoice?.id ?? ''} onChange={(event) => editActionDraft({ duplicateId: event.target.value })}><option value="">Choose a report</option>{duplicateTargets.map((candidate) => <option key={candidate.id} value={candidate.id}>{candidate.title}</option>)}</SelectField></div>
@@ -197,7 +217,8 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
             <Text size="small" tone="muted">Linking finishes this review. Cat records stay separate.</Text>
             {changed ? <Text size="small" tone="muted">Your review draft will be kept if you reopen this report.</Text> : null}
           </> : null}
-          <DialogFooter><Button type="button" variant="outline" onClick={() => setAction(null)}>Cancel</Button><Button type="submit" disabled={action === 'question' ? !actionDraft?.question.trim() : action === 'task' ? !actionDraft?.taskTitle.trim() || !actionDraft.taskOwner : !duplicateChoice}>{action === 'question' ? 'Add question and wait' : action === 'task' ? 'Create task' : 'Link and finish'}</Button></DialogFooter>
+          {error ? <Alert>{error}</Alert> : null}
+          <DialogFooter><Button type="button" variant="outline" disabled={saving} onClick={() => { setAction(null); setError('') }}>Cancel</Button><Button type="submit" loading={saving} disabled={action === 'question' ? !actionDraft?.question.trim() : action === 'task' ? !actionDraft?.taskTitle.trim() || !actionDraft.taskOwner : !duplicateChoice}>{action === 'question' ? 'Add question and wait' : action === 'task' ? 'Create task' : 'Link and finish'}</Button></DialogFooter>
         </form>
       </DialogContent>
     </Dialog>

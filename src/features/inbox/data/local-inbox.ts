@@ -1,14 +1,15 @@
 import type { InboxData, InboxReport } from '../types'
 
 // Fictional local interaction fixture. No records or messages are fetched or sent.
-const base: Pick<InboxReport, 'attachments' | 'tasks' | 'thread' | 'history' | 'unread' | 'status' | 'urgent' | 'catId'> = {
-  attachments: [], tasks: [], thread: [], history: [], unread: true, status: 'pending', urgent: false, catId: '',
+const base: Pick<InboxReport, 'attachments' | 'thread' | 'history' | 'unread' | 'status' | 'urgent' | 'catId'> = {
+  attachments: [], thread: [], history: [], unread: true, status: 'pending', urgent: false, catId: '',
 }
 
 /** Detailed scenarios for focused interaction stories. */
 export const inboxScenarioData: InboxData = {
-  colonies: [{ id: 'riverside', name: 'Riverside' }, { id: 'canal', name: 'Canal' }, { id: 'grove', name: 'Grove' }],
-  cats: [{ id: 'pepper', colonyId: 'riverside', name: 'Pepper' }, { id: 'miso', colonyId: 'canal', name: 'Miso' }, { id: 'olive', colonyId: 'grove', name: 'Olive' }],
+  colonies: [{ id: 'riverside', name: 'Riverside', coordinates: [-80.249, 25.812] }, { id: 'canal', name: 'Canal', coordinates: [-80.226, 25.797] }, { id: 'grove', name: 'Grove', coordinates: [-80.243, 25.771] }],
+  cats: [{ id: 'pepper', colonyId: 'riverside', name: 'Pepper', photoUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=200&q=80' }, { id: 'miso', colonyId: 'canal', name: 'Miso' }, { id: 'olive', colonyId: 'grove', name: 'Olive' }],
+  tasks: [],
   members: ['Alex Morgan', 'Maya Rivera', 'Sam Chen'],
   reports: [
     { ...base, id: 'report-injury', title: 'Possible injury near the feeding station', reporter: 'Maya Rivera', submittedAt: '2026-11-07T10:40:00-05:00', message: 'Pepper was limping on his front paw this morning. He stayed by the fence and did not come over for food. I left water nearby. Can someone check on him?', category: 'Care concern', colonyId: 'riverside', catId: 'pepper', careNote: 'Reported limping on a front paw and reduced interest in food. Needs a care check.', urgent: true, attachments: [{ id: 'stock-cat', name: 'cat-sighting.jpg', mimeType: 'image/jpeg', size: 66221, url: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1000&q=80' }] },
@@ -33,6 +34,20 @@ const activities = [
   { title: 'Follow-up care check', category: 'Care concern', message: 'Please arrange a follow-up observation and record appetite, movement, and any change since the previous visit.' },
   { title: 'Feeding area cleaned', category: 'Site care', message: 'The feeding area has been cleared of old food and litter. Dishes are clean and the path is clear.' },
 ]
+
+const followUpTasks = [
+  'Check food and water',
+  'Check the water bowls',
+  'Restock food supplies',
+  'Look for the unfamiliar cat',
+  'Check shelter bedding',
+  'Confirm evening feeding cover',
+  'Check on the returning cat',
+  'Clean the feeding area',
+  'Arrange a follow-up care check',
+  'Inspect the feeding area',
+]
+const taskDueDates = ['2026-11-08', '2026-11-09', '2026-11-10', '']
 
 const additionalReports: InboxReport[] = Array.from({ length: 93 }, (_, index): InboxReport => {
   const status = index < 55 ? 'pending' : index < 74 ? 'waiting' : 'processed'
@@ -61,7 +76,6 @@ const additionalReports: InboxReport[] = Array.from({ length: 93 }, (_, index): 
     unread: status !== 'processed' && index % 3 !== 0,
     status,
     attachments: [],
-    tasks: index % 11 === 0 ? [{ id: `visit-task-${index + 1}`, title: 'Arrange the next colony visit', owner: reviewer, due: '2026-11-08', status: 'open' }] : [],
     thread: status === 'waiting' ? [{ id: `visit-question-${index + 1}`, author: reviewer, text: 'Can you confirm the exact location and the time of your visit?' }] : [],
     history: status === 'processed' ? [`${reviewer} confirmed the report details and finished the review.`] : status === 'waiting' ? [`${reviewer} requested more details.`] : [],
   }
@@ -71,4 +85,8 @@ const additionalReports: InboxReport[] = Array.from({ length: 93 }, (_, index): 
 export const localInboxData: InboxData = {
   ...inboxScenarioData,
   reports: [...inboxScenarioData.reports, ...additionalReports],
+  tasks: additionalReports.flatMap((report, index) => index % 11 === 0 ? [{
+    id: `visit-task-${index + 1}`, reportId: report.id, title: report.urgent ? 'Arrange a care check' : followUpTasks[index % followUpTasks.length]!,
+    owner: inboxScenarioData.members[(index + 1) % inboxScenarioData.members.length]!, ownerId: `story:${inboxScenarioData.members[(index + 1) % inboxScenarioData.members.length]!}`, due: taskDueDates[Math.floor(index / 11) % taskDueDates.length]!, status: 'open' as const, associations: [],
+  }] : []),
 }

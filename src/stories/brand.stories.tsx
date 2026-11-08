@@ -7,6 +7,7 @@ import { TextLink } from '@/components/ui/text-link'
 import { Button } from '@/components/ui/button'
 import { LoadingIndicator } from '@/components/ui/loading-indicator'
 import { CommunityCat } from '@/components/illustrations/community-cat'
+import { SadCat } from '@/components/illustrations/sad-cat'
 
 const meta = {
   title: 'Foundations/Brand assets',
@@ -62,6 +63,13 @@ export const CommunityIllustration: Story = {
   render: () => <CommunityCat className="w-full max-w-xl" />,
   parameters: {
     docs: { description: { story: 'Original, responsive brand artwork shared by the landing and About pages. Colors use the same theme tokens as the component library.' } },
+  },
+}
+
+export const RecoveryIllustration: Story = {
+  render: () => <div className="size-48 rounded-full bg-secondary"><SadCat /></div>,
+  parameters: {
+    docs: { description: { story: 'A decorative sad cat used on recovery screens. The illustration is generated artwork, stored as a compact WebP image.' } },
   },
 }
 

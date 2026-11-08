@@ -4,11 +4,11 @@ Open `/app/reports` with an approved local account, or **Pages → Reports → R
 
 ## Current scope
 
-This is a local interface for reviewing the flow before rescue persistence is designed. `src/features/inbox/data/local-inbox.ts` supplies 100 fictional reports: 60 to review, 20 waiting for details, and 20 processed. They cover three fictional colonies and cats and three reviewer names. The seven detailed interaction scenarios also remain available through the Focused inbox story. The attachment is a stock Unsplash cat photo. It does not depict a reported injury. No real reports, messages, locations, or contacts are used.
+Local setup seeds 100 fictional reports across three fictional colonies and cats. The Focused inbox story has seven interaction scenarios. No real reports, messages, locations, or contacts are used in the seed.
 
-Reports, questions, tasks, attachments, duplicate links, read state, and history stay in a workspace-level memory provider. They survive navigation between workspace routes. Refreshing or leaving the workspace resets them. Unfinished review drafts and question/task form drafts stay by report while the Inbox screen is mounted. Closing a follow-up dialog or switching reports preserves its unfinished form. Questions are not sent. Tasks are not persisted or delivered to an assignee. Completing a review does not change a database cat or colony record. The page makes no live-feed claim. Integration notes stay here and in Storybook Docs.
+Reports, questions, tasks, duplicate links, per-user read state, and history are saved in D1. Report attachments use private R2 storage and authenticated reads. These saved records survive refresh. Unfinished review and follow-up drafts stay only while the screen is mounted. Questions appear in the saved report conversation; outbound delivery is not implemented. Completing a review does not change the cat or colony record.
 
-The UI contracts in `src/features/inbox/types.ts` are feature-local and do not define a database schema or API contract. Schema work runs separately; no rescue migrations or endpoints were added for this page.
+Shared types and validation schemas define the API contract. `migrations/0010_reports_and_tasks.sql` defines the report and task tables. The report and task APIs require an active account and same-origin writes.
 
 ## Behavior
 
@@ -20,7 +20,7 @@ The UI contracts in `src/features/inbox/types.ts` are feature-local and do not d
 - Checkboxes select reports without opening them. Select this page affects only the displayed page; selections can span pages in the current filtered view. Mark read or Mark unread updates the selected reports. Changing a filter or view clears the selection.
 - The original message and attachments remain unchanged. Review drafts can change colony, cat match, care note, and urgency. Changing colony clears the cat match so a cat from another colony cannot remain attached.
 - Unknown cat identity is allowed. A colony and nonempty care note are required to finish a normal review. Unclear locations can wait for more information.
-- Asking a question adds it to the local conversation and moves the report to Waiting for details. Its draft stays available while the screen is mounted.
+- Asking a question adds it to the saved conversation and moves the report to Waiting for details. Its draft stays available while the screen is mounted.
 - A care task requires a title and team member. Its due date is optional. Tasks remain open when their report is processed or reopened. A confirmation appears beside the linked tasks and is announced to assistive technology; it does not cover the drawer actions.
 - Duplicate linking preserves both reports and moves the duplicate to Processed. Targets belong to the same known colony and cannot already be duplicates. A report with incoming duplicate links cannot itself be linked as a duplicate; this prevents cycles. Cat records are never merged by this action.
 - Finishing a review confirms that the report can be found under Processed. Processed reports show saved details as readable text, history, and open linked tasks. Unsaved duplicate-review drafts do not appear in the saved summary. Reopen returns a report to Pending and restores its review draft when one exists.
@@ -57,7 +57,7 @@ The notification popover lists urgent, unprocessed reports; it is not a complete
 
 **New report** is available from every protected workspace page. It opens the same shared right-side drawer as report review and fills phone screens. The header and Cancel/Submit actions stay visible while the form body scrolls. The form uses **What happened?**, **Colony**, **Details**, **Attachments (optional)**, and **Needs urgent attention**. Its final action is **Submit report**. Unknown colony is allowed at submission; the reviewer must identify it before processing.
 
-Attachments support images, audio recordings, PDF, text, Word (`.docx`), and CSV files. Each report can contain up to five files of 10 MB each. Users can remove files before submission. Photos show large inline previews in the review drawer and compact thumbnails in the submission form. Clicking a review photo opens a wide viewer. Reports also offer file-open links, downloads, and native audio playback. Local object URLs stay valid while the workspace is mounted and are released on removal, cancellation, or workspace unmount. No storage service or uploads are implemented.
+Attachments support images, audio recordings, PDF, text, Word (`.docx`), and CSV files. Each report can contain up to five files of 10 MB each. Users can remove files before submission. Photos show large inline previews in the review drawer and compact thumbnails in the submission form. Clicking a review photo opens a wide viewer. Reports also offer file-open links, downloads, and native audio playback. Local object URLs stay valid while the workspace is mounted and are released on removal, cancellation, or workspace unmount. Saved attachments use private R2 storage and require an active account to read.
 
 Submitting adds a local report and opens its review in the same position, with a confirmation in the drawer description. The composer and review skip their sliding transitions for this handoff. A report from another workspace page reaches the Inbox through `?report=<id>`. Closing the drawer clears that query and the submission confirmation. Review status remains separate from task state.
 

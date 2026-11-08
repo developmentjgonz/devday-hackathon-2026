@@ -17,8 +17,9 @@ export const badgeStateVariants: CompleteVariants<ComponentProps<typeof Badge>['
 // Each shared source must have browser coverage or a reason it has no own states.
 // The coverage test compares this list with the source directory.
 export const sharedStateCoverage = {
+  'progress-ring.tsx': 'Determinate, completed, zero, and empty totals in Feedback/Progress ring; task and report counts update in overview-progress.spec.ts.',
   'record-avatar.tsx': 'Passive photo with cat and colony fallback; photo failure is checked in record-avatar.spec.ts.',
-  'view-switcher.tsx': 'Selection, hover, and keyboard focus are checked in view-switcher.spec.ts.',
+  'view-switcher.tsx': 'Selection, hover, and keyboard focus are checked in view-switcher.spec.ts; task filters and selection are covered in my-tasks.spec.ts.',
   'toaster.tsx': 'Sonner owns notification stacking, dismissal, and announcements; Feedback/Notifications demonstrates success and error. Report action checks cover emitted confirmations.',
   'attachment-list.tsx': 'Attachment actions compose the shared Button; attachment stories cover photos, audio, documents, and unavailable previews.',
   'data-table-toolbar.tsx': 'Search, colony filtering, clear filters, and selection actions in data-table.spec.ts; compact fields compose the tested shared Input and SelectField.',
@@ -27,7 +28,7 @@ export const sharedStateCoverage = {
   'account-button.tsx': 'Account trigger: popover open, hover, focus, Escape, and focus return.',
   'badge.tsx': 'All variants as links; plain spans must remain passive.',
   'button.tsx': 'Every variant: hover, focus, activation, disabled, and loading.',
-  'card.tsx': 'Interactive links have hover and keyboard focus coverage in interactive-card.spec.ts.',
+  'card.tsx': 'Anchor rendering and interactive record-card hover and focus are checked in shared-components and colonies-and-cats specs. Note surfaces appear in My Tasks light and dark layout checks.',
   'checkbox.tsx': 'Checked, unchecked, invalid, disabled, keyboard, and touch.',
   'colony-map.tsx': 'Location selection and retry use RecordButton and Button; offline map story.',
   'dialog.tsx': 'Trigger, focus trap, close controls, Escape, and focus return.',

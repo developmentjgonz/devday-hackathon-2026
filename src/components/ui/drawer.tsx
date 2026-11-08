@@ -7,12 +7,12 @@ import { cn } from '@/lib/utils'
 
 export const Drawer = Primitive.Root
 
-export function DrawerContent({ className, children, closeLabel = 'Close panel', motion = 'default', ...props }: Primitive.Popup.Props & { closeLabel?: string; motion?: 'default' | 'none' }) {
+export function DrawerContent({ className, children, closeLabel = 'Close panel', closeDisabled = false, motion = 'default', ...props }: Primitive.Popup.Props & { closeLabel?: string; closeDisabled?: boolean; motion?: 'default' | 'none' }) {
   return <DialogPortal><DialogOverlay motion={motion} /><Primitive.Popup
     data-slot="drawer-content"
     className={cn('fixed inset-y-0 right-0 z-50 flex h-dvh w-full flex-col overflow-hidden border-l border-border bg-popover font-sans text-sm leading-6 text-popover-foreground shadow-xl outline-none sm:max-w-[38rem]', motion === 'default' && 'duration-200 ease-(--ease-out) data-open:animate-in data-open:slide-in-from-right data-closed:animate-out data-closed:slide-out-to-right motion-reduce:animate-none', className)}
     {...props}
-  >{children}<Primitive.Close render={<Button variant="ghost" size="icon" className="absolute top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))]" />} aria-label={closeLabel}><X aria-hidden="true" /></Primitive.Close></Primitive.Popup></DialogPortal>
+  >{children}<Primitive.Close disabled={closeDisabled} render={<Button variant="ghost" size="icon" className="absolute top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))]" />} aria-label={closeLabel}><X aria-hidden="true" /></Primitive.Close></Primitive.Popup></DialogPortal>
 }
 export function DrawerHeader({ className, density = 'default', ...props }: ComponentProps<'div'> & { density?: 'default' | 'compact' }) {
   return <div data-slot="drawer-header" className={cn('grid min-w-0 shrink-0 border-b border-border wrap-anywhere', density === 'compact' ? 'gap-2 px-6 py-4 pt-[max(1rem,env(safe-area-inset-top))]' : 'gap-3 p-6 pt-[max(1.5rem,env(safe-area-inset-top))]', 'pr-16', className)} {...props} />

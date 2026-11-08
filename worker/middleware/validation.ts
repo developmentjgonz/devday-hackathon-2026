@@ -17,6 +17,11 @@ export const limitFormBody = bodyLimit({
   onError: () => { throw new HTTPException(413, { message: 'Form data is too large' }) },
 })
 
+export const limitCatBody = bodyLimit({
+  maxSize: 1_450_000,
+  onError: () => { throw new HTTPException(413, { message: 'Cat details or photo are too large' }) },
+})
+
 export function validateJson<T extends z.ZodType>(schema: T) {
   return validator('json', (value) => {
     const result = schema.safeParse(value)

@@ -8,7 +8,7 @@ const meta = {
   parameters: {
     docs: {
       description: {
-        component: 'The production workspace navigation. Pink marks the current route; gray marks hover on another link. Hover must not change the current route. Keyboard focus adds a ring to either state. Links remain usable, including the current link. These stories use an in-memory router and make no account requests. Check default, hover, current + hover, focus, current + focus, and navigation in light and dark themes.',
+        component: 'The production workspace navigation. On phones, links form a horizontally scrollable row; wider screens use a vertical list. Pink marks the current route; gray marks hover on another link. Hover must not change the current route. Keyboard focus adds a ring to either state. Links remain usable, including the current link. These stories use an in-memory router and make no account requests. Check default, hover, current + hover, focus, current + focus, and navigation in light and dark themes.',
       },
     },
   },

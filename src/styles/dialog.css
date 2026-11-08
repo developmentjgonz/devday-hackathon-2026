@@ -1,0 +1,21 @@
+/* Scroll inside the dialog shell; leave its rounded corners and actions clear. */
+.mews-dialog-scroll::-webkit-scrollbar {
+  width: 0.625rem;
+  height: 0.625rem;
+}
+.mews-dialog-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin-block: var(--control-radius);
+}
+.mews-dialog-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: var(--surface-radius);
+  background: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
+  background-clip: padding-box;
+}
+@supports not selector(::-webkit-scrollbar) {
+  .mews-dialog-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--muted-foreground) transparent;
+  }
+}

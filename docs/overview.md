@@ -1,0 +1,9 @@
+# Overview
+
+The user approved the three Care progress cards and asked to remove the repeated task list and Team summary. Keep Overview focused on these three cards. My tasks links to `/app/tasks`; Report reviews links to `/app/reports`. Task lists, report lists, and directory inventory belong on their own pages.
+
+Personal task completion uses the signed-in user's stable ID. Team task completion counts all workspace tasks. Report processing remains separate from task completion. These totals update from workspace state after completion, Undo, reopening, or review. They do not claim weekly output, streaks, or historical trends. Due and overdue counts use America/New_York and exclude completed tasks. Empty totals show a dash in the shared ProgressRing and readable text.
+
+The shared Card, ProgressRing, Heading, Text, and TextLink components own appearance. Feedback → Progress ring documents zero, partial, and complete totals. Storybook uses isolated fictional records; production reads the workspace provider.
+
+The card structure draws on [ClickUp member progress](https://mobbin.com/screens/caed8962-b58e-4c18-9391-13df63797c66) and [Wrike review status](https://mobbin.com/screens/d750f820-568f-4a4f-8540-1692449871de). The user chose to keep full task and report lists off Overview.

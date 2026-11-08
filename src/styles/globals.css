@@ -36,6 +36,7 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
+  --color-placeholder-foreground: var(--placeholder-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
@@ -53,6 +54,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-note: var(--note);
+  --color-note-border: var(--note-border);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
   --color-brand-background: var(--brand-background);

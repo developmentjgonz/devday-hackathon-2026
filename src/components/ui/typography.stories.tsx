@@ -52,6 +52,7 @@ export const Body: Story = {
     <div className="w-full space-y-6">
       {(
         [
+          ['metric', '24', '24 px · line height 1.2'],
           ['lead', 'Feeding visits, cat records, and care needs in one shared place.', '18 px / 32 px'],
           [
             'body',

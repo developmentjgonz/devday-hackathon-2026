@@ -8,7 +8,7 @@
 - Challenge: Mangrove Mews cat colony tracking
 - Frontend foundation: Vite, React, TypeScript, Tailwind CSS, and shadcn/ui
 - Backend foundation: a dedicated Cloudflare Worker and D1 database, connected through a read-only health endpoint; account tables are implemented locally, and R2 is not provisioned
-- Local accounts: seeded administrator and test members, optional phone, and approval required for new users; Google and administrator management screens are deferred
+- Local accounts: seeded administrator and test members, optional phone, approval required for new users, and an administrator team management page; Google sign-in is deferred
 - Stage: local public landing and workspace shells with placeholders, separate Storybook component workspace, and a deployed infrastructure baseline; no rescue workflows implemented
 
 ## Organizer's problem statement

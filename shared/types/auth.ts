@@ -10,6 +10,18 @@ export interface SessionUser {
   status: AccountStatus
 }
 
+export interface ManagedUser extends SessionUser {
+  /** Unix timestamp in seconds. */
+  createdAt: number
+}
+
+export interface UserAccessChange {
+  role: UserRole
+  status: Exclude<AccountStatus, 'pending'>
+  expectedRole: UserRole
+  expectedStatus: AccountStatus
+}
+
 export interface SignInOptions {
   localSignInEnabled: boolean
   users: Omit<SessionUser, 'phone'>[]

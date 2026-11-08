@@ -16,5 +16,11 @@
       "database_name": "devday-js-2026-db",
       "database_id": "5e49e8ba-625a-4954-9ebc-10d7f3100b90"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "UPLOADS",
+      "bucket_name": "devday-js-2026-uploads"
+    }
   ]
 }

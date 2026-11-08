@@ -22,18 +22,18 @@ function sortedReports(reports: InboxReport[]) {
   return [...reports].sort((a, b) => Number(b.urgent) - Number(a.urgent) || Date.parse(a.submittedAt) - Date.parse(b.submittedAt))
 }
 
-export function InboxScreen({ currentUser = 'Alex Morgan', initialStatus = 'pending' }: {
-  currentUser?: string
+export function InboxScreen({ initialStatus = 'pending' }: {
   initialStatus?: StatusFilter
 }) {
-  const { data: initialData, reports, setReports } = useInbox()
+  const { data: initialData, reports, markReports } = useInbox()
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedId = searchParams.get('report')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(searchParams.has('colony') ? 'all' : initialStatus)
   const [selectedId, setSelectedId] = useState<string | null>(requestedId)
   const [drawerOpen, setDrawerOpen] = useState(Boolean(requestedId))
+  const [marking, setMarking] = useState(false)
   const [search, setSearch] = useState('')
-  const [colonyFilter, setColonyFilter] = useState('all')
+  const [colonyFilter, setColonyFilter] = useState(() => initialData.colonies.some((colony) => colony.id === searchParams.get('colony')) ? searchParams.get('colony')! : 'all')
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
   const listRef = useRef<HTMLDivElement>(null)
   const returnFocus = useRef<HTMLButtonElement | null>(null)
@@ -54,23 +54,20 @@ export function InboxScreen({ currentUser = 'Alex Morgan', initialStatus = 'pend
     onPaginationChange: setPagination,
   })
   const selected = reports.find((report) => report.id === selectedId) ?? null
+  const requestedUnread = reports.find((report) => report.id === requestedId)?.unread
   // The global bell and report composer can open a report from any route.
   useEffect(() => {
     if (!requestedId) return
     setSelectedId(requestedId)
     setDrawerOpen(true)
-    setReports((items) => items.map((report) => report.id === requestedId ? { ...report, unread: false } : report))
-  }, [requestedId, setReports])
-
-  function updateReport(id: string, update: (report: InboxReport) => InboxReport) {
-    setReports((items) => items.map((report) => report.id === id ? update(report) : report))
-  }
+    if (requestedUnread) void markReports([requestedId], false).catch(() => toast.error('Could not mark the report as read.'))
+  }, [requestedId, requestedUnread, markReports])
 
   function openReport(report: InboxReport, trigger: HTMLButtonElement | null) {
     returnFocus.current = trigger
     setSelectedId(report.id)
     setDrawerOpen(true)
-    updateReport(report.id, (item) => ({ ...item, unread: false }))
+    if (report.unread) void markReports([report.id], false).catch(() => toast.error('Could not mark the report as read.'))
   }
 
   function closeDrawer() {
@@ -93,11 +90,15 @@ export function InboxScreen({ currentUser = 'Alex Morgan', initialStatus = 'pend
     table.resetRowSelection()
   }
 
-  function markRead(items: InboxReport[], unread: boolean) {
-    const ids = new Set(items.map((report) => report.id))
-    setReports((reports) => reports.map((report) => ids.has(report.id) ? { ...report, unread } : report))
-    table.resetRowSelection()
-    toast.success(`${items.length} ${items.length === 1 ? 'report' : 'reports'} marked as ${unread ? 'unread' : 'read'}.`)
+  async function markRead(items: InboxReport[], unread: boolean) {
+    if (marking) return
+    setMarking(true)
+    try {
+      await markReports(items.map((report) => report.id), unread)
+      table.resetRowSelection()
+      toast.success(`${items.length} ${items.length === 1 ? 'report' : 'reports'} marked as ${unread ? 'unread' : 'read'}.`)
+    } catch { toast.error('Could not update the selected reports. Try again.') }
+    finally { setMarking(false) }
   }
 
   return (
@@ -129,7 +130,7 @@ export function InboxScreen({ currentUser = 'Alex Morgan', initialStatus = 'pend
           getLabel: (report) => report.title,
           actions: (items) => {
             const unread = items.every((report) => !report.unread)
-            return <Button variant="outline" size="sm" onClick={() => markRead(items, unread)}>Mark {unread ? 'unread' : 'read'}</Button>
+            return <Button variant="outline" size="sm" loading={marking} onClick={() => void markRead(items, unread)}>Mark {unread ? 'unread' : 'read'}</Button>
           },
         }}
         emptyState={<EmptyState
@@ -143,10 +144,8 @@ export function InboxScreen({ currentUser = 'Alex Morgan', initialStatus = 'pend
         report={selected}
         reports={reports}
         data={initialData}
-        currentUser={currentUser}
         open={drawerOpen}
         onClose={closeDrawer}
-        onUpdate={updateReport}
         onNotice={(message) => { toast.success(message) }}
         finalFocus={() => returnFocus.current?.isConnected ? returnFocus.current : listRef.current}
       />

@@ -42,6 +42,7 @@ export function Heading({
 const textVariants = cva('font-sans', {
   variants: {
     size: {
+      metric: 'text-(length:--type-section) leading-[1.2] tabular-nums',
       lead: 'text-(length:--type-lead) leading-8',
       body: 'text-(length:--type-body) leading-7',
       small: 'text-(length:--type-small) leading-6',

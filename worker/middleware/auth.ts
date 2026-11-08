@@ -35,3 +35,8 @@ export const requireActiveUser = createMiddleware<AppEnv>(async (c, next) => {
   c.set('user', user)
   await next()
 })
+
+export const requireAdministrator = createMiddleware<AppEnv>(async (c, next) => {
+  if (c.get('user').role !== 'administrator') throw new HTTPException(403, { message: 'Administrator access is required.' })
+  await next()
+})

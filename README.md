@@ -4,7 +4,7 @@ Mews is Team JS's project for the [DevDay Exchange Community Hackathon](https://
 
 The project aims to help cat rescue coordinators and volunteers track colonies, cats, feeding visits, and care needs in one place. The project direction is confirmed; the first user flow and MVP scope still need to be agreed. Mews remains the working name.
 
-**Status:** The local app has a public landing placeholder at `/`, local test sign-in at `/sign-in`, and a protected workspace shell at `/app`. Local D1 includes a seeded administrator and test members. New users wait for approval; phone is optional. Storybook provides the separate component workspace. This account work has not been deployed. Google sign-in and rescue workflows remain unimplemented.
+**Status:** The local app uses D1 for accounts, colonies, cats, reports, tasks, and published public content. Report attachments use private R2 storage. Local development includes fictional seed data and test sign-in. Storybook runs separately with isolated examples. These changes have not been deployed; Google sign-in and outbound messaging remain unimplemented.
 
 ## Cloudflare deployment
 
@@ -20,7 +20,7 @@ Cloudflare dashboard links require an account with access to these resources. Th
 
 Pushes to `main` run checks. Pushes to `release` run checks and deploy to the live URL. Pull requests to either branch run checks only. See the [workflow](.github/workflows/cloudflare.yml), [Cloudflare configuration](wrangler.jsonc), and [infrastructure guide](docs/infrastructure.md) for setup and deployment details.
 
-Storybook runs locally and is not deployed. Account migrations are available for local development. Rescue data tables and uploads remain unimplemented.
+Storybook runs locally and is not deployed. Migrations and fictional seed data are available for local development. The remote database and R2 bucket must be prepared before deployment.
 
 ## Project guide
 
@@ -63,7 +63,7 @@ npm ci
 npm run dev
 ```
 
-The development command applies local database migrations, seeds missing test users, and starts the frontend and API. Open [the landing page](http://127.0.0.1:5197/) or [local sign-in](http://127.0.0.1:5197/sign-in). Select Alex Morgan (`admin@mews.test`) for administrator access. The workspace still shows placeholder rescue content. Approved users see unknown workspace URLs inside the app shell.
+The development command applies local migrations, adds missing fictional seed records, and starts the frontend and API. Open [the landing page](http://127.0.0.1:5197/) or [local sign-in](http://127.0.0.1:5197/sign-in). Select Alex Morgan (`admin@mews.test`) for administrator access. Saved accounts, colonies, cats, reports, tasks, and public content persist in local D1. Report attachments persist in local R2 emulation. Re-running the seed does not replace saved records.
 
 Start the component workspace separately:
 
@@ -78,13 +78,15 @@ npm run build       # Type-check and build production assets
 npm run typecheck   # Generate Worker types and check frontend, backend, and shared code
 npm run cf:typegen  # Refresh Cloudflare binding and runtime types
 npm run test:auth   # Check signup, sessions, and server access rules
+npm run test:directory # Check colony and cat persistence
+npm run test:workspace # Check reports, tasks, attachments, and public content
 npm run preview     # Serve the production build on port 4197
 npm run build-storybook # Build the separate component workspace
 ```
 
 The frontend uses React, TypeScript, Vite, React Router in Data Mode, Tailwind CSS v4, and shadcn/ui with Base UI primitives. Public and workspace layouts have separate route branches. Product feature routes remain undecided. The Warm Company theme lives in `src/styles/tokens.css`; both shells use the shared theme. Storybook includes loading stages, spinner, paw and fire loaders, skeletons, and typography. Fonts and icons are bundled dependencies.
 
-The local backend uses Hono and TypeScript on Cloudflare Workers, with D1 for account data. Shared Zod schemas validate account inputs. Routes handle HTTP, middleware checks access, services own account operations, and `worker/db/` owns account SQL. Builds check the backend with strict TypeScript settings. See the [backend decision](docs/decisions/0004-hono-typescript-backend.md).
+The local backend uses Hono and TypeScript on Cloudflare Workers, with D1 for application records and private R2 storage for report attachments. Shared Zod schemas validate inputs. Routes handle HTTP, middleware checks access, services own account operations, and `worker/db/` owns SQL. Builds check the backend with strict TypeScript settings. See the [backend decision](docs/decisions/0004-hono-typescript-backend.md).
 
 React Doctor is installed as a development dependency for manual checks only:
 
@@ -94,4 +96,4 @@ npm exec -- react-doctor
 
 It is not connected to package scripts, builds, hooks, or CI. Run it only when a review is wanted. See the [CLI reference](https://www.react.doctor/docs/reference/cli-reference).
 
-Use fictional data for this hackathon. Uploaded colony photos belong in private R2 storage once configured; they must not be placed in `public/`.
+Use fictional data for this hackathon. Report attachments use private R2 storage and authenticated reads; cat profile photos use private D1 records. Do not place uploaded photos in `public/`.

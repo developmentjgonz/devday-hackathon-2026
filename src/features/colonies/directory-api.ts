@@ -1,0 +1,24 @@
+import type { Cat, Colony } from '../../../shared/types/directory'
+import type { CatInput } from '../../../shared/schemas/directory'
+import { authRequest } from '@/features/auth/auth'
+
+export type DirectoryStore = {
+  addColony: (name: string) => Promise<Colony>
+  addCat: (input: CatInput) => Promise<Cat>
+  updateCat: (cat: Cat, input: CatInput) => Promise<Cat>
+}
+
+export const databaseDirectory: DirectoryStore = {
+  async addColony(name) {
+    const { colony } = await authRequest<{ colony: Colony }>('/api/directory/colonies', { method: 'POST', body: JSON.stringify({ name }) })
+    return colony
+  },
+  async addCat(input) {
+    const { cat } = await authRequest<{ cat: Cat }>('/api/directory/cats', { method: 'POST', body: JSON.stringify(input) })
+    return cat
+  },
+  async updateCat(existing, input) {
+    const { cat } = await authRequest<{ cat: Cat }>(`/api/directory/cats/${encodeURIComponent(existing.id)}`, { method: 'PATCH', body: JSON.stringify(input) })
+    return cat
+  },
+}

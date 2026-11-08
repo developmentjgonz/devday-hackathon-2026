@@ -1,6 +1,6 @@
 # Cloudflare infrastructure
 
-Dedicated resources were created for this project in the user's existing paid Cloudflare account. Account tables and seed fixtures are available for local development; they have not been applied to the remote database. See [local accounts](local-accounts.md).
+Dedicated resources were created for this project in the user's existing paid Cloudflare account. Migrations and fictional seeds for workspace and public content are available locally; they have not been applied to the remote database. The configured private R2 upload bucket must be created before deployment. See [local accounts](local-accounts.md).
 
 | Resource | Name | Management |
 | --- | --- | --- |
@@ -19,7 +19,7 @@ Both endpoints are public. Cloudflare dashboard links require an account with ac
 ## Source and configuration
 
 - `worker/index.ts`: Hono API route groups and static asset fallback; `worker/routes/health.ts` checks D1.
-- `wrangler.jsonc`: Worker name, account, static assets, and the D1 `DB` binding.
+- `wrangler.jsonc`: Worker name, account, static assets, the D1 `DB` binding, and the private R2 `UPLOADS` binding.
 - `dist/`: compiled app assets; generated and ignored by Git.
 
 Resource identifiers in the configuration are not API credentials. Wrangler uses the developer's existing Cloudflare login. Keep credentials out of the repository.

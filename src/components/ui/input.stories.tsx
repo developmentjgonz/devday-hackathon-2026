@@ -12,6 +12,7 @@ const meta = {
   title: 'Forms/Input',
   component: Input,
   args: { placeholder: 'e.g. Miso', disabled: false },
+  parameters: { docs: { description: { component: 'Empty hints use the shared placeholder foreground token. Entered values use the normal foreground. The hint stays visible on focus until text is entered; labels remain outside the field.' } } },
   render: (args) => <InputPreview {...args} />,
 } satisfies Meta<typeof Input>
 
@@ -22,3 +23,4 @@ export const Default: Story = {}
 export const Compact: Story = { args: { controlSize: 'sm' } }
 export const Disabled: Story = { args: { disabled: true, defaultValue: 'Miso' } }
 export const Invalid: Story = { args: { 'aria-invalid': true } }
+export const EnteredValue: Story = { args: { defaultValue: 'Miso' } }
