@@ -25,7 +25,7 @@ test('reviews requests, filters accounts, and returns focus after approval', asy
   await expect(page.getByRole('heading', { name: '1 person is waiting to join' })).toBeVisible()
   await expect(page.getByRole('row', { name: /Jordan Lee/ })).toHaveCount(0)
   await expect(page.locator('[data-slot="card"][aria-label="Team accounts"]')).toBeFocused()
-  await page.getByRole('button', { name: 'Clear filters' }).click()
+  await page.getByRole('button', { name: 'View all accounts' }).click()
   const jordan = page.getByRole('row', { name: /Jordan Lee/ })
   await expect(jordan).toContainText('Active')
   await page.getByLabel('Search team accounts').fill('jordan@mews')
