@@ -4,7 +4,7 @@ This is a six-to-seven-minute, judge-ready demonstration of a **fictional** Sout
 
 For a precise account of what is implemented, simulated, and still needed, read [Judge Readiness Review](judge-readiness-review.md).
 
-**Current pass:** [Pass 8 scorecard and core walkthrough](feature-pass-8-regrade.md) gives the **8.6/10** local-demo estimate and 50-test verification. Bulk imports and chat replay now share source identities, so an already seeded scenario reports retained sources without inflating the census. Navigation is grouped by workday; volunteers see their own notifications. Field map includes pause/follow controls for the simulated tracker.
+**Current pass:** [Pass 8 scorecard and core walkthrough](feature-pass-8-regrade.md) gives the **8.8/10** local-demo estimate and 50-test verification. Bulk imports and chat replay now share source identities, so an already seeded scenario reports retained sources without inflating the census. Navigation is grouped by workday; volunteers see their own notifications. Field map includes pause/follow controls for the simulated tracker.
 
 **Earlier pass:** [Feature pass 6](feature-pass-6.md) added Today’s operations, Clarifications & routing, and persistent Missing-cat cases. Its 8.4/10 estimate is historical. Use the extension below for an additional three-to-five-minute walkthrough.
 

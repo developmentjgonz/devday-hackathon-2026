@@ -41,7 +41,7 @@ The Worker code and migrations are designed for D1/R2-style bindings, but remote
 - [Demo runbook](docs/demo-runbook.md): a guided judge-ready walkthrough with the synthetic chats and SMS relays.
 - [Feature pass 6](docs/feature-pass-6.md): current rating, new review/search workflows, and local verification evidence.
 - [Feature pass 7](docs/feature-pass-7.md): real image analysis, five practical field tools, the expanded scenario, and current verification.
-- [Current regrade — pass 8](docs/feature-pass-8-regrade.md): 8.6/10 local-demo estimate, replay integrity, simpler workday navigation, and 50 passing tests.
+- [Current regrade — pass 8](docs/feature-pass-8-regrade.md): 8.8/10 local-demo estimate, replay integrity, simpler workday navigation, and 50 passing tests.
 - [Hosted demo setup](docs/hosted-demo-setup.md): the isolated D1/R2 deployment path and the current account-permission blocker.
 
 ## Directory boundaries

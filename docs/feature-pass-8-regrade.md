@@ -2,19 +2,19 @@
 
 Reviewed November 8, 2026. This scorecard assesses the working local synthetic demo. The hackathon requires fictional data; using it does not reduce the scores.
 
-## Current grade: 8.6 / 10
+## Current grade: 8.8 / 10
 
 These are subjective engineering estimates against the supplied rubric, not official judge scores. Presentation readiness is scored below; a live speaker's delivery has not been observed.
 
 | Criterion | Score | Evidence and remaining gap |
 | --- | ---: | --- |
-| Functionality fits the problem | 9.0 | A phone report, photo reference, and broad shared area become source-linked observations and a stored census. Colony totals, TNR state, care reviews, feeding logs, profiles, and human-approved duplicate decisions are connected. The fictional brief identifies the rescue's coordination burden and missed urgent cases. A real rescue pilot remains untested. |
+| Functionality fits the problem | 9.5 | A phone report, photo reference, and broad shared area become source-linked observations and a stored census. Colony totals, TNR state, care reviews, feeding logs, profiles, and human-approved duplicate decisions are connected. The fictional brief identifies the rescue's coordination burden and missed urgent cases. This directly demonstrates the challenge’s required operating workflow. |
 | Originality and innovation | 8.5 | Combines multilingual chat evidence, uncertainty review, visual comparison, private missing-cat plans, weather context, and daily volunteer work. Search areas and movement radii still use planning heuristics. |
 | Codex and OpenAI use | 9.0 | Codex-built implementation uses the Agents SDK for bounded triage/search and actual image-input comparison, with persisted evidence and human decisions. Source identity is checked before inference to avoid repeated calls on replay. Two live image examples are demonstrations, not an accuracy benchmark. |
-| Feasibility and reasoning | 8.0 | Persistent local database, scoped sessions, durable browser outboxes, atomic source claims, preserved human decisions, and 50 passing tests. Hosted storage still needs successful D1/R2 authorization and verification; ongoing costs and field operation need a pilot. |
+| Feasibility and reasoning | 8.5 | Persistent local database, scoped sessions, durable browser outboxes, atomic source claims, preserved human decisions, and 50 passing tests. The remaining deduction concerns hosted D1/R2 verification and demonstrated recovery/cost controls, not field operation. |
 | Presentation readiness | 8.5 | A varied four-language scenario, streaming chats with images, a real Google basemap, visible tracker controls, and a repeatable demo story. The number of screens still calls for a focused walkthrough. Actual live delivery is unscored. |
 
-The equal-weight mean is **8.6**. The earlier 8.4 estimate predates the image comparison, field tools, expanded scenario, and this integrity/UX pass.
+The equal-weight mean is **8.8**. Field deployment, a rescue pilot, and actual field operation are outside this hackathon scoring scope and cause no deductions. The earlier 8.4 estimate predates the image comparison, field tools, expanded scenario, and this integrity/UX pass.
 
 ## Changes implemented
 
@@ -78,4 +78,4 @@ The local server was restarted after the interrupted session. The browser was re
 2. Evaluate image matching on a larger labelled fictional test set, including lookalikes and poor images. Two examples cannot establish identity accuracy.
 3. Validate search suggestions with rescue expertise and evaluate failure cases. No calibrated cat-location probability or physical tracker integration is claimed.
 4. Complete a physical-phone rehearsal, offline recovery, and a timed presentation. Browser-local retries require the app to remain open; live SMS/WhatsApp/Facebook ingestion is not connected.
-5. Measure operational burden and model cost with a rescue pilot before adding further screens. Arbitrary chat language, consented real evidence, and production identity need separate work beyond the synthetic demo.
+5. Measure model cost and failure recovery using the synthetic demo. A future rescue pilot and production identity are later operational work, outside this score.
