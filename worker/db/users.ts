@@ -26,13 +26,14 @@ export async function changeUserAccess(db: D1Database, id: string, actorId: stri
       approved_by = CASE WHEN status = 'pending' AND ? = 'active' THEN ? ELSE approved_by END,
       approved_at = CASE WHEN status = 'pending' AND ? = 'active' THEN unixepoch() ELSE approved_at END
     WHERE id = ? AND id <> ? AND role = ? AND status = ?
+      AND (? <> 'administrator' OR NOT EXISTS (SELECT 1 FROM sign_in_identities demo WHERE demo.user_id = users.id AND demo.provider = 'demo'))
       AND EXISTS (SELECT 1 FROM users AS actor WHERE actor.id = ? AND actor.role = 'administrator' AND actor.status = 'active')
       AND ((? = 'administrator' AND ? = 'active') OR role <> 'administrator' OR status <> 'active'
         OR (SELECT count(*) FROM users WHERE role = 'administrator' AND status = 'active') > 1)
     RETURNING ${fields}
   `).bind(
     change.role, change.status, change.status, actorId, change.status,
-    id, actorId, change.expectedRole, change.expectedStatus, actorId, change.role, change.status,
+    id, actorId, change.expectedRole, change.expectedStatus, change.role, actorId, change.role, change.status,
   ).first<ManagedUserRow>()
   return changed ? userFromRow(changed) : null
 }

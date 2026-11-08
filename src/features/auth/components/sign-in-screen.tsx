@@ -15,20 +15,21 @@ export type SignInScreenProps = SignInOptions & {
 
 const statusLabels = { active: 'Approved', pending: 'Pending approval', suspended: 'Suspended' }
 
-export function SignInScreen({ localSignInEnabled, googleSignInEnabled, users, selected, error, onSignIn }: SignInScreenProps) {
+export function SignInScreen({ localSignInEnabled, demoSignInEnabled, googleSignInEnabled, users, selected, error, onSignIn }: SignInScreenProps) {
   return (
     <div className="mx-auto w-full max-w-2xl px-6 py-12 sm:py-16">
       <title>Sign in · Mews</title>
       <Heading level={1} size="title">Sign in to Mews</Heading>
       <Text size="small" tone="muted" className="mt-3 max-w-lg">
-        {localSignInEnabled
+        {localSignInEnabled || demoSignInEnabled
           ? 'Choose your account to continue.'
           : googleSignInEnabled ? 'Sign in with your Google account to join your rescue team.' : 'Contact your rescue administrator for account access.'}
       </Text>
       {error ? <div className="mt-6"><Alert>{error}</Alert></div> : null}
       {googleSignInEnabled ? <div className="mt-8"><Button render={<a href="/api/auth/google/start" />}>Continue with Google <ArrowRight aria-hidden="true" /></Button></div> : null}
-      {localSignInEnabled ? (
+      {localSignInEnabled || demoSignInEnabled ? (
         <>
+          {demoSignInEnabled ? <div className="mt-8"><Heading level={2} size="card">Demo accounts</Heading><Text size="small" tone="muted" className="mt-2">Choose a demo account to explore the workspace.</Text></div> : null}
           <ul className="mt-8 space-y-3" aria-label="Accounts">
             {users.map((user) => {
               const Icon = user.role === 'administrator' ? ShieldCheck : UserRound
@@ -54,11 +55,11 @@ export function SignInScreen({ localSignInEnabled, googleSignInEnabled, users, s
               )
             })}
           </ul>
-          <div className="mt-8 border-t pt-6">
+          {localSignInEnabled ? <div className="mt-8 border-t pt-6">
             <Heading size="card">New to Mews?</Heading>
             <Text size="small" tone="muted" className="mt-2">Request access to join your rescue team.</Text>
             <Button className="mt-4" render={<Link to="/sign-up" />}>Request access <ArrowRight aria-hidden="true" /></Button>
-          </div>
+          </div> : null}
         </>
       ) : null}
     </div>

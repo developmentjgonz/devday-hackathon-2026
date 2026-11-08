@@ -16,6 +16,7 @@ function fixture(t) {
   sqlite.exec('PRAGMA foreign_keys = ON')
   sqlite.exec(readFileSync(new URL('../../migrations/0001_accounts.sql', import.meta.url), 'utf8'))
   sqlite.exec(readFileSync(new URL('../../migrations/0012_user_photos.sql', import.meta.url), 'utf8'))
+  sqlite.exec(readFileSync(new URL('../../migrations/0018_demo_access.sql', import.meta.url), 'utf8'))
   t.after(() => sqlite.close())
   const DB = {
     prepare(sql) {

@@ -25,6 +25,6 @@ Apply migrations to the intended remote D1 database and create the private R2 bu
 
 For example, `npx wrangler secret put GOOGLE_CLIENT_SECRET` prompts for a value without requiring it in a shell command. Configure all four before deploying the release branch. Google sign-in is hidden when configuration is incomplete. A local HTTP callback is allowed only on localhost; live callback URIs must use HTTPS.
 
-Do not run `seeds/local.sql` or `seeds/workspace.sql` on the live database: these contain fictional accounts, care records, and public content. The live database starts empty. Create real records after the administrator signs in. The local and live databases are separate.
+The live database currently contains the fictional demo records requested for the hackathon. Local and live databases are separate. Do not apply local seed files to live data without reviewing the target and the contents. An administrator can turn [demo sign-in](demo-access.md) on or off; Google sign-in remains separate.
 
 Verify a release by signing in as the designated administrator, creating a colony, cat, report with a small attachment, and task, and checking them after refresh. Then check a second Google account remains pending until approved. Remove any disposable verification records through supported product workflows when available; do not assume refreshing resets live data.

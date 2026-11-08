@@ -3,12 +3,13 @@ import { HTTPException } from 'hono/http-exception'
 import { localSignInSchema, profileSchema, signUpSchema } from '../../shared/schemas/auth.ts'
 import type { SignInOptions } from '../../shared/types/auth.ts'
 import type { AppEnv } from '../types.ts'
-import { findUserByEmail, listLocalUsers } from '../db/accounts.ts'
+import { findDemoUser, findUserByEmail, listDemoUsers, listLocalUsers } from '../db/accounts.ts'
+import { demoAccessEnabled } from '../db/demo-access.ts'
 import { getUserPhoto, saveProfile } from '../db/user-profile.ts'
 import { localSignInEnabled, requireActiveUser, requireLocalSignIn, requireSameOrigin } from '../middleware/auth.ts'
 import { limitFormBody, limitProfileBody, requireJson, validateJson } from '../middleware/validation.ts'
 import { signInLocalUser, signUpLocalUser } from '../services/accounts.ts'
-import { createSession, endSession, getSessionUser } from '../services/session.ts'
+import { createDemoSession, createSession, endSession, getSessionUser } from '../services/session.ts'
 import { signInGoogleUser } from '../db/google-identities.ts'
 import { clearGoogleCookie, googleConfig, startGoogleSignIn, verifyGoogleCallback } from '../services/google-auth.ts'
 
@@ -42,7 +43,8 @@ authRoutes.get('/photos/:id', requireActiveUser, async (c) => {
 
 authRoutes.get('/options', async (c) => {
   const enabled = localSignInEnabled(c.req.raw, c.env)
-  const options: SignInOptions = { localSignInEnabled: enabled, googleSignInEnabled: Boolean(googleConfig(c.env)), users: enabled ? await listLocalUsers(c.env.DB) : [] }
+  const demo = new URL(c.req.url).protocol === 'https:' && await demoAccessEnabled(c.env.DB)
+  const options: SignInOptions = { localSignInEnabled: enabled, demoSignInEnabled: demo, googleSignInEnabled: Boolean(googleConfig(c.env)), users: enabled ? await listLocalUsers(c.env.DB) : demo ? await listDemoUsers(c.env.DB) : [] }
   return c.json(options)
 })
 
@@ -82,6 +84,14 @@ authRoutes.post('/local/sign-up', requireSameOrigin, requireJson, limitFormBody,
   const user = await signUpLocalUser(c.env.DB, c.req.valid('json'))
   c.header('Set-Cookie', await createSession(c.req.raw, c.env.DB, user.id))
   return c.json({ user }, 201)
+})
+
+authRoutes.post('/demo/sign-in', requireSameOrigin, requireJson, limitFormBody, validateJson(localSignInSchema), async (c) => {
+  if (new URL(c.req.url).protocol !== 'https:' || !await demoAccessEnabled(c.env.DB)) throw new HTTPException(404, { message: 'Not found' })
+  const user = await findDemoUser(c.env.DB, c.req.valid('json').userId)
+  if (!user) throw new HTTPException(404, { message: 'Demo account was not found.' })
+  c.header('Set-Cookie', await createDemoSession(c.req.raw, c.env.DB, user.id))
+  return c.json({ user })
 })
 
 authRoutes.post('/sign-out', requireSameOrigin, async (c) => {

@@ -15,6 +15,7 @@ import { ColonyPage } from '@/features/colonies/pages/colony-page'
 import { CatsPage } from '@/features/cats/pages/cats-page'
 import { CatPage } from '@/features/cats/pages/cat-page'
 import { UsersPage } from '@/features/users/pages/users-page'
+import { ConfigurationPage } from '@/features/configuration/pages/configuration-page'
 import type { InboxData } from '@/features/inbox/types'
 import type { Params } from 'react-router'
 import { NotFoundPage } from '@/pages/not-found-page'
@@ -70,6 +71,7 @@ export const router = createBrowserRouter([
           { path: 'tasks', Component: MyTasksPage, handle: { breadcrumb: 'My Tasks' } },
           { path: 'reports', Component: InboxPage, handle: { breadcrumb: 'Reports' } },
           { path: 'team', Component: UsersPage, handle: { breadcrumb: 'Team' } },
+          { path: 'configuration/:section?', Component: ConfigurationPage, handle: { breadcrumb: 'Configuration' } },
           { path: 'profile', Component: ProfilePage, handle: { breadcrumb: 'Profile' } },
           { path: '*', element: <NotFoundPage homePath="/app" /> },
         ],
