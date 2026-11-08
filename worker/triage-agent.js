@@ -69,8 +69,8 @@ const communitySignalAgent = new Agent({
 function clamp(value, fallback) { const number = Number(value); return Number.isFinite(number) ? Math.max(0, Math.min(1, number)) : fallback; }
 function fallbackTriage(report) {
   const text = String(report.message ?? "").toLowerCase();
-  const found = ["injur", "limp", "bleed", "pregnan", "kitten", "sick", "not eating", "flood", "hurricane", "heat", "traffic"].filter((signal) => text.includes(signal));
-  const urgent = Boolean(report.urgent) || found.some((signal) => ["injur", "limp", "bleed", "pregnan", "kitten"].includes(signal));
+  const found = ["injur", "limp", "bleed", "pregnan", "kitten", "sick", "not eating", "flood", "hurricane", "heat", "traffic", "no feeder", "lost its feeder", "no one to feed", "herid", "cojea", "embarazada", "gatitos"].filter((signal) => text.includes(signal));
+  const urgent = Boolean(report.urgent) || found.some((signal) => ["injur", "limp", "bleed", "pregnan", "kitten", "no feeder", "lost its feeder", "no one to feed", "herid", "cojea", "embarazada", "gatitos"].includes(signal));
   return { summary: "Saved for coordinator review. The safe demo triage is running.", urgency: urgent ? "urgent" : found.length ? "watch" : "routine", reasons: found.length ? found.map((signal) => `Possible ${signal} signal`) : ["No immediate risk phrase detected"], suggestedColonyId: null, colonyConfidence: .42, matchEvidence: { visual: 0, markings: 0, proximity: .35, colonyContext: .4 }, clarification: /maybe|possibly|think/.test(text) ? "Can you confirm the count or share another clear photo?" : null, tasks: urgent ? ["Create urgent coordinator review", "Keep source report unchanged"] : ["Add to coordinator review queue"] };
 }
 function normalized(value, fallback) {

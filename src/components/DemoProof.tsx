@@ -2,6 +2,9 @@ import { useState } from "react";
 import { AlertTriangle, Check, ClipboardCheck, FileDown, MapPin, MessagesSquare, Stethoscope, UsersRound } from "lucide-react";
 import { CommunitySignals } from "@/components/CommunitySignals";
 import { SyntheticOperationsReplay } from "@/components/SyntheticOperationsReplay";
+import { AgentEvaluation } from "@/components/AgentEvaluation";
+import { OfflineIntakeDesk } from "@/components/OfflineIntakeDesk";
+import { SharedIntake } from "@/components/SharedIntake";
 
 /**
  * A deliberately local, transparent replay of the supplied fictional fixture.
@@ -62,6 +65,9 @@ export function DemoProof() {
       <div className="snapshot-action"><Stethoscope size={17}/><span>{replayed ? "Demo batch added to coordinator review" : "Replay to show the same-day update"}</span></div>
     </div>
     <SyntheticOperationsReplay/>
+    <OfflineIntakeDesk/>
+    <SharedIntake/>
+    <AgentEvaluation/>
     <CommunitySignals/>
   </section>;
 }

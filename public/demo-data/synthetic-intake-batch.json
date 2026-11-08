@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "batchId": "fixture-south-florida-2026-11-07-a",
+  "provenance": "Fictional hackathon fixture. Names, photos, messages, and approximate areas are invented; no live WhatsApp access.",
+  "sourceKind": "whatsapp_export",
+  "records": [
+    {
+      "id": "wa-001",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Maya F.",
+      "receivedAt": "2026-11-07T17:46:00-05:00",
+      "broadArea": "Little Havana",
+      "text": "Hey team, la calico has her front paw up and didn't come for food 😟 I counted 6 adults. Dropping the demo pin here.",
+      "attachments": [{ "kind": "image", "fixturePath": "/demo-assets/poppy-calico-limp.png" }],
+      "proposedColonyKey": "COL-04",
+      "proposedCatKey": "CAT-04",
+      "colonyConfidence": 0.82,
+      "count": { "low": 6, "high": 6, "confidence": 0.86 },
+      "flags": ["injury"],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-002",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Joel M.",
+      "receivedAt": "2026-11-07T18:04:00-05:00",
+      "broadArea": "Little River",
+      "text": "Buenas! Orange tabby w the white chin finally came out. Fed 7. Her belly looks bigger than last week, maybe pregnant?",
+      "attachments": [{ "kind": "image", "fixturePath": "/demo-assets/marmalade-orange-tabby.png" }],
+      "proposedColonyKey": "COL-02",
+      "proposedCatKey": "CAT-02",
+      "colonyConfidence": 0.91,
+      "count": { "low": 7, "high": 7, "confidence": 0.9 },
+      "feedingConfirmed": true,
+      "flags": ["pregnancy"],
+      "duplicateGroup": "MARMALADE-2026-11-07"
+    },
+    {
+      "id": "wa-003",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Rina P.",
+      "receivedAt": "2026-11-07T18:08:00-05:00",
+      "broadArea": "Little River",
+      "text": "Photo from Tuesday shows the same orange tabby: white chin and a small left-ear nick. Please review before merging.",
+      "attachments": [{ "kind": "image", "fixturePath": "/demo-assets/marmalade-orange-tabby.png" }],
+      "proposedColonyKey": "COL-02",
+      "proposedCatKey": "CAT-02",
+      "colonyConfidence": 0.87,
+      "flags": ["possible_duplicate"],
+      "duplicateGroup": "MARMALADE-2026-11-07"
+    },
+    {
+      "id": "phone-004",
+      "sourceKind": "phone_report",
+      "volunteerAlias": "Verified volunteer A.",
+      "receivedAt": "2026-11-07T18:31:00-05:00",
+      "broadArea": "North Miami",
+      "text": "Maybe three kittens heard behind a fence. I could not safely see or count them.",
+      "attachments": [],
+      "proposedColonyKey": "COL-07",
+      "proposedCatKey": null,
+      "colonyConfidence": 0.54,
+      "count": { "low": 0, "high": 3, "confidence": 0.54 },
+      "flags": ["kittens", "uncertain_count"],
+      "duplicateGroup": null
+    },
+    {
+      "id": "wa-005",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Ana V.",
+      "receivedAt": "2026-11-07T18:38:00-05:00",
+      "broadArea": "Fort Lauderdale",
+      "text": "Tux did not return today. Last verified demo area was shrub cover near the public footpath. White chest and white paws.",
+      "attachments": [{ "kind": "image", "fixturePath": "/demo-assets/tux-missing-search.png" }],
+      "proposedColonyKey": "COL-11",
+      "proposedCatKey": "CAT-11",
+      "colonyConfidence": 0.75,
+      "flags": ["missing"],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-006",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Dani S.",
+      "receivedAt": "2026-11-07T18:52:00-05:00",
+      "broadArea": "Miami Beach",
+      "text": "Quick update from the beach demo group: gray tabby checked in, shade looks good. Lots of traffic noise today though.",
+      "attachments": [],
+      "proposedColonyKey": "COL-MB-DEMO",
+      "proposedCatKey": "CAT-SKIPPER",
+      "colonyConfidence": 0.69,
+      "flags": ["traffic"],
+      "duplicateGroup": null
+    },
+    {
+      "id": "phone-007",
+      "sourceKind": "phone_report",
+      "volunteerAlias": "Verified volunteer B.",
+      "receivedAt": "2026-11-07T19:05:00-05:00",
+      "broadArea": "Hialeah",
+      "text": "Oye, I saw a young black kitty on the demo route. Couldn't see an ear tip. Can someone check if this is a TNR candidate?",
+      "attachments": [],
+      "proposedColonyKey": "COL-HL-DEMO",
+      "proposedCatKey": "CAT-COAL",
+      "colonyConfidence": 0.62,
+      "flags": ["tnr_candidate", "new_cat"],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-008",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Maya F.",
+      "receivedAt": "2026-11-07T19:17:00-05:00",
+      "broadArea": "Homestead",
+      "text": "Evening feed done ✅ Saw 5 adults from the sidewalk, refreshed the water. No urgent changes tonight.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HM-DEMO",
+      "proposedCatKey": null,
+      "colonyConfidence": 0.71,
+      "count": { "low": 5, "high": 5, "confidence": 0.8 },
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "wa-009", "sourceKind": "whatsapp_export", "volunteerAlias": "Nadia L.", "receivedAt": "2026-11-07T19:25:00-05:00", "broadArea": "North Miami", "text": "Bonjou team, demo update: no feeder is available tomorrow morning. Can someone cover the route?", "attachments": [], "proposedColonyKey": "COL-07", "proposedCatKey": null, "colonyConfidence": 0.88, "flags": ["feeder_gap"], "duplicateGroup": null
+    },
+    {
+      "id": "sms-010", "sourceKind": "sms_relay", "volunteerAlias": "Lia P.", "receivedAt": "2026-11-07T19:31:00-05:00", "broadArea": "Miami Beach", "text": "Oi pessoal! Demo beach group ate well, contei 4 cats. Water bowl refilled.", "attachments": [], "proposedColonyKey": "COL-MB-DEMO", "proposedCatKey": null, "colonyConfidence": 0.82, "count": { "low": 4, "high": 4, "confidence": 0.78 }, "feedingConfirmed": true, "flags": [], "duplicateGroup": null
+    },
+    {
+      "id": "wa-011", "sourceKind": "whatsapp_export", "volunteerAlias": "Camila T.", "receivedAt": "2026-11-07T19:35:00-05:00", "broadArea": "Hialeah", "text": "Equipo, demo kitty looks hurt / la gata cojea. I stayed back and sent the approximate area for vet review.", "attachments": [{ "kind": "image", "fixturePath": "/demo-assets/poppy-calico-limp.png" }], "proposedColonyKey": "COL-HL-DEMO", "proposedCatKey": null, "colonyConfidence": 0.57, "flags": ["injury"], "duplicateGroup": null
+    },
+    {
+      "id": "sms-012", "sourceKind": "sms_relay", "volunteerAlias": "Jules R.", "receivedAt": "2026-11-07T19:42:00-05:00", "broadArea": "Hollywood / Broward", "text": "Demo sighting: orange longhair in the broad Hollywood area, not sure if it's the missing cat. No approach, photo review requested.", "attachments": [{ "kind": "image", "fixturePath": "/demo-assets/marmalade-orange-tabby.png" }], "proposedColonyKey": null, "proposedCatKey": null, "colonyConfidence": 0.31, "flags": ["missing", "possible_duplicate"], "duplicateGroup": "HOLLYWOOD-DEMO"
+    }
+  ]
+}

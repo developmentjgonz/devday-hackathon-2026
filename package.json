@@ -7,6 +7,7 @@
     "dev": "vite --host 127.0.0.1 --port 5197 --strictPort",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
+    "test": "node --test tests/unit/*.test.mjs",
     "preview": "vite preview --host 127.0.0.1 --port 4197 --strictPort",
     "storybook": "storybook dev --host 127.0.0.1 --port 6006 --no-open --ci",
     "build-storybook": "storybook build"
