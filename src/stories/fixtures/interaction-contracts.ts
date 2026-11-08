@@ -27,7 +27,7 @@ export const sharedStateCoverage = {
   'account-button.tsx': 'Account trigger: popover open, hover, focus, Escape, and focus return.',
   'badge.tsx': 'All variants as links; plain spans must remain passive.',
   'button.tsx': 'Every variant: hover, focus, activation, disabled, and loading.',
-  'card.tsx': 'Anchor rendering: hover does not imply selection; keyboard focus remains visible.',
+  'card.tsx': 'Interactive links have hover and keyboard focus coverage in interactive-card.spec.ts.',
   'checkbox.tsx': 'Checked, unchecked, invalid, disabled, keyboard, and touch.',
   'colony-map.tsx': 'Location selection and retry use RecordButton and Button; offline map story.',
   'dialog.tsx': 'Trigger, focus trap, close controls, Escape, and focus return.',
