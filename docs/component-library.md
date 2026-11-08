@@ -173,7 +173,7 @@ Use `Heading` for semantic headings. Card and Dialog titles share its `headingVa
 
 The `--type-*` values in `src/styles/tokens.css` own the size scale. `Heading` keeps heading level separate from visual size. `Text` labels use sentence case and semibold weight. Use the explicit length form of Tailwind CSS variables in shared heading styles so the class merger distinguishes font size from text color.
 
-Default buttons, inputs, and preview selects use `--control-height` (44 px). Small controls use 36 px; extra-small controls use 28 px; large controls use 48 px. Fields keep 16 px text for coarse pointers. Control corners use `--control-radius` (14 px); cards, dialogs, the map surface, and gallery frames use `--surface-radius` (20 px). Cards use the shared border color and 24 px default content spacing, or 16 px in their small size. Map zoom controls use the control size tokens.
+Default buttons, inputs, and preview selects use `--control-height` (44 px). Small controls use 36 px; extra-small controls use 28 px; large controls use 48 px. Fields keep 16 px text for coarse pointers. Control corners use `--control-radius` (14 px); cards, dialogs, the map surface, and gallery frames use `--surface-radius` (20 px). Both radii derive from the shared `--radius` scale. The view switcher, popover actions, and dialog close button account for their inset and any surface border so nested corners follow the outer curve. Joined map zoom buttons use the `icon-group` Button size inside a clipped Card, with straight shared edges. Cards use the shared border color and 24 px default content spacing, or 16 px in their small size.
 
 ## Inbox controls and screen
 

@@ -8,7 +8,7 @@ import { Label } from './label'
 const meta = {
   title: 'Overlays/Dialog',
   component: Dialog,
-  parameters: { docs: { description: { component: 'DialogContent supports closeDisabled during a pending save. Control onOpenChange as well when dismissal must wait for the save.' } } },
+  parameters: { docs: { description: { component: 'DialogContent supports closeDisabled during a pending save. Control onOpenChange as well when dismissal must wait for the save. Its shared dialog-close button size follows the inset curve of the dialog surface.' } } },
   render: () => (
     <Dialog>
       <DialogTrigger render={<Button variant="outline" />}>View last visit</DialogTrigger>

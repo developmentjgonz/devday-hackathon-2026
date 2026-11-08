@@ -53,8 +53,8 @@
   --chart-4: #b76e46;
   --chart-5: var(--ink-900);
   --radius: 1rem;
-  --control-radius: 0.875rem;
-  --surface-radius: 1.25rem;
+  --control-radius: calc(var(--radius) * 0.875);
+  --surface-radius: calc(var(--radius) * 1.25);
   --control-height-xs: 1.75rem;
   --control-height-sm: 2.25rem;
   --control-height: 2.75rem;

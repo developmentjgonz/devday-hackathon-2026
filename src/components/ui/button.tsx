@@ -42,6 +42,8 @@ const buttonVariants = cva(
         'icon-sm':
           'size-(--control-height-sm) rounded-control in-data-[slot=button-group]:rounded-control',
         'icon-lg': 'size-(--control-height-lg) rounded-control',
+        'icon-group': 'size-(--control-height) rounded-none focus-visible:z-10 focus-visible:ring-inset',
+        'dialog-close': 'size-(--control-height-sm) [--dialog-close-inset:calc(var(--spacing)*3)] rounded-[max(0px,calc(var(--surface-radius)-var(--dialog-close-inset)-1px))]',
       },
     },
     defaultVariants: {

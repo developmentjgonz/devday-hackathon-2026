@@ -48,7 +48,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Production component with fictional Storybook fixtures. Names, counts, and positions are sample data. The optional selection renderer provides links or details for a selected location. Unknown status and an urgent report awaiting review have distinct labels. Live feeds and server authorization are not connected. Public location protection must be applied by the server before this component receives data. A pointer selection pans the visible map with the shared motion tokens; keyboard selection, reduced motion, and an offscreen map use an immediate change.',
+          'Production component with fictional Storybook fixtures. Names, counts, and positions are sample data. The optional selection renderer provides links or details for a selected location. Unknown status and an urgent report awaiting review have distinct labels. Live feeds and server authorization are not connected. Public location protection must be applied by the server before this component receives data. A pointer selection pans the visible map with the shared motion tokens; keyboard selection, reduced motion, and an offscreen map use an immediate change. The zoom buttons use the shared icon-group size inside a clipped Card, which provides the outer corners while the adjoining edges stay straight.',
       },
     },
   },
