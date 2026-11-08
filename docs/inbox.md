@@ -21,7 +21,7 @@ The UI contracts in `src/features/inbox/types.ts` are feature-local and do not d
 - The original message and attachments remain unchanged. Review drafts can change colony, cat match, care note, and urgency. Changing colony clears the cat match so a cat from another colony cannot remain attached.
 - Unknown cat identity is allowed. A colony and nonempty care note are required to finish a normal review. Unclear locations can wait for more information.
 - Asking a question adds it to the local conversation and moves the report to Waiting for details. Its draft stays available while the screen is mounted.
-- A care task requires a title and team member. Its due date is optional. Tasks remain open when their report is processed or reopened.
+- A care task requires a title and team member. Its due date is optional. Tasks remain open when their report is processed or reopened. A confirmation appears beside the linked tasks and is announced to assistive technology; it does not cover the drawer actions.
 - Duplicate linking preserves both reports and moves the duplicate to Processed. Targets belong to the same known colony and cannot already be duplicates. A report with incoming duplicate links cannot itself be linked as a duplicate; this prevents cycles. Cat records are never merged by this action.
 - Processed reports show saved details as readable text, history, and open linked tasks. Unsaved duplicate-review drafts do not appear in the saved summary. Reopen returns a report to Pending and restores its review draft when one exists.
 - Review drafts survive switching reports, filters, and tabs while the screen remains mounted.

@@ -92,6 +92,22 @@ test('a task stays linked after saving and reopening the report', async ({ page 
   await expect(page.getByLabel('Care note', { exact: true })).toHaveValue('Pepper needs a check at the fence.')
 })
 
+for (const width of [390, 1440]) {
+  test(`task confirmation keeps the drawer actions usable at ${width}px`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height: 844 })
+    await open(page, 'pages-reports--report-drawer', info.project.name === 'dark')
+    await page.getByRole('button', { name: 'Create task', exact: true }).click()
+    await page.getByLabel('What needs to happen?', { exact: true }).fill('Check Pepper at the fence')
+    await page.getByLabel('Assign to', { exact: true }).selectOption('Alex Morgan')
+    await page.getByRole('dialog', { name: 'Create a care task', exact: true }).getByRole('button', { name: 'Create task', exact: true }).click()
+
+    await expect(page.getByRole('status').filter({ hasText: 'Care task created.' })).toHaveText('Care task created. 1 task linked to this report.')
+    await expect(page.locator('[data-sonner-toast]')).toHaveCount(0)
+    await page.getByRole('button', { name: 'Save and finish', exact: true }).click()
+    await expect(page.locator('[data-slot="drawer-content"]')).toHaveCount(0)
+  })
+}
+
 test('duplicate comparison shows the target and keeps unsaved details out of the saved summary', async ({ page }, info) => {
   await open(page, 'pages-reports--possible-duplicate-drawer', info.project.name === 'dark')
   await page.getByLabel('Care note', { exact: true }).fill('Unfinished draft for this sighting')

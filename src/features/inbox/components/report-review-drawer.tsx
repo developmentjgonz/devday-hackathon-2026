@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Check, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -52,6 +52,10 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
   const changed = report && draft ? (['colonyId', 'catId', 'careNote', 'urgent'] as const).some((key) => report[key] !== draft[key]) : false
   const finishHint = !draft?.colonyId ? 'Choose a colony to finish.' : !draft.careNote.trim() ? 'Add a care note to finish.' : changed ? 'Unsaved review changes' : ''
 
+  useEffect(() => {
+    setTaskNotice(null)
+  }, [open, report?.id])
+
   function editDraft(update: Partial<ReviewDraft>) {
     if (!report || !draft) return
     setDrafts((items) => ({ ...items, [report.id]: { colonyId: draft.colonyId, catId: draft.catId, careNote: draft.careNote, urgent: draft.urgent, ...update } }))
@@ -94,8 +98,8 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
     } else if (action === 'task' && actionDraft.taskTitle.trim() && actionDraft.taskOwner) {
       onUpdate(report.id, (item) => ({ ...item, tasks: [...item.tasks, { id: crypto.randomUUID(), title: actionDraft.taskTitle.trim(), owner: actionDraft.taskOwner, due: actionDraft.taskDue, status: 'open' }], history: [...item.history, `${currentUser} created a care task assigned to ${actionDraft.taskOwner}.`] }))
       editActionDraft({ taskTitle: '', taskOwner: '', taskDue: '' })
-      setTaskNotice({ reportId: report.id, text: 'Care task created.' })
-      onNotice('Care task created and linked to this report.')
+      const count = report.tasks.length + 1
+      setTaskNotice({ reportId: report.id, text: `Care task created. ${count} ${count === 1 ? 'task' : 'tasks'} linked to this report.` })
     } else if (action === 'duplicate' && duplicateChoice) {
       onUpdate(report.id, (item) => ({ ...item, status: 'processed', duplicateOf: duplicateChoice.id, history: [...item.history, `${currentUser} linked this duplicate to an existing report.`] }))
       onNotice('Duplicate linked. Both original submissions have been kept.')
@@ -147,7 +151,7 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
             <section aria-labelledby="care-tasks-title" className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2"><Heading id="care-tasks-title" level={3} size="compact">Care tasks{report.tasks.length ? ` (${report.tasks.length})` : ''}</Heading>{!isProcessed ? <Button variant="outline" size="sm" onClick={() => setAction('task')}>Create task</Button> : null}</div>
               {report.tasks.length ? <ul className="space-y-4">{report.tasks.map((task) => <li key={task.id} className="space-y-1"><Text size="small" weight="medium" className="wrap-anywhere">{task.title}</Text><Text size="caption" tone="muted">{task.status === 'completed' ? 'Completed task' : 'Open task'} assigned to {task.owner}</Text>{task.due ? <Text size="caption" tone="muted">Due {dueFormat.format(new Date(`${task.due}T00:00:00Z`))}</Text> : null}</li>)}</ul> : null}
-              {taskNotice?.reportId === report.id ? <Text role="status" size="small" className="sr-only">{taskNotice.text}</Text> : null}
+              <Text role="status" size="small" className={taskNotice?.reportId === report.id ? undefined : 'sr-only'}>{taskNotice?.reportId === report.id ? taskNotice.text : ''}</Text>
             </section>
           </> : null}
           {report.thread.length ? <><Separator /><section aria-labelledby="conversation-title" className="space-y-4"><Heading id="conversation-title" level={3} size="compact">Conversation</Heading><ol className="space-y-4">{report.thread.map((entry) => <li key={entry.id} className="space-y-1"><Text size="small" weight="medium">{entry.author}</Text><Text size="small" className="whitespace-pre-wrap wrap-anywhere">{entry.text}</Text></li>)}</ol></section></> : null}
