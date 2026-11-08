@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Heading, Text } from '@/components/ui/typography'
 import { reportStatusLabels, type InboxData, type InboxReport, type ReportAttachment } from '../types'
 import { ReportAttachments } from './report-attachments'
+import { useReportComposer } from './report-composer'
 
 type ReviewDraft = Pick<InboxReport, 'colonyId' | 'catId' | 'careNote' | 'urgent'>
 type Action = 'question' | 'task' | 'duplicate'
@@ -38,6 +39,7 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
   const [action, setAction] = useState<Action | null>(null)
   const [photo, setPhoto] = useState<ReportAttachment | null>(null)
   const [taskNotice, setTaskNotice] = useState<{ reportId: string; text: string } | null>(null)
+  const { submittedReportId, clearSubmittedReport } = useReportComposer()
   const drawerRef = useRef<HTMLDivElement>(null)
   const draft = report ? drafts[report.id] ?? report : null
   const actionDraft = report ? actionDrafts[report.id] ?? {
@@ -51,10 +53,15 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
   const suggestedDuplicate = duplicateTargets.find((candidate) => candidate.id === report?.possibleDuplicateOf)
   const changed = report && draft ? (['colonyId', 'catId', 'careNote', 'urgent'] as const).some((key) => report[key] !== draft[key]) : false
   const finishHint = !draft?.colonyId ? 'Choose a colony to finish.' : !draft.careNote.trim() ? 'Add a care note to finish.' : changed ? 'Unsaved review changes' : ''
+  const justSubmitted = report?.id === submittedReportId && submittedReportId !== null
 
   useEffect(() => {
     setTaskNotice(null)
   }, [open, report?.id])
+
+  useEffect(() => {
+    if (!open && report && report.id === submittedReportId) clearSubmittedReport(report.id)
+  }, [open, report, submittedReportId, clearSubmittedReport])
 
   function editDraft(update: Partial<ReviewDraft>) {
     if (!report || !draft) return
@@ -71,13 +78,18 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
     onUpdate(report.id, (item) => ({ ...item, ...draft, careNote: draft.careNote.trim(), status: 'processed', history: [...item.history, `${currentUser} saved the confirmed report details and finished the review.`] }))
     setDrafts((items) => { const next = { ...items }; delete next[report.id]; return next })
     onNotice(`Review finished: ${report.title}. Find it under Processed.${report.tasks.some((task) => task.status === 'open') ? ' Linked care tasks remain open.' : ''}`)
-    onClose()
+    closeReview()
   }
 
   function reopen() {
     if (!report) return
     onUpdate(report.id, (item) => ({ ...item, status: 'pending', duplicateOf: undefined, history: [...item.history, `${currentUser} reopened the report for review.`] }))
     onNotice('Report returned to Pending.')
+    closeReview()
+  }
+
+  function closeReview() {
+    if (justSubmitted && report) clearSubmittedReport(report.id)
     onClose()
   }
 
@@ -94,7 +106,7 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
       onUpdate(report.id, (item) => ({ ...item, status: 'waiting', thread: [...item.thread, { id: crypto.randomUUID(), author: currentUser, text: actionDraft.question.trim() }], history: [...item.history, `${currentUser} requested more details.`] }))
       editActionDraft({ question: '' })
       onNotice('Question added. Report moved to Waiting for details.')
-      onClose()
+      closeReview()
     } else if (action === 'task' && actionDraft.taskTitle.trim() && actionDraft.taskOwner) {
       onUpdate(report.id, (item) => ({ ...item, tasks: [...item.tasks, { id: crypto.randomUUID(), title: actionDraft.taskTitle.trim(), owner: actionDraft.taskOwner, due: actionDraft.taskDue, status: 'open' }], history: [...item.history, `${currentUser} created a care task assigned to ${actionDraft.taskOwner}.`] }))
       editActionDraft({ taskTitle: '', taskOwner: '', taskDue: '' })
@@ -103,13 +115,13 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
     } else if (action === 'duplicate' && duplicateChoice) {
       onUpdate(report.id, (item) => ({ ...item, status: 'processed', duplicateOf: duplicateChoice.id, history: [...item.history, `${currentUser} linked this duplicate to an existing report.`] }))
       onNotice('Duplicate linked. Both original submissions have been kept.')
-      onClose()
+      closeReview()
     } else return
     setAction(null)
   }
 
-  return <Drawer open={open && report !== null} onOpenChange={(next) => { if (!next) onClose() }}>
-    <DrawerContent ref={drawerRef} closeLabel="Close report" finalFocus={restoreFocus} initialFocus={drawerRef}>
+  return <Drawer open={open && report !== null} onOpenChange={(next) => { if (!next) closeReview() }}>
+    <DrawerContent ref={drawerRef} closeLabel="Close report" motion={justSubmitted ? 'none' : 'default'} finalFocus={restoreFocus} initialFocus={drawerRef}>
       {report && draft ? <>
         <DrawerHeader density="compact">
           <DialogTitle size="card" className="flex min-h-11 items-center">{report.title}</DialogTitle>
@@ -118,7 +130,7 @@ export function ReportReviewDrawer({ report, reports, data, currentUser, open, o
             {draft.urgent ? <Text size="caption" tone="danger" weight="medium">Urgent</Text> : null}
             <Text size="caption" tone="muted">{reportStatusLabels[report.status]}</Text>
           </div>
-          <DialogDescription className="flex flex-wrap gap-x-3"><span>Reported by {report.reporter}</span><time dateTime={report.submittedAt}>{dateFormat.format(new Date(report.submittedAt))}</time></DialogDescription>
+          <DialogDescription className="flex flex-wrap gap-x-3">{justSubmitted ? <span>Report added.</span> : null}<span>Reported by {report.reporter}</span><time dateTime={report.submittedAt}>{dateFormat.format(new Date(report.submittedAt))}</time></DialogDescription>
         </DrawerHeader>
         <DrawerBody key={report.id}>
           <section aria-labelledby="original-report-title" className="space-y-3">

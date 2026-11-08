@@ -119,6 +119,7 @@ test('duplicate comparison shows the target and keeps unsaved details out of the
   await expect(dialog).toContainText('tipped ear confirmed')
   await dialog.getByRole('button', { name: 'Link and finish', exact: true }).click()
   await page.getByRole('combobox', { name: 'Filter by status', exact: true }).selectOption('processed')
+  await page.getByRole('searchbox', { name: 'Search reports', exact: true }).fill(sighting)
   await page.getByRole('button', { name: `Review ${sighting}`, exact: true }).click()
   const reviewed = page.getByRole('region', { name: 'Reviewed details', exact: true })
   await expect(reviewed).toContainText('Linked as a duplicate')

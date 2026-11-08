@@ -1,4 +1,4 @@
-import { createContext, useContext, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { Paperclip, Plus } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { Alert } from '@/components/ui/alert'
@@ -15,7 +15,11 @@ import { useInbox } from '../inbox-context'
 import type { ReportAttachment } from '../types'
 import { ReportAttachments } from './report-attachments'
 
-const ReportComposerContext = createContext<{ openComposer: (trigger?: HTMLElement) => void } | null>(null)
+const ReportComposerContext = createContext<{
+  openComposer: (trigger?: HTMLElement) => void
+  submittedReportId: string | null
+  clearSubmittedReport: (id: string) => void
+} | null>(null)
 
 export function useReportComposer() {
   const context = useContext(ReportComposerContext)
@@ -33,6 +37,7 @@ export function ReportComposerProvider({ currentUser, children }: { currentUser:
   const { data, setReports, createAttachment, discardAttachment } = useInbox()
   const navigate = useNavigate()
   const [reportOpen, setReportOpen] = useState(false)
+  const [submittedReportId, setSubmittedReportId] = useState<string | null>(null)
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
   const [colonyId, setColonyId] = useState('')
@@ -42,10 +47,14 @@ export function ReportComposerProvider({ currentUser, children }: { currentUser:
   const fileInput = useRef<HTMLInputElement>(null)
   const triggerRef = useRef<HTMLElement | null>(null)
   const submitted = useRef(false)
+  const clearSubmittedReport = useCallback((id: string) => {
+    setSubmittedReportId((current) => current === id ? null : current)
+  }, [])
 
   function openComposer(trigger?: HTMLElement) {
     triggerRef.current = trigger ?? null
     submitted.current = false
+    setSubmittedReportId(null)
     setTitle(''); setMessage(''); setColonyId(''); setUrgent(false); setFileError(''); setReportOpen(true)
   }
   function closeComposer() {
@@ -68,15 +77,16 @@ export function ReportComposerProvider({ currentUser, children }: { currentUser:
     const id = crypto.randomUUID()
     setReports((items) => [{ id, title: title.trim(), message: message.trim(), reporter: currentUser, submittedAt: new Date().toISOString(), category: 'Field report', colonyId, catId: '', careNote: '', urgent, unread: true, status: 'pending', attachments, tasks: [], thread: [], history: [] }, ...items])
     submitted.current = true
+    setSubmittedReportId(id)
     setAttachments([])
     setReportOpen(false)
     navigate(`/app/reports?report=${encodeURIComponent(id)}`)
   }
 
-  return <ReportComposerContext value={{ openComposer }}>
+  return <ReportComposerContext value={{ openComposer, submittedReportId, clearSubmittedReport }}>
     {children}
     <Drawer open={reportOpen} onOpenChange={(open) => { if (!open) closeComposer() }}>
-      <DrawerContent render={<form onSubmit={submitReport} />} closeLabel="Close new report" finalFocus={() => submitted.current ? false : triggerRef.current}>
+      <DrawerContent render={<form onSubmit={submitReport} />} closeLabel="Close new report" motion={submitted.current ? 'none' : 'default'} finalFocus={() => submitted.current ? false : triggerRef.current}>
         <DrawerHeader><DialogTitle>New report</DialogTitle><DialogDescription>Share a sighting, care concern, or feeding update with your team.</DialogDescription></DrawerHeader>
         <DrawerBody>
           <div className="grid gap-2"><Label htmlFor="field-report-title">What happened?</Label><Input id="field-report-title" required maxLength={160} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="For example, feeding visit complete" /></div>

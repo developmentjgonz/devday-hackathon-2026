@@ -59,7 +59,7 @@ The notification popover lists urgent, unprocessed reports; it is not a complete
 
 Attachments support images, audio recordings, PDF, text, Word (`.docx`), and CSV files. Each report can contain up to five files of 10 MB each. Users can remove files before submission. Photos show large inline previews in the review drawer and compact thumbnails in the submission form. Clicking a review photo opens a wide viewer. Reports also offer file-open links, downloads, and native audio playback. Local object URLs stay valid while the workspace is mounted and are released on removal, cancellation, or workspace unmount. No storage service or uploads are implemented.
 
-Submitting adds a local report and opens its drawer. A report from another workspace page reaches the Inbox through `?report=<id>`. Closing the drawer clears that query. Review status remains separate from task state.
+Submitting adds a local report and opens its review in the same position, with a confirmation in the drawer description. The composer and review skip their sliding transitions for this handoff. A report from another workspace page reaches the Inbox through `?report=<id>`. Closing the drawer clears that query and the submission confirmation. Review status remains separate from task state.
 
 The shared Button previously forced relative positioning after caller layout classes. That displaced dialog and drawer close controls. Its default positioning now precedes the caller classes, so close buttons stay in the top-right corner. Shared dialogs also limit height to the visible viewport and scroll when necessary.
 
