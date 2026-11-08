@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Check, CheckCheck, ClipboardList, Copy, MessageCircle, RotateCcw, Search, X } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button, ButtonLabel } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import { DataTable, useDataTable } from '@/components/ui/data-table'
 import { Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader } from '@/components/ui/drawer'
-import { Table, TableCell, TableHead, TableOpenButton, TableRow } from '@/components/ui/table'
 import { useSearchParams } from 'react-router'
 import { useInbox } from '../inbox-context'
 import { ReportAttachments } from './report-attachments'
+import { inboxColumnClassName, useInboxColumns } from './inbox-columns'
+import type { PaginationState } from '@tanstack/react-table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -42,15 +43,6 @@ function ReportBadge({ report }: { report: InboxReport }) {
   return <Badge variant="outline">{report.category}</Badge>
 }
 
-function ReviewSignal({ report }: { report: InboxReport }) {
-  if (report.status === 'processed') return <Badge variant={report.duplicateOf ? 'outline' : 'success'}>{report.duplicateOf ? 'Duplicate linked' : 'Processed'}</Badge>
-  if (report.urgent) return <Badge variant="destructive">Urgent</Badge>
-  if (report.status === 'waiting') return <Badge variant="outline">Waiting for details</Badge>
-  if (report.possibleDuplicateOf) return <Badge variant="warning">Check duplicate</Badge>
-  if (!report.colonyId) return <Badge variant="warning">Needs location</Badge>
-  return <Badge variant="outline">Ready to review</Badge>
-}
-
 export function InboxScreen({ currentUser = 'Alex Morgan', initialView = 'review' }: {
   currentUser?: string
   initialView?: ReviewStatus
@@ -63,6 +55,7 @@ export function InboxScreen({ currentUser = 'Alex Morgan', initialView = 'review
   const [drawerOpen, setDrawerOpen] = useState(Boolean(requestedId))
   const [search, setSearch] = useState('')
   const [colonyFilter, setColonyFilter] = useState('all')
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 })
   const [drafts, setDrafts] = useState<Record<string, Draft>>({})
   const [notice, setNotice] = useState('')
   const [dialog, setDialog] = useState<ActionDialog>(null)
@@ -76,12 +69,20 @@ export function InboxScreen({ currentUser = 'Alex Morgan', initialView = 'review
   const returnFocus = useRef<HTMLButtonElement | null>(null)
 
   const query = search.trim().toLocaleLowerCase()
-  const visibleReports = sortedReports(reports.filter((report) => {
+  const visibleReports = useMemo(() => sortedReports(reports.filter((report) => {
     const colony = initialData.colonies.find((item) => item.id === report.colonyId)
     return report.status === view
       && (colonyFilter === 'all' || report.colonyId === colonyFilter)
       && (!query || [report.title, report.message, report.reporter, colony?.name ?? '', initialData.cats.find((cat) => cat.id === report.catId)?.name ?? ''].join(' ').toLocaleLowerCase().includes(query))
-  }))
+  })), [reports, initialData, view, colonyFilter, query])
+  const columns = useInboxColumns(initialData)
+  const table = useDataTable({
+    data: visibleReports,
+    columns,
+    getRowId: (report) => report.id,
+    state: { pagination: { ...pagination, pageIndex: Math.min(pagination.pageIndex, Math.max(0, Math.ceil(visibleReports.length / pagination.pageSize) - 1)) } },
+    onPaginationChange: setPagination,
+  })
   const selected = reports.find((report) => report.id === selectedId) ?? null
   const draft = selected ? drafts[selected.id] ?? selected : null
   const isProcessed = selected?.status === 'processed'
@@ -125,7 +126,20 @@ export function InboxScreen({ currentUser = 'Alex Morgan', initialView = 'review
 
   function changeView(next: ReviewStatus) {
     setView(next)
+    resetTable()
     closeDrawer()
+  }
+
+  function resetTable() {
+    table.firstPage()
+    table.resetRowSelection()
+  }
+
+  function markRead(items: InboxReport[], unread: boolean) {
+    const ids = new Set(items.map((report) => report.id))
+    setReports((reports) => reports.map((report) => ids.has(report.id) ? { ...report, unread } : report))
+    table.resetRowSelection()
+    setNotice(`${items.length} ${items.length === 1 ? 'report' : 'reports'} marked as ${unread ? 'unread' : 'read'}.`)
   }
 
   function leaveReport() {
@@ -180,11 +194,11 @@ export function InboxScreen({ currentUser = 'Alex Morgan', initialView = 'review
       <div className="my-5 flex flex-col gap-3 sm:flex-row">
         <div className="relative flex-1">
           <Label htmlFor="inbox-search" className="sr-only">Search reports</Label>
-          <Input id="inbox-search" type="search" placeholder="Search reports…" value={search} onChange={(event) => { setSearch(event.target.value); closeDrawer() }} enterKeyHint="search" />
+          <Input id="inbox-search" type="search" placeholder="Search reports…" value={search} onChange={(event) => { setSearch(event.target.value); resetTable(); closeDrawer() }} enterKeyHint="search" />
         </div>
         <div className="sm:w-48">
           <Label htmlFor="inbox-colony-filter" className="sr-only">Filter by colony</Label>
-          <SelectField id="inbox-colony-filter" value={colonyFilter} onChange={(event) => { setColonyFilter(event.target.value); closeDrawer() }}>
+          <SelectField id="inbox-colony-filter" value={colonyFilter} onChange={(event) => { setColonyFilter(event.target.value); resetTable(); closeDrawer() }}>
             <option value="all">All colonies</option>
             <option value="">Colony unknown</option>
             {initialData.colonies.map((colony) => <option key={colony.id} value={colony.id}>{colony.name}</option>)}
@@ -197,34 +211,29 @@ export function InboxScreen({ currentUser = 'Alex Morgan', initialView = 'review
         {notice ? <Button variant="ghost" size="icon" aria-label="Dismiss message" onClick={() => setNotice('')}><X aria-hidden="true" /></Button> : null}
       </div>
 
-      <Card padding="none" ref={listRef} tabIndex={-1} aria-label="Reports">
-        {visibleReports.length ? <Table>
-          <caption className="sr-only">{views.find((item) => item.value === view)?.label} reports. Urgent reports appear first, then oldest submissions.</caption>
-          <thead><tr>
-            <TableHead>Report</TableHead>
-            <TableHead className="hidden w-36 md:table-cell">Colony / cat</TableHead>
-            <TableHead className="hidden w-40 sm:table-cell">Status</TableHead>
-            <TableHead className="hidden w-32 xl:table-cell">From</TableHead>
-            <TableHead className="hidden w-36 xl:table-cell">Received</TableHead>
-          </tr></thead>
-          <tbody>{visibleReports.map((report) => {
-            const colony = initialData.colonies.find((item) => item.id === report.colonyId)
-            const cat = initialData.cats.find((item) => item.id === report.catId)
-            return <TableRow key={report.id} interactive selected={drawerOpen && selected?.id === report.id} onClick={(event) => openReport(report, event.currentTarget.querySelector('button'))}>
-              <TableCell>
-                <TableOpenButton unread={report.unread} aria-label={`Review ${report.title}`}>{report.title}</TableOpenButton>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 md:hidden"><Text size="caption" tone="muted" className="truncate">{colony?.name ?? 'Colony unknown'} · {report.category}</Text><span className="sm:hidden"><ReviewSignal report={report} /></span></div>
-              </TableCell>
-              <TableCell className="hidden md:table-cell"><Text size="small" className="truncate">{colony?.name ?? 'Unknown'}{cat ? ` · ${cat.name}` : ''}</Text></TableCell>
-              <TableCell className="hidden sm:table-cell"><ReviewSignal report={report} /></TableCell>
-              <TableCell className="hidden xl:table-cell"><Text size="small" className="truncate">{report.reporter}</Text></TableCell>
-              <TableCell className="hidden xl:table-cell"><Text size="caption" tone="muted">{dateFormat.format(new Date(report.submittedAt))}</Text></TableCell>
-            </TableRow>
-          })}</tbody>
-        </Table> : <EmptyState icon={query || colonyFilter !== 'all' ? <Search /> : <CheckCheck />} title={query || colonyFilter !== 'all' ? 'No matching reports' : view === 'review' ? 'All reports reviewed' : view === 'waiting' ? 'No reports waiting' : 'No processed reports'} description={query || colonyFilter !== 'all' ? 'Try another search or colony.' : view === 'review' ? 'Reports that need review will appear here.' : undefined} />}
-        {(!visibleReports.length && (query || colonyFilter !== 'all')) ? <div className="flex justify-center px-5 pb-5"><Button variant="outline" onClick={() => { setSearch(''); setColonyFilter('all') }}>Clear filters</Button></div> : null}
-      </Card>
-      <div className="mt-3 flex items-center justify-between gap-3"><Text size="caption" tone="muted">{visibleReports.length} {visibleReports.length === 1 ? 'report' : 'reports'}</Text><Text size="caption" tone="muted">Urgent first, then oldest</Text></div>
+      <DataTable
+        ref={listRef}
+        table={table}
+        label="Reports"
+        itemName="report"
+        columnClassName={inboxColumnClassName}
+        activeRowId={drawerOpen ? selected?.id : undefined}
+        onOpenRow={openReport}
+        selection={{
+          getLabel: (report) => report.title,
+          actions: (items) => {
+            const unread = items.every((report) => !report.unread)
+            return <Button variant="outline" size="sm" onClick={() => markRead(items, unread)}>Mark {unread ? 'unread' : 'read'}</Button>
+          },
+        }}
+        emptyState={<EmptyState
+          icon={query || colonyFilter !== 'all' ? <Search /> : <CheckCheck />}
+          title={query || colonyFilter !== 'all' ? 'No matching reports' : view === 'review' ? 'All reports reviewed' : view === 'waiting' ? 'No reports waiting' : 'No processed reports'}
+          description={query || colonyFilter !== 'all' ? 'Try another search or colony.' : view === 'review' ? 'Reports that need review will appear here.' : undefined}
+          action={query || colonyFilter !== 'all' ? <Button variant="outline" onClick={() => { setSearch(''); setColonyFilter('all'); resetTable() }}>Clear filters</Button> : undefined}
+        />}
+      />
+      {!table.state.sorting.length && visibleReports.length ? <Text size="caption" tone="muted" className="mt-3">Urgent first, then oldest</Text> : null}
       </ViewTabs>
 
       <Drawer open={drawerOpen && selected !== null} onOpenChange={(open) => { if (!open) closeDrawer() }}>

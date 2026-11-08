@@ -23,6 +23,7 @@ const buttonVariants = cva(
         selection: 'h-auto justify-between whitespace-normal border-border bg-card text-left font-sans font-normal hover:bg-muted aria-pressed:border-ring aria-pressed:bg-sidebar-accent aria-pressed:hover:bg-sidebar-accent',
         media: 'overflow-hidden bg-card p-0 hover:bg-muted',
         account: 'justify-start text-left font-sans font-normal hover:bg-muted aria-expanded:border-ring data-popup-open:border-ring data-popup-open:bg-muted',
+        'table-header': 'justify-start rounded-sm font-sans font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
       },
       size: {
         default:

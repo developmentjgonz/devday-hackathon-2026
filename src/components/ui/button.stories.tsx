@@ -9,7 +9,7 @@ const meta = {
   component: Button,
   args: { children: 'Log visit', variant: 'default', size: 'default', disabled: false, loading: false },
   argTypes: {
-    variant: { control: 'select', options: ['default', 'secondary', 'outline', 'ghost', 'destructive', 'link', 'selection', 'media', 'account'] },
+    variant: { control: 'select', options: ['default', 'secondary', 'outline', 'ghost', 'destructive', 'link', 'selection', 'media', 'account', 'table-header'] },
     size: { control: 'select', options: ['xs', 'sm', 'default', 'lg', 'icon', 'icon-xs', 'icon-sm', 'icon-lg', 'content', 'media', 'account'] },
     children: { control: 'text' },
   },
@@ -22,6 +22,7 @@ export const Primary: Story = {}
 export const Secondary: Story = { args: { children: 'Add care note', variant: 'secondary' } }
 export const Outline: Story = { args: { children: 'View care history', variant: 'outline' } }
 export const Ghost: Story = { args: { children: 'Edit visit', variant: 'ghost' } }
+export const TableHeader: Story = { args: { children: 'Received', variant: 'table-header', size: 'sm' } }
 export const Destructive: Story = { args: { children: 'Delete care note', variant: 'destructive' } }
 export const Link: Story = { args: { children: 'View colony', variant: 'link' } }
 export const Disabled: Story = { args: { disabled: true } }
