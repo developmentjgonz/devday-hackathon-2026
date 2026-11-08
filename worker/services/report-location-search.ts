@@ -38,7 +38,13 @@ export async function searchReportLocations(query: string, area: string, selecte
   const radius = area ? 10 : 5
   const latitudeSpan = radius / 111
   const longitudeSpan = Math.min(180, latitudeSpan / Math.max(0.01, Math.cos(center.latitude * Math.PI / 180)))
-  const bounds = anchor?.bounds ?? [Math.max(-180, center.longitude - longitudeSpan), Math.max(-90, center.latitude - latitudeSpan),
+  // A locality result can describe a small mapped footprint, not the town.
+  // Treat bounds under 1 km across like a missing boundary and check locality.
+  const areaBounds = anchor?.bounds && distance(
+    { longitude: anchor.bounds[0], latitude: anchor.bounds[1] },
+    { longitude: anchor.bounds[2], latitude: anchor.bounds[3] },
+  ) >= 1 ? anchor.bounds : undefined
+  const bounds = areaBounds ?? [Math.max(-180, center.longitude - longitudeSpan), Math.max(-90, center.latitude - latitudeSpan),
     Math.min(180, center.longitude + longitudeSpan), Math.min(90, center.latitude + latitudeSpan)]
   const params = {
     limit: '5', lat: String(center.latitude), lon: String(center.longitude), location_bias_scale: '0.1',
@@ -58,9 +64,9 @@ export async function searchReportLocations(query: string, area: string, selecte
     const key = `${label.toLowerCase()}:${latitude.toFixed(5)}:${longitude.toFixed(5)}`
     // A nearby town is still the wrong town. Without provider bounds, require
     // its locality metadata to match the named area as well as the radius.
-    if (anchor && !anchor.bounds && !result.areas?.some((name) => areaName(name) === areaName(anchor.label))) return []
+    if (anchor && !areaBounds && !result.areas?.some((name) => areaName(name) === areaName(anchor.label))) return []
     if (longitude < bounds[0]! || longitude > bounds[2]! || latitude < bounds[1]! || latitude > bounds[3]!
-      || (!anchor?.bounds && distance(center, { latitude, longitude }) > radius) || seen.has(key)) return []
+      || (!areaBounds && distance(center, { latitude, longitude }) > radius) || seen.has(key)) return []
     seen.add(key)
     return [{ label, title: result.label, description: result.detail, latitude, longitude }]
   }).slice(0, 3)

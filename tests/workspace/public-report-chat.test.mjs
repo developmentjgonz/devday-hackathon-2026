@@ -256,6 +256,41 @@ test('a nearby result in a different town is not suggested when the area has no 
   assert.deepEqual(result.locations, []);
 });
 
+test('a tiny Key Largo footprint does not hide Publix or admit shops in other towns', async (t) => {
+  const { request } = await enableChat(t);
+  globalThis.fetch = async (url) => {
+    if (String(url).startsWith('https://api.openai.com/')) return functionCall('findLocation', {
+      reply: 'I’ll look for that shop.', query: 'Publix', area: 'Key Largo, Florida',
+    });
+    const params = new URL(url).searchParams;
+    if (params.get('q') === 'Key Largo, Florida') return places(
+      [['Key Largo', -80.4677741, 25.091338]], [-80.467909, 25.091449, -80.467629, 25.091209],
+    );
+    assert.equal(params.get('q'), 'Publix');
+    const [west, south, east, north] = params.get('bbox').split(',').map(Number);
+    assert.ok(west < -80.4211044 && east > -80.4211044 && south < 25.1125929 && north > 25.1125929,
+      'The search area must include the real Publix, about 5 km from the locality footprint');
+    return Response.json({ features: [
+      { city: 'Key Largo', longitude: -80.4211044, latitude: 25.1125929, street: 'Overseas Highway', housenumber: '101499' },
+      { city: 'A different town', longitude: -80.42, latitude: 25.11 },
+      { city: 'Key Largo', longitude: -80.34, latitude: 25.091338 },
+      { city: 'Key Largo', longitude: -80.4211044, latitude: 25.1125929, name: 'Unrelated shop' },
+    ].map(({ longitude, latitude, ...properties }) => ({
+      properties: { name: 'Publix', state: 'Florida', ...properties },
+      geometry: { type: 'Point', coordinates: [longitude, latitude] },
+    })) });
+  };
+  const result = await (await request('/api/public-reports/chat', { body: {
+    messages: [{ role: 'user', text: 'cats spotted by publix in key largo florida' }],
+  } })).json();
+  assert.equal(result.ready, false);
+  assert.equal(result.locationSource, 'search');
+  assert.equal(result.locations.length, 1);
+  assert.match(result.locations[0].label, /101499 Overseas Highway, Key Largo/);
+  assert.equal(result.locations[0].latitude, 25.1125929);
+  assert.equal(result.locations[0].longitude, -80.4211044);
+});
+
 test('a shared device pin needs confirmation, keeps its coordinates, and works when reverse lookup fails', async (t) => {
   const { request, sqlite } = await enableChat(t);
   const point = { latitude: 25.767088, longitude: -80.189696, accuracy: 20 };
