@@ -12,6 +12,7 @@ export type WorkspaceStore = {
   searchDuplicateReports: (id: string, query: string, offset: number, signal?: AbortSignal) => Promise<DuplicateSearchResult>
   createReport: (input: CreateReportInput, files: DraftFile[]) => Promise<Report>
   finishReport: (id: string, input: FinishReportInput) => Promise<Report>
+  dismissReport: (id: string) => Promise<Report>
   reopenReport: (id: string) => Promise<Report>
   askQuestion: (id: string, text: string) => Promise<Report>
   linkDuplicate: (id: string, targetId: string) => Promise<Report>
@@ -47,6 +48,7 @@ export const databaseWorkspace: WorkspaceStore = {
     return result.report
   },
   async finishReport(id, input) { return (await post<{ report: Report }>(`/api/reports/${pathId(id)}/finish`, input)).report },
+  async dismissReport(id) { return (await post<{ report: Report }>(`/api/reports/${pathId(id)}/dismiss`)).report },
   async reopenReport(id) { return (await post<{ report: Report }>(`/api/reports/${pathId(id)}/reopen`)).report },
   async askQuestion(id, text) { return (await post<{ report: Report }>(`/api/reports/${pathId(id)}/questions`, { text })).report },
   async linkDuplicate(id, targetId) { return (await post<{ report: Report }>(`/api/reports/${pathId(id)}/duplicate`, { targetId })).report },

@@ -20,6 +20,7 @@ type InboxStore = {
   changeCatColony: (cat: InboxCat, colonyId: string) => Promise<InboxCat>
   createAttachment: (file: File) => ReportAttachment; discardAttachment: (attachment: ReportAttachment) => void
   createReport: (input: CreateReportInput, attachments: ReportAttachment[]) => Promise<InboxReport>
+  dismissReport: (id: string) => Promise<InboxReport>
   finishReport: (id: string, input: FinishReportInput) => Promise<InboxReport>; reopenReport: (id: string) => Promise<InboxReport>
   askQuestion: (id: string, text: string) => Promise<InboxReport>; linkDuplicate: (id: string, targetId: string) => Promise<InboxReport>
   createTask: (input: TaskInput) => Promise<Task>; editTask: (id: string, input: TaskInput) => Promise<Task>; changeTaskStatus: (id: string, status: TaskStatus, completionNote?: string) => Promise<Task>
@@ -188,6 +189,7 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
     })
   }
   const finishReport = useCallback((id: string, input: FinishReportInput) => mutateWorkspace(async () => applyReport(await workspaceStore.finishReport(id, input))), [workspaceStore, applyReport, mutateWorkspace])
+  const dismissReport = useCallback((id: string) => mutateWorkspace(async () => applyReport(await workspaceStore.dismissReport(id))), [workspaceStore, applyReport, mutateWorkspace])
   const reopenReport = useCallback((id: string) => mutateWorkspace(async () => applyReport(await workspaceStore.reopenReport(id))), [workspaceStore, applyReport, mutateWorkspace])
   const askQuestion = useCallback((id: string, text: string) => mutateWorkspace(async () => applyReport(await workspaceStore.askQuestion(id, text))), [workspaceStore, applyReport, mutateWorkspace])
   const linkDuplicate = useCallback((id: string, targetId: string) => mutateWorkspace(async () => applyReport(await workspaceStore.linkDuplicate(id, targetId))), [workspaceStore, applyReport, mutateWorkspace])
@@ -206,7 +208,7 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
   const createCareRule = useCallback((input: CareRuleInput) => mutateWorkspace(async () => applyCareRule(await workspaceStore.createCareRule(input))), [workspaceStore, applyCareRule, mutateWorkspace])
   const editCareRule = useCallback((id: string, input: CareRuleInput) => mutateWorkspace(async () => applyCareRule(await workspaceStore.editCareRule(id, input))), [workspaceStore, applyCareRule, mutateWorkspace])
   const setCareRuleActive = useCallback((id: string, active: boolean) => mutateWorkspace(async () => applyCareRule(await workspaceStore.setCareRuleActive(id, active))), [workspaceStore, applyCareRule, mutateWorkspace])
-  return <InboxContext value={{ data: workspaceData, reports, tasks, members, careRules, careGenerationFailed, googleMapsEnabled, aiAnalysisEnabled, getRecordActivity, activityRevision, refreshWorkspace, refreshingWorkspace, workspaceRefreshFailed, analyzeReport, searchDuplicateReports, addColony, updateColonyLocation, addCat, updateCat, changeCatColony, createAttachment, discardAttachment, createReport, finishReport, reopenReport, askQuestion, linkDuplicate, createTask, editTask, changeTaskStatus, createCareRule, editCareRule, setCareRuleActive }}>{children}</InboxContext>
+  return <InboxContext value={{ data: workspaceData, reports, tasks, members, careRules, careGenerationFailed, googleMapsEnabled, aiAnalysisEnabled, getRecordActivity, activityRevision, refreshWorkspace, refreshingWorkspace, workspaceRefreshFailed, analyzeReport, searchDuplicateReports, addColony, updateColonyLocation, addCat, updateCat, changeCatColony, createAttachment, discardAttachment, createReport, finishReport, dismissReport, reopenReport, askQuestion, linkDuplicate, createTask, editTask, changeTaskStatus, createCareRule, editCareRule, setCareRuleActive }}>{children}</InboxContext>
 }
 export function useInbox() {
   const store = useContext(InboxContext)

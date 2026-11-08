@@ -1,3 +1,4 @@
+import { isReportClosed } from '../../../../shared/types/workspace'
 import { Cat, House } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 import { Button } from '@/components/ui/button'
@@ -31,7 +32,7 @@ export function ColonyDetailContent({ colonyId, inDrawer = false }: { colonyId?:
   if (!colony) return <EmptyState size="page" icon={<House />} title="Colony not found" action={<Button render={<Link to="/app/colonies" />}>View colonies</Button>} />
 
   const relatedReports = reportsForColony(reports, colony.id)
-  const openReports = relatedReports.filter((report) => report.status !== 'processed')
+  const openReports = relatedReports.filter((report) => !isReportClosed(report.status))
   const urgentReports = openReports.filter((report) => report.urgent)
     .sort((a, b) => Date.parse(a.submittedAt) - Date.parse(b.submittedAt))
   const resolvedTasks = resolveTasks(allTasks, reports, data)
@@ -64,8 +65,8 @@ export function ColonyDetailContent({ colonyId, inDrawer = false }: { colonyId?:
         <div className="flex flex-wrap items-center justify-between gap-3"><Heading id="colony-cats" level={2} size="card">Cats</Heading><div className="flex flex-wrap gap-2"><ManageColonyCats colony={colony} /><NewRecordButton kind="cat" colonyId={colony.id} fixedColony /></div></div>
         {cats.length ? <>
           <Text size="small" tone="muted">Select a cat to edit its profile or move it to another colony.</Text>
-          <div className="md:hidden"><RecordList items={cats} getKey={(cat) => cat.id} label="Colony cats" itemName="cat" renderItem={(cat) => <CatRecordListItem cat={cat} urgentCount={reports.filter((report) => report.catId === cat.id && report.urgent && report.status !== 'processed').length} taskCount={openTasksForRecord(resolvedTasks, 'cat', cat.id).length} />} /></div>
-          <div className={inDrawer ? 'hidden gap-3 md:grid' : 'hidden gap-3 md:grid md:grid-cols-2 lg:grid-cols-3'}>{cats.map((cat) => <CatRecordCard key={cat.id} cat={cat} headingLevel={3} urgentCount={reports.filter((report) => report.catId === cat.id && report.urgent && report.status !== 'processed').length} taskCount={openTasksForRecord(resolvedTasks, 'cat', cat.id).length} />)}</div>
+          <div className="md:hidden"><RecordList items={cats} getKey={(cat) => cat.id} label="Colony cats" itemName="cat" renderItem={(cat) => <CatRecordListItem cat={cat} urgentCount={reports.filter((report) => report.catId === cat.id && report.urgent && !isReportClosed(report.status)).length} taskCount={openTasksForRecord(resolvedTasks, 'cat', cat.id).length} />} /></div>
+          <div className={inDrawer ? 'hidden gap-3 md:grid' : 'hidden gap-3 md:grid md:grid-cols-2 lg:grid-cols-3'}>{cats.map((cat) => <CatRecordCard key={cat.id} cat={cat} headingLevel={3} urgentCount={reports.filter((report) => report.catId === cat.id && report.urgent && !isReportClosed(report.status)).length} taskCount={openTasksForRecord(resolvedTasks, 'cat', cat.id).length} />)}</div>
         </> : <EmptyState icon={<Cat />} title="No cats in this colony" />}
       </section>
       <div className={inDrawer ? 'grid gap-8' : 'grid items-start gap-8 lg:grid-cols-2 lg:items-stretch'}>

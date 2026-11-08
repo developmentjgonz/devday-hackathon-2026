@@ -134,7 +134,7 @@ test('report tasks keep added and unfinished related items', async ({ page }) =>
 test('a report task shows saved report links until the review is saved', async ({ page }) => {
   await page.goto('/iframe.html?id=pages-reports--report-drawer&viewMode=story')
   const report = page.getByRole('dialog', { name: 'Report', exact: true })
-  await report.getByLabel('Colony', { exact: true }).selectOption('canal')
+  await report.getByLabel('Colony (optional)', { exact: true }).selectOption('canal')
   await report.getByLabel('Cat (optional)').selectOption('miso')
   await report.getByRole('button', { name: 'Create task', exact: true }).click()
   const task = page.getByRole('dialog', { name: 'Create a care task' })

@@ -91,6 +91,8 @@ export const PossibleDuplicateDrawer: Story = { args: { initialReportId: 'report
 export const UnknownColonyDrawer: Story = { args: { initialReportId: 'report-location' } }
 export const ReportWithCareTask: Story = { args: { initialReportId: 'report-injury', data: { ...localInboxData, tasks: [...localInboxData.tasks, { id: 'care-check', reportId: 'report-injury', title: 'Arrange a care check', owner: 'Sam Chen', ownerId: 'story:Sam Chen', due: '2026-11-08', status: 'open', associations: [] }] } } }
 
+export const DismissedReportDrawer: Story = { args: { initialStatus: 'dismissed', initialReportId: 'report-location', data: { ...localInboxData, reports: localInboxData.reports.map((report) => report.id === 'report-location' ? { ...report, status: 'dismissed' as const, history: ['Alex Morgan dismissed the report. No further action is needed.'] } : report) } } }
+
 export const AllReports: Story = { args: { initialStatus: 'all' } }
 
 export const IncomingReport: Story = { args: { data: { ...inboxScenarioData, reports: [] }, refreshScenario: 'incoming' } }

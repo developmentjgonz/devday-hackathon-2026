@@ -38,7 +38,10 @@ export async function searchReportLocations(query: string, area: string, selecte
   }
   // The bounds already supply the area. Including the city in q can make Photon
   // return the city itself when the requested landmark does not exist there.
-  const results = await lookup('api', { ...params, q: query }, signal)
+  // Photon can miss possessive names such as McDonald's with an apostrophe.
+  // Keep the name as one word, including when the model adds an apostrophe.
+  const searchQuery = query.replace(/['’‘ʼ]/g, '')
+  const results = await lookup('api', { ...params, q: searchQuery }, signal)
   const seen = new Set<string>()
   return results.flatMap((result): ChatPlace[] => {
     const [longitude, latitude] = result.coordinates

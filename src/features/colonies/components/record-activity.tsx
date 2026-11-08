@@ -1,3 +1,4 @@
+import { isReportClosed } from '../../../../shared/types/workspace'
 import { FileText } from 'lucide-react'
 import { Link } from 'react-router'
 import { Badge } from '@/components/ui/badge'
@@ -16,7 +17,7 @@ export function ReportActivity({ reports, emptyTitle = 'No reports' }: { reports
       render={<Link {...reportLink(report.id, `record-report:${report.id}`)} />}
       meta={`${report.category} · ${formatReportTime(report.submittedAt)}`}
       badge={<>
-        {report.urgent && report.status !== 'processed' ? <Badge variant="destructive">Urgent</Badge> : null}
+        {report.urgent && !isReportClosed(report.status) ? <Badge variant="destructive">Urgent</Badge> : null}
         <Badge variant="secondary">{reportStatusLabels[report.status]}</Badge>
       </>} />
     </li>)}

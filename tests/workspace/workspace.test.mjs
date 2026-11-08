@@ -243,3 +243,79 @@ test('report questions and duplicate links remain in saved history', async (t) =
   assert.equal(reopened.duplicateOf, undefined);
   assert.equal(reopened.thread.at(-1).text, 'Was the ear tipped?');
 });
+
+test('reviews can finish without a colony and still validate selected records', async (t) => {
+  const { sqlite, request, signIn } = fixture(t);
+  const cookie = await signIn('local-member');
+  const endpoint = '/api/reports/report-location/finish';
+  const input = { colonyId: '', catId: '', careNote: '', urgent: false };
+  assert.equal((await request(endpoint, { method: 'POST', cookie, body: { ...input, colonyId: 'missing' } })).status, 404);
+  assert.equal((await request(endpoint, { method: 'POST', cookie, body: { ...input, catId: 'pepper' } })).status, 400);
+  const response = await request(endpoint, { method: 'POST', cookie, body: input });
+  assert.equal(response.status, 200);
+  const { report } = await response.json();
+  assert.equal(report.status, 'processed');
+  assert.equal(report.colonyId, '');
+  assert.equal(sqlite.prepare('SELECT colony_id FROM reports WHERE id = ?').get(report.id).colony_id, null);
+});
+
+test('dismissal is authenticated, retains content and tasks, and can be reopened', async (t) => {
+  const { sqlite, request, signIn } = fixture(t);
+  const cookie = await signIn('local-member');
+  const endpoint = '/api/reports/report-location/dismiss';
+  assert.equal((await request(endpoint, { method: 'POST' })).status, 401);
+  assert.equal((await request(endpoint, { method: 'POST', cookie, origin: 'https://other.example' })).status, 403);
+  assert.equal((await request('/api/reports/missing/dismiss', { method: 'POST', cookie })).status, 404);
+  const before = sqlite.prepare('SELECT * FROM reports WHERE id = ?').get('report-location');
+  const taskResult = await request('/api/tasks', { method: 'POST', cookie, body: { title: 'Check location', ownerId: 'local-member', due: '', reportId: 'report-location', associations: [] } });
+  const { task } = await taskResult.json();
+  const response = await request(endpoint, { method: 'POST', cookie });
+  assert.equal(response.status, 200);
+  const { report } = await response.json();
+  assert.equal(report.status, 'dismissed');
+  assert.equal(report.colonyId, '');
+  assert.ok(report.history.some((entry) => entry.includes('Sam Rivera dismissed the report')));
+  assert.deepEqual({ ...sqlite.prepare('SELECT * FROM reports WHERE id = ?').get('report-location') }, { ...before, status: 'dismissed' });
+  assert.equal(sqlite.prepare('SELECT status FROM tasks WHERE id = ?').get(task.id).status, 'open');
+  const shared = (await (await request('/api/workspace-data', { cookie })).json()).reports.find((item) => item.id === report.id);
+  assert.equal(shared.status, 'dismissed');
+  assert.equal((await request(endpoint, { method: 'POST', cookie })).status, 409);
+  assert.equal((await request('/api/reports/report-location/finish', { method: 'POST', cookie, body: { colonyId: '', catId: '', careNote: '', urgent: false } })).status, 409);
+  assert.equal((await request('/api/reports/report-location/questions', { method: 'POST', cookie, body: { text: 'Where?' } })).status, 409);
+  const reopened = await request('/api/reports/report-location/reopen', { method: 'POST', cookie });
+  assert.equal(reopened.status, 200);
+  assert.equal((await reopened.json()).report.status, 'pending');
+});
+
+test('dismissed reports are excluded from duplicate search and cannot be linked', async (t) => {
+  const { request, signIn } = fixture(t);
+  const cookie = await signIn('local-admin');
+  assert.equal((await request('/api/reports/report-earlier-sighting/reopen', { method: 'POST', cookie })).status, 200);
+  assert.equal((await request('/api/reports/report-earlier-sighting/dismiss', { method: 'POST', cookie })).status, 200);
+  const candidates = await request('/api/reports/report-sighting/duplicate-candidates', { cookie });
+  assert.ok(!(await candidates.json()).reports.some((report) => report.id === 'report-earlier-sighting'));
+  assert.equal((await request('/api/reports/report-sighting/duplicate', { method: 'POST', cookie, body: { targetId: 'report-earlier-sighting' } })).status, 400);
+  assert.deepEqual((await (await request('/api/reports/report-earlier-sighting/duplicate-candidates', { cookie })).json()).reports, []);
+});
+
+test('dismissal migration preserves populated reports, dependents, and search', (t) => {
+  const sqlite = new DatabaseSync(':memory:');
+  t.after(() => sqlite.close());
+  sqlite.exec('PRAGMA foreign_keys = ON');
+  const migrations = new URL('../../migrations/', import.meta.url);
+  for (const file of readdirSync(migrations).filter((name) => name.endsWith('.sql') && name < '0033').sort()) sqlite.exec(readFileSync(new URL(file, migrations), 'utf8'));
+  for (const file of ['../../seeds/local.sql', '../../seeds/workspace.sql']) sqlite.exec(readFileSync(new URL(file, import.meta.url), 'utf8'));
+  sqlite.exec("INSERT INTO report_reads VALUES ('report-location', 'local-admin')");
+  sqlite.exec("UPDATE reports SET public_latitude = 25.7, public_longitude = -80.2, public_submission_hash = 'test-hash', public_contact_phone = '+13055550100', public_contact_consented_at = '2026-11-08T18:00:00Z' WHERE id = 'report-location'");
+  const tables = ['reports', 'report_reads', 'report_entries', 'report_history', 'report_attachments', 'tasks', 'record_activity'];
+  const snapshot = () => Object.fromEntries(tables.map((table) => [table, sqlite.prepare(`SELECT * FROM ${table} ORDER BY rowid`).all()]));
+  const before = snapshot();
+  sqlite.exec('BEGIN');
+  sqlite.exec(readFileSync(new URL('0033_report_dismissal.sql', migrations), 'utf8'));
+  sqlite.exec('COMMIT');
+  assert.deepEqual(snapshot(), before);
+  assert.deepEqual(sqlite.prepare('PRAGMA foreign_key_check').all(), []);
+  assert.ok(sqlite.prepare("SELECT rowid FROM report_search WHERE report_search MATCH 'parking'").all().length > 0);
+  sqlite.exec("UPDATE reports SET status = 'dismissed', message = 'uniquedismissalword' WHERE id = 'report-location'");
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM report_search WHERE report_search MATCH 'uniquedismissalword'").get().count, 1);
+});

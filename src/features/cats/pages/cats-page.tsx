@@ -1,3 +1,4 @@
+import { isReportClosed } from '../../../../shared/types/workspace'
 import { useState } from 'react'
 import { Cat, LayoutGrid, List, Map as MapIcon, Search } from 'lucide-react'
 import { RecordList } from '@/components/ui/record-list'
@@ -35,12 +36,12 @@ export function CatsPage() {
       ]} /><NewRecordButton kind="cat" colonyId={colonyId === 'all' ? '' : colonyId} onCreated={() => { setSearch(''); setColonyId('all') }} /></>} />
       {view !== 'list' ? <Text size="caption" tone="muted">{cats.length} {cats.length === 1 ? 'cat' : 'cats'}{query || colonyId !== 'all' ? ' found' : ''}</Text> : null}
       {cats.length ? view === 'map' ? <DirectoryMap scope="cats" colonies={data.colonies} cats={cats} reports={reports} /> : view === 'list' ? <RecordList key={`${query}:${colonyId}`} items={cats} getKey={(cat) => cat.id} label="Cats" itemName="cat" renderItem={(cat) => {
-        const urgentCount = reports.filter((report) => report.catId === cat.id && report.urgent && report.status !== 'processed').length
+        const urgentCount = reports.filter((report) => report.catId === cat.id && report.urgent && !isReportClosed(report.status)).length
         const taskCount = openTasksForRecord(resolvedTasks, 'cat', cat.id).length
         return <CatRecordListItem cat={cat} colonyName={data.colonies.find((colony) => colony.id === cat.colonyId)?.name ?? 'No colony'} urgentCount={urgentCount} taskCount={taskCount} />
       }} /> : <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{cats.map((cat) => {
         const associated = reports.filter((report) => report.catId === cat.id)
-        const urgentCount = associated.filter((report) => report.urgent && report.status !== 'processed').length
+        const urgentCount = associated.filter((report) => report.urgent && !isReportClosed(report.status)).length
         const taskCount = openTasksForRecord(resolvedTasks, 'cat', cat.id).length
         return <CatRecordCard key={cat.id} cat={cat} colonyName={data.colonies.find((colony) => colony.id === cat.colonyId)?.name ?? 'No colony'} urgentCount={urgentCount} taskCount={taskCount} />
       })}</div> : <EmptyState icon={query || colonyId !== 'all' ? <Search /> : <Cat />} title={query || colonyId !== 'all' ? 'No matching cats' : 'No cats'} description={query || colonyId !== 'all' ? 'Try another search or colony.' : undefined} />}

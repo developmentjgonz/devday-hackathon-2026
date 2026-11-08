@@ -16,7 +16,7 @@ const association = z.union([
 ])
 
 export const createReportSchema = z.object({ title, message: text, colonyId: optionalId, catId: optionalId, urgent: z.boolean() })
-export const finishReportSchema = z.object({ colonyId: id, catId: optionalId, careNote: z.string().trim().max(4000), urgent: z.boolean() })
+export const finishReportSchema = z.object({ colonyId: optionalId, catId: optionalId, careNote: z.string().trim().max(4000), urgent: z.boolean() })
 export const questionSchema = z.object({ text })
 export const duplicateSchema = z.object({ targetId: id })
 export const taskInputSchema = z.object({ title, ownerId: id, due, reportId: id.optional(), associations: z.array(association).max(30) })

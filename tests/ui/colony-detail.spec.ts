@@ -124,7 +124,7 @@ test('existing cats can be moved into and removed from a colony', async ({ page 
   await report.getByLabel('Details', { exact: true }).fill('Miso was seen near the garden.')
   await report.getByRole('button', { name: 'Submit report' }).click()
   const newReview = page.getByRole('dialog', { name: 'Report', exact: true })
-  await newReview.getByLabel('Colony', { exact: true }).selectOption('canal')
+  await newReview.getByLabel('Colony (optional)', { exact: true }).selectOption('canal')
   await newReview.getByLabel('Cat (optional)').selectOption('miso')
   await newReview.getByText('Care note (optional)', { exact: true }).click()
   await newReview.getByLabel('Care note').fill('Sighting reviewed.')

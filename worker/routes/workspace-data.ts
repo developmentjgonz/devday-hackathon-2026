@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { HTTPException } from 'hono/http-exception'
 import { careRuleInputSchema, careRuleStatusSchema, createReportSchema, duplicateSchema, finishReportSchema, questionSchema, taskInputSchema, taskStatusSchema } from '../../shared/schemas/workspace.ts'
-import { addQuestion, changeTaskStatus, createTask, editTask, findAttachment, finishReport, insertReport, linkDuplicate, listReports, listTasks, listWorkspace, reopenReport, type StoredAttachment } from '../db/workspace.ts'
+import { addQuestion, changeTaskStatus, createTask, dismissReport, editTask, findAttachment, finishReport, insertReport, linkDuplicate, listReports, listTasks, listWorkspace, reopenReport, type StoredAttachment } from '../db/workspace.ts'
 import { createCareRule, editCareRule, generateCareTasks, listCareRules, setCareRuleActive } from '../db/care-rules.ts'
 import { hasOpenAiConfiguration } from '../db/configuration.ts'
 import { configurationKey } from '../lib/configuration-secret.ts'
@@ -74,6 +74,7 @@ workspaceDataRoutes.post('/reports', requireActiveUser, requireSameOrigin, bodyL
 })
 
 workspaceDataRoutes.post('/reports/:id/finish', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(finishReportSchema), async (c) => c.json({ report: await finishReport(c.env.DB, c.req.param('id'), c.get('user'), c.req.valid('json')) }))
+workspaceDataRoutes.post('/reports/:id/dismiss', requireActiveUser, requireSameOrigin, async (c) => c.json({ report: await dismissReport(c.env.DB, c.req.param('id'), c.get('user')) }))
 workspaceDataRoutes.post('/reports/:id/reopen', requireActiveUser, requireSameOrigin, async (c) => c.json({ report: await reopenReport(c.env.DB, c.req.param('id'), c.get('user')) }))
 workspaceDataRoutes.post('/reports/:id/questions', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(questionSchema), async (c) => c.json({ report: await addQuestion(c.env.DB, c.req.param('id'), c.get('user'), c.req.valid('json').text) }))
 workspaceDataRoutes.get('/reports/:id/duplicate-candidates', requireActiveUser, async (c) => {

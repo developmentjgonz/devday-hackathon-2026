@@ -1,3 +1,4 @@
+import { isReportClosed } from '../../shared/types/workspace.ts'
 import { HTTPException } from 'hono/http-exception'
 import type { CreateReportInput, FinishReportInput, TaskInput } from '../../shared/schemas/workspace.ts'
 import type { Report, ReportAttachment, ReportEntry, Task, TaskAssociation, TaskStatus, WorkspaceMember, WorkspaceSnapshot } from '../../shared/types/workspace.ts'
@@ -105,7 +106,7 @@ export async function insertReport(db: D1Database, id: string, actor: SessionUse
 
 export async function finishReport(db: D1Database, id: string, actor: SessionUser, input: FinishReportInput): Promise<Report> {
   const report = await requireReport(db, id)
-  if (report.status === 'processed') throw new HTTPException(409, { message: 'This report has already been reviewed.' })
+  if (isReportClosed(report.status)) throw new HTTPException(409, { message: 'This report has already been reviewed.' })
   const originalCat = (report.catId ?? '') === input.catId
   await validateLocation(db, input.colonyId, originalCat ? '' : input.catId)
   const changes: ActivityChange[] = [{ field: 'Status', before: report.status === 'waiting' ? 'Waiting for details' : 'Needs review', after: 'Reviewed' }]
@@ -113,7 +114,7 @@ export async function finishReport(db: D1Database, id: string, actor: SessionUse
     if (!recordId) return ''
     return (await db.prepare(`SELECT name FROM ${table} WHERE id = ?`).bind(recordId).first<{ name: string }>())?.name ?? recordId
   }
-  if (report.colonyId !== input.colonyId) changes.push({ field: 'Colony', before: await recordName('colonies', report.colonyId), after: await recordName('colonies', input.colonyId) })
+  if ((report.colonyId ?? '') !== input.colonyId) changes.push({ field: 'Colony', before: await recordName('colonies', report.colonyId), after: await recordName('colonies', input.colonyId) })
   if ((report.catId ?? '') !== input.catId) changes.push({ field: 'Cat', before: await recordName('cats', report.catId), after: await recordName('cats', input.catId || null) })
   if (report.careNote !== input.careNote) changes.push({ field: 'Care note', before: report.careNote, after: input.careNote })
   if (Boolean(report.urgent) !== input.urgent) changes.push({ field: 'Urgent', before: report.urgent ? 'Yes' : 'No', after: input.urgent ? 'Yes' : 'No' })
@@ -121,27 +122,38 @@ export async function finishReport(db: D1Database, id: string, actor: SessionUse
   await db.batch([
     reportActivityStatement(db, id, event),
     db.prepare("UPDATE reports SET colony_id = ?, cat_id = ?, care_note = ?, urgent = ?, status = 'processed' WHERE id = ?")
-      .bind(input.colonyId, input.catId || null, input.careNote, Number(input.urgent), id),
+      .bind(input.colonyId || null, input.catId || null, input.careNote, Number(input.urgent), id),
     reportActivityStatement(db, id, event),
     historyStatement(db, id, actor, 'saved the confirmed report details and finished the review.'),
   ])
   return (await listReports(db, id))[0]!
 }
 
+export async function dismissReport(db: D1Database, id: string, actor: SessionUser): Promise<Report> {
+  const report = await requireReport(db, id)
+  if (isReportClosed(report.status)) throw new HTTPException(409, { message: 'Reopen this report before dismissing it.' })
+  await db.batch([
+    db.prepare("UPDATE reports SET status = 'dismissed' WHERE id = ?").bind(id),
+    historyStatement(db, id, actor, 'dismissed the report. No further action is needed.'),
+    reportActivityStatement(db, id, { operationId: crypto.randomUUID(), actor, kind: 'report', summary: `Report dismissed: ${report.title}`, changes: [{ field: 'Status', before: report.status === 'waiting' ? 'Waiting for details' : 'Needs review', after: 'Dismissed' }], occurredAt: new Date().toISOString(), reportId: id }),
+  ])
+  return (await listReports(db, id))[0]!
+}
+
 export async function reopenReport(db: D1Database, id: string, actor: SessionUser): Promise<Report> {
   const report = await requireReport(db, id)
-  if (report.status !== 'processed') throw new HTTPException(409, { message: 'This report is already open.' })
+  if (!isReportClosed(report.status)) throw new HTTPException(409, { message: 'This report is already open.' })
   await db.batch([
     db.prepare("UPDATE reports SET status = 'pending', duplicate_of = NULL WHERE id = ?").bind(id),
     historyStatement(db, id, actor, 'reopened the report for review.'),
-    reportActivityStatement(db, id, { operationId: crypto.randomUUID(), actor, kind: 'report', summary: `Report reopened: ${report.title}`, changes: [{ field: 'Status', before: 'Reviewed', after: 'Needs review' }], occurredAt: new Date().toISOString(), reportId: id }),
+    reportActivityStatement(db, id, { operationId: crypto.randomUUID(), actor, kind: 'report', summary: `Report reopened: ${report.title}`, changes: [{ field: 'Status', before: report.status === 'dismissed' ? 'Dismissed' : 'Reviewed', after: 'Needs review' }], occurredAt: new Date().toISOString(), reportId: id }),
   ])
   return (await listReports(db, id))[0]!
 }
 
 export async function addQuestion(db: D1Database, id: string, actor: SessionUser, text: string): Promise<Report> {
   const report = await requireReport(db, id)
-  if (report.status === 'processed') throw new HTTPException(409, { message: 'Reopen this report before asking for details.' })
+  if (isReportClosed(report.status)) throw new HTTPException(409, { message: 'Reopen this report before asking for details.' })
   if (!report.reporterId) throw new HTTPException(409, { message: 'Anonymous reports cannot receive questions.' })
   await db.batch([
     db.prepare("UPDATE reports SET status = 'waiting' WHERE id = ?").bind(id),
@@ -154,7 +166,7 @@ export async function addQuestion(db: D1Database, id: string, actor: SessionUser
 
 export async function linkDuplicate(db: D1Database, id: string, targetId: string, actor: SessionUser): Promise<Report> {
   const [report, target] = await Promise.all([requireReport(db, id), requireReport(db, targetId)])
-  if (id === targetId || !report.colonyId || report.colonyId !== target.colonyId || report.status === 'processed' || target.duplicateOf) {
+  if (id === targetId || !report.colonyId || report.colonyId !== target.colonyId || isReportClosed(report.status) || target.duplicateOf || target.status === 'dismissed') {
     throw new HTTPException(400, { message: 'Choose an existing report in the same colony.' })
   }
   const incoming = await db.prepare('SELECT id FROM reports WHERE duplicate_of = ? LIMIT 1').bind(id).first()

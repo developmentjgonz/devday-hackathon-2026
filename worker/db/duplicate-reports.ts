@@ -1,3 +1,4 @@
+import { isReportClosed } from '../../shared/types/workspace.ts'
 import { HTTPException } from 'hono/http-exception'
 import type { DuplicateReport, DuplicateSearchResult } from '../../shared/types/workspace.ts'
 
@@ -13,7 +14,7 @@ function searchTerms(value: string, join: ' AND ' | ' OR ', max: number): string
 async function sourceReport(db: D1Database, id: string) {
   const report = await db.prepare(`SELECT id, title, message, colony_id AS colonyId, cat_id AS catId, status,
     EXISTS(SELECT 1 FROM reports linked WHERE linked.duplicate_of = reports.id) AS hasIncoming
-    FROM reports WHERE id = ?`).bind(id).first<{ id: string; title: string; message: string; colonyId: string | null; catId: string | null; status: string; hasIncoming: number }>()
+    FROM reports WHERE id = ?`).bind(id).first<{ id: string; title: string; message: string; colonyId: string | null; catId: string | null; status: import('../../shared/types/workspace.ts').ReportStatus; hasIncoming: number }>()
   if (!report) throw new HTTPException(404, { message: 'Report not found.' })
   return report
 }
@@ -24,28 +25,28 @@ const joins = 'LEFT JOIN users u ON u.id = r.reporter_id LEFT JOIN cats c ON c.i
 
 export async function searchDuplicateReports(db: D1Database, id: string, query: string, offset: number): Promise<DuplicateSearchResult> {
   const source = await sourceReport(db, id)
-  if (!source.colonyId || source.status === 'processed' || source.hasIncoming) return { reports: [], hasMore: false }
+  if (!source.colonyId || isReportClosed(source.status) || source.hasIncoming) return { reports: [], hasMore: false }
   const term = searchTerms(query, ' AND ', 12)
   if (query.trim() && !term) return { reports: [], hasMore: false }
   const result = term
     ? await db.prepare(`SELECT ${columns} FROM report_search JOIN reports r ON r.rowid = report_search.rowid ${joins}
-      WHERE report_search MATCH ? AND r.colony_id = ? AND r.id <> ? AND r.duplicate_of IS NULL
+      WHERE report_search MATCH ? AND r.colony_id = ? AND r.id <> ? AND r.duplicate_of IS NULL AND r.status <> 'dismissed'
       ORDER BY bm25(report_search), r.submitted_at DESC, r.id LIMIT ? OFFSET ?`).bind(term, source.colonyId, id, pageSize + 1, offset).all<DuplicateReport>()
     : await db.prepare(`SELECT ${columns} FROM reports r ${joins}
-      WHERE r.colony_id = ? AND r.id <> ? AND r.duplicate_of IS NULL
+      WHERE r.colony_id = ? AND r.id <> ? AND r.duplicate_of IS NULL AND r.status <> 'dismissed'
       ORDER BY r.submitted_at DESC, r.id LIMIT ? OFFSET ?`).bind(source.colonyId, id, pageSize + 1, offset).all<DuplicateReport>()
   return { reports: result.results.slice(0, pageSize), hasMore: result.results.length > pageSize }
 }
 
 export async function analysisDuplicateCandidates(db: D1Database, id: string): Promise<DuplicateReport[]> {
   const source = await sourceReport(db, id)
-  if (!source.colonyId || source.status === 'processed' || source.hasIncoming) return []
+  if (!source.colonyId || isReportClosed(source.status) || source.hasIncoming) return []
   const term = searchTerms(`${source.title} ${source.message}`, ' OR ', 16)
   const textMatches = term ? db.prepare(`SELECT ${columns} FROM report_search JOIN reports r ON r.rowid = report_search.rowid ${joins}
-    WHERE report_search MATCH ? AND r.colony_id = ? AND r.id <> ? AND r.duplicate_of IS NULL
+    WHERE report_search MATCH ? AND r.colony_id = ? AND r.id <> ? AND r.duplicate_of IS NULL AND r.status <> 'dismissed'
     ORDER BY bm25(report_search), r.submitted_at DESC, r.id LIMIT 15`).bind(term, source.colonyId, id).all<DuplicateReport>() : Promise.resolve({ results: [] as DuplicateReport[] })
   const sameCat = source.catId ? db.prepare(`SELECT ${columns} FROM reports r ${joins}
-    WHERE r.cat_id = ? AND r.colony_id = ? AND r.id <> ? AND r.duplicate_of IS NULL
+    WHERE r.cat_id = ? AND r.colony_id = ? AND r.id <> ? AND r.duplicate_of IS NULL AND r.status <> 'dismissed'
     ORDER BY r.submitted_at DESC, r.id LIMIT 10`).bind(source.catId, source.colonyId, id).all<DuplicateReport>() : Promise.resolve({ results: [] as DuplicateReport[] })
   const [matched, catMatches] = await Promise.all([textMatches, sameCat])
   const unique = new Map<string, DuplicateReport>()

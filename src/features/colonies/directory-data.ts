@@ -1,3 +1,4 @@
+import { isReportClosed } from '../../../shared/types/workspace'
 import type { InboxCat, InboxColony, InboxReport } from '@/features/inbox/types'
 
 import { openTasksForRecord, type AssignedTask } from '@/features/tasks/task-data'
@@ -15,7 +16,7 @@ export function colonySummary(colony: InboxColony, cats: InboxCat[], reports: In
   return {
     colony,
     catCount: cats.filter((cat) => cat.colonyId === colony.id).length,
-    urgentCount: related.filter((report) => report.urgent && report.status !== 'processed').length,
+    urgentCount: related.filter((report) => report.urgent && !isReportClosed(report.status)).length,
     taskCount: openTasksForRecord(tasks, 'colony', colony.id).length,
   }
 }

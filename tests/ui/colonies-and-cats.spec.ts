@@ -109,7 +109,7 @@ test('a report started from a cat profile includes its colony and cat', async ({
   await composer.getByRole('button', { name: 'Submit report' }).click()
   const review = page.getByRole('dialog', { name: 'Report', exact: true })
   await expect(review).toBeVisible()
-  await expect(review.getByLabel('Colony', { exact: true })).toHaveValue('riverside')
+  await expect(review.getByLabel('Colony (optional)', { exact: true })).toHaveValue('riverside')
   await expect(review.getByLabel('Cat (optional)', { exact: true })).toHaveValue('pepper')
 })
 

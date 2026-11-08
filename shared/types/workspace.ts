@@ -1,6 +1,10 @@
 import type { PublicReportContact, PublicReportMapLocation } from '../schemas/public-report'
 
-export type ReportStatus = 'pending' | 'waiting' | 'processed'
+export type ReportStatus = 'pending' | 'waiting' | 'processed' | 'dismissed'
+export function isReportClosed(status: ReportStatus) {
+  return status === 'processed' || status === 'dismissed'
+}
+
 export type TaskStatus = 'open' | 'completed'
 export type TaskAssociation =
   | { type: 'cat' | 'colony'; id: string }

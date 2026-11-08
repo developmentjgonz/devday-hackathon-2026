@@ -1,3 +1,4 @@
+import { isReportClosed } from '../../../../shared/types/workspace'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { CircleAlert } from 'lucide-react'
 import { Link } from 'react-router'
@@ -37,7 +38,7 @@ export function DirectoryMap({ colonies, cats, reports, scope }: {
       const matchingCats = cats.filter((cat) => cat.colonyId === colony.id)
       const coordinates = colony.googlePlaceId ? places.values[colony.googlePlaceId]?.coordinates : colony.coordinates
       if (!coordinates || (scope === 'cats' && !matchingCats.length)) return []
-      const urgent = reports.some((report) => report.colonyId === colony.id && report.urgent && report.status !== 'processed')
+      const urgent = reports.some((report) => report.colonyId === colony.id && report.urgent && !isReportClosed(report.status))
       return [{ id: colony.id, name: colony.name, coordinates, status: urgent ? 'urgent-report' as const : 'unknown' as const, catCount: matchingCats.length }]
     }),
   }), [colonies, cats, reports, scope, places.values])

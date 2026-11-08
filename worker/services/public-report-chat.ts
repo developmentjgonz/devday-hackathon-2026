@@ -10,7 +10,7 @@ const reply = z.string().trim().min(1).max(600).describe('A caring reply that ac
 const questionSchema = z.strictObject({ reply })
 const locationSearchSchema = z.strictObject({
   reply: reply.describe('Briefly acknowledge their location details. Do not claim to have found results or ask the visitor to search.'),
-  query: z.string().trim().min(2).max(160).describe('Only the specific landmark, shop, street, intersection, or street address from the conversation. Put the city/neighborhood in area, not in this query. Preserve street numbers and directions.'),
+  query: z.string().trim().min(2).max(160).describe('One specific landmark, shop, street, intersection, or street address from the conversation. Put the city/neighborhood in area. Do not combine separate landmarks with near, by, or next to. If the visitor adds a new landmark after a failed search, search that new landmark alone. Preserve street numbers and directions.'),
   area: z.string().trim().max(120).describe('The city or neighborhood and state/country supplied by the visitor. Never invent an area. May be empty only if they already selected a map location.'),
 })
 const draftSchema = z.strictObject({

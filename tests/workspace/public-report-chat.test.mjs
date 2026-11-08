@@ -170,7 +170,7 @@ test('the server searches the supplied area and keeps only nearby real places, t
       assert.equal(query.searchParams.get('q'), 'Miami, Florida');
       return places([['Miami', -80.19, 25.77]], [-80.3, 25.79, -80.1, 25.75]);
     }
-    assert.equal(query.searchParams.get('q'), 'McDonald’s');
+    assert.equal(query.searchParams.get('q'), 'McDonalds');
     assert.equal(query.searchParams.get('lat'), '25.77');
     assert.ok(query.searchParams.get('bbox'));
     return places([['McDonald’s', -80.2, 25.77], ['McDonald’s', -80.2, 25.77], ['Outside the named area', -80.2, 25.81], ['Another McDonald’s', -80.22, 25.78]]);
@@ -204,6 +204,33 @@ test('an unresolved area or failed place search asks for details without inventi
     assert.deepEqual(result.locations, []);
     assert.equal(searches, 1, 'An unknown area must not trigger a worldwide landmark search');
     assert.match(result.reply, unavailable ? /couldn’t look up/ : /landmark/);
+  }
+});
+
+test('possessive shop names find the downtown business instead of unrelated roads', async (t) => {
+  const { request } = await enableChat(t);
+  for (const query of ["McDonald's", 'McDonald’s', 'McDonalds']) {
+    globalThis.fetch = async (url) => {
+      if (String(url).startsWith('https://api.openai.com/')) return functionCall('findLocation', {
+        reply: 'I’ll look near that shop.', query, area: 'Downtown Miami',
+      });
+      const search = new URL(url).searchParams.get('q');
+      if (search === 'Downtown Miami') return places([['Downtown Miami', -80.191995, 25.7744981]]);
+      // Photon returns these unrelated Miami places for the apostrophe spelling.
+      if (search !== 'McDonalds') return places([['McDonald Road', -80.24739, 25.77545], ['Ronald McDonald House', -80.21303, 25.78876]]);
+      return Response.json({ features: [{
+        properties: { name: "McDonald's", housenumber: '345', street: 'Northeast 2nd Avenue', locality: 'Downtown Miami', city: 'Miami', state: 'Florida' },
+        geometry: { type: 'Point', coordinates: [-80.1901555, 25.7779617] },
+      }] });
+    };
+    const result = await (await request('/api/public-reports/chat', { body: {
+      messages: [{ role: 'user', text: 'i spotted a cat in downtown miami by the mcdonalds' }],
+    } })).json();
+    assert.equal(result.locationSource, 'search');
+    assert.equal(result.locations.length, 1);
+    assert.equal(result.locations[0].title, "McDonald's");
+    assert.match(result.locations[0].label, /345 Northeast 2nd Avenue/);
+    assert.equal(result.ready, false);
   }
 });
 

@@ -1,3 +1,4 @@
+import { isReportClosed } from '../../../../shared/types/workspace'
 import { useMemo } from 'react'
 import { createDataColumnHelper } from '@/components/ui/data-table'
 import { TableOpenButton } from '@/components/ui/table'
@@ -37,7 +38,7 @@ export function useInboxColumns(data: InboxData) {
           <div className="flex min-h-5 flex-wrap items-center gap-x-3 gap-y-1">
             {row.original.urgent ? <Text size="caption" tone="danger" weight="medium">Urgent</Text> : null}
             <Text size="caption" tone="muted" className="truncate"><span className="lg:hidden">{colonies.get(row.original.colonyId) ?? 'Colony unknown'} · </span>{row.original.category}</Text>
-            {row.original.possibleDuplicateOf && !row.original.duplicateOf && row.original.status !== 'processed' ? <Text size="caption" tone="muted">Possible duplicate</Text> : null}
+            {row.original.possibleDuplicateOf && !row.original.duplicateOf && !isReportClosed(row.original.status) ? <Text size="caption" tone="muted">Possible duplicate</Text> : null}
             <span className="md:hidden"><ReportStatusText report={row.original} /></span>
           </div>
         </div>,

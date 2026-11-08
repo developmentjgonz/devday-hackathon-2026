@@ -1,3 +1,4 @@
+import { isReportClosed } from '../../../../shared/types/workspace'
 import { useEffect, useId, useLayoutEffect, useRef, useState, type FormEvent } from 'react'
 import { ArrowLeft, Check, RotateCcw } from 'lucide-react'
 import { Link, useRouteLoaderData } from 'react-router'
@@ -54,8 +55,9 @@ export function ReportReviewDrawer({ report, reports, data, open, onClose, onNot
 }) {
   const { user } = useRouteLoaderData('workspace') as WorkspaceData
   const taskLink = useTaskDetailLink()
-  const { tasks, members, aiAnalysisEnabled, analyzeReport, finishReport, reopenReport, askQuestion, linkDuplicate, createTask, editTask } = useInbox()
+  const { tasks, members, aiAnalysisEnabled, analyzeReport, finishReport, dismissReport, reopenReport, askQuestion, linkDuplicate, createTask, editTask } = useInbox()
   const [saving, setSaving] = useState(false)
+  const [dismissing, setDismissing] = useState(false)
   const [error, setError] = useState('')
   const reportTasks = tasks.filter((task) => task.reportId === report?.id)
   // Keep drafts by report, including unfinished follow-up actions.
@@ -105,24 +107,24 @@ export function ReportReviewDrawer({ report, reports, data, open, onClose, onNot
     return resolveTaskRecordContext(preview, reports, data)
   })()
   const resolvedTasks = resolveTasks(reportTasks, reports, data)
-  const isProcessed = report?.status === 'processed'
+  const isClosed = Boolean(report && isReportClosed(report.status))
   const matchingCats = data.cats.filter((cat) => cat.colonyId === draft?.colonyId || cat.id === report?.catId)
-  const colonyName = data.colonies.find((colony) => colony.id === (isProcessed ? report?.colonyId : draft?.colonyId))?.name ?? 'Unknown'
-  const catName = data.cats.find((cat) => cat.id === (isProcessed ? report?.catId : draft?.catId))?.name ?? 'Unconfirmed'
+  const colonyName = data.colonies.find((colony) => colony.id === (isClosed ? report?.colonyId : draft?.colonyId))?.name ?? 'Unknown'
+  const catName = data.cats.find((cat) => cat.id === (isClosed ? report?.catId : draft?.catId))?.name ?? 'Unconfirmed'
   const savedColonyName = data.colonies.find((colony) => colony.id === report?.colonyId)?.name ?? 'Unknown'
   const savedCatName = data.cats.find((cat) => cat.id === report?.catId)?.name ?? 'Unconfirmed'
   const suggestedAssociations: TaskAssociation[] = [
     ...(draft?.colonyId && data.colonies.some((colony) => colony.id === draft.colonyId) ? [{ type: 'colony' as const, id: draft.colonyId }] : []),
     ...(draft?.catId && data.cats.some((cat) => cat.id === draft.catId) ? [{ type: 'cat' as const, id: draft.catId }] : []),
   ]
-  const canLinkDuplicate = Boolean(report?.colonyId && !isProcessed && !reports.some((item) => item.duplicateOf === report.id))
-  const existingChoice = reports.find((candidate) => candidate.id === actionDraft?.duplicateId && candidate.id !== report?.id && !candidate.duplicateOf && candidate.colonyId === report?.colonyId)
+  const canLinkDuplicate = Boolean(report?.colonyId && !isClosed && !reports.some((item) => item.duplicateOf === report.id))
+  const existingChoice = reports.find((candidate) => candidate.id === actionDraft?.duplicateId && candidate.id !== report?.id && !candidate.duplicateOf && candidate.status !== 'dismissed' && candidate.colonyId === report?.colonyId)
   const duplicateChoice: DuplicateReport | null = chosenDuplicate && chosenDuplicate.sourceId === report?.id && chosenDuplicate.report.id === actionDraft?.duplicateId ? chosenDuplicate.report : existingChoice ? { id: existingChoice.id, title: existingChoice.title, message: existingChoice.message, reporter: existingChoice.reporter, submittedAt: existingChoice.submittedAt, cat: data.cats.find((cat) => cat.id === existingChoice.catId)?.name ?? '' } : null
   const duplicateTarget = reports.find((candidate) => candidate.id === report?.duplicateOf)
-  const suggestedDuplicate = canLinkDuplicate ? reports.find((candidate) => candidate.id === report?.possibleDuplicateOf && !candidate.duplicateOf && candidate.colonyId === report?.colonyId) : undefined
+  const suggestedDuplicate = canLinkDuplicate ? reports.find((candidate) => candidate.id === report?.possibleDuplicateOf && !candidate.duplicateOf && candidate.status !== 'dismissed' && candidate.colonyId === report?.colonyId) : undefined
   const changed = report && draft ? (['colonyId', 'catId', 'careNote', 'urgent'] as const).some((key) => report[key] !== draft[key]) : false
   const reportLinksChanged = Boolean(report && draft && (report.colonyId !== draft.colonyId || report.catId !== draft.catId))
-  const finishHint = !draft?.colonyId ? 'Choose a colony to finish.' : changed ? 'Unsaved review changes' : ''
+  const finishHint = !isClosed && changed ? 'Unsaved review changes' : ''
   const justSubmitted = report?.id === submittedReportId && submittedReportId !== null
   const reportId = report?.id
   const hasAnalysis = Boolean(reportId && analyses[reportId])
@@ -133,7 +135,7 @@ export function ReportReviewDrawer({ report, reports, data, open, onClose, onNot
   const suggestionCount = analysis ? analysis.tasks.filter((item) => !reportTasks.some((task) => task.title.trim().toLocaleLowerCase() === item.title.trim().toLocaleLowerCase())).length + analysis.cats.length + analysis.colonies.length + analysis.duplicates.length : 0
 
   useEffect(() => {
-    if (!open || !reportId || isProcessed || !aiAnalysisEnabled || hasAnalysis) return
+    if (!open || !reportId || isClosed || !aiAnalysisEnabled || hasAnalysis) return
     const controller = new AbortController()
     setAnalysisState({ reportId, loading: true, error: '' })
     // Strict Mode can mount and immediately clean up effects in development.
@@ -152,7 +154,7 @@ export function ReportReviewDrawer({ report, reports, data, open, onClose, onNot
       })
     })
     return () => controller.abort()
-  }, [open, reportId, isProcessed, aiAnalysisEnabled, hasAnalysis, analyzeReport, analysisRetry])
+  }, [open, reportId, isClosed, aiAnalysisEnabled, hasAnalysis, analyzeReport, analysisRetry])
 
   useEffect(() => {
     setTaskNotice(null)
@@ -187,7 +189,7 @@ export function ReportReviewDrawer({ report, reports, data, open, onClose, onNot
   }
 
   function linkCreatedRecord(record: Cat | Colony) {
-    if (isProcessed) return
+    if (isClosed) return
     editDraft('colonyId' in record ? { colonyId: record.colonyId, catId: record.id } : { colonyId: record.id, catId: '' })
   }
 
@@ -205,7 +207,7 @@ export function ReportReviewDrawer({ report, reports, data, open, onClose, onNot
   }
 
   async function finishReview() {
-    if (!report || !draft || !draft.colonyId || saving) return
+    if (!report || !draft || saving) return
     setSaving(true); setError('')
     try {
       await finishReport(report.id, { ...draft, careNote: draft.careNote.trim() })
@@ -214,6 +216,18 @@ export function ReportReviewDrawer({ report, reports, data, open, onClose, onNot
       closeReview()
     } catch (error) { setError(error instanceof Error ? error.message : 'Could not save the review. Try again.') }
     finally { setSaving(false) }
+  }
+
+  async function dismiss() {
+    if (!report || saving) return
+    setSaving(true); setDismissing(true); setError('')
+    try {
+      await dismissReport(report.id)
+      setDrafts((items) => { const next = { ...items }; delete next[report.id]; return next })
+      onNotice(`Report dismissed: ${report.title}. Find it under Dismissed.${reportTasks.some((task) => task.status === 'open') ? ' Linked care tasks remain open.' : ''}`)
+      closeReview()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not dismiss the report. Try again.') }
+    finally { setSaving(false); setDismissing(false) }
   }
 
   async function reopen() {
@@ -364,7 +378,7 @@ export function ReportReviewDrawer({ report, reports, data, open, onClose, onNot
             <Text size="small" weight="medium" className="wrap-anywhere">{report.title}</Text>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <Text size="caption" tone="muted">{report.category}</Text>
-              {isProcessed && report.urgent ? <Text size="caption" tone="danger" weight="medium">Urgent</Text> : null}
+              {isClosed && report.urgent ? <Text size="caption" tone="danger" weight="medium">Urgent</Text> : null}
               <Text size="caption" tone="muted">{reportStatusLabels[report.status]}</Text>
             </div>
             <Text size="caption" tone="muted" className="flex flex-wrap gap-x-3"><span>{report.anonymous && !report.contact ? 'Submitted anonymously' : `Reported by ${report.reporter}`}</span><time dateTime={report.submittedAt}>{dateFormat.format(new Date(report.submittedAt))}</time></Text>
@@ -382,7 +396,7 @@ export function ReportReviewDrawer({ report, reports, data, open, onClose, onNot
           </section></> : null}
           {report.attachments.length ? <><Separator /><section aria-labelledby="report-attachments-title" className="space-y-3"><Heading id="report-attachments-title" level={3} size="compact">Attachments</Heading><ReportAttachments attachments={report.attachments} onOpenPhoto={setPhoto} /></section></> : null}
           <Separator />
-          {!isProcessed && aiAnalysisEnabled ? <>
+          {!isClosed && aiAnalysisEnabled ? <>
             <Card render={<section aria-labelledby="report-suggestions-summary" />} size="sm" tone="subtle">
               <CardContent className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0 space-y-1">
@@ -395,24 +409,24 @@ export function ReportReviewDrawer({ report, reports, data, open, onClose, onNot
             <Separator />
           </> : null}
           <section aria-labelledby="review-details-title" className="space-y-4">
-            <Heading id="review-details-title" level={3} size="card">{isProcessed ? 'Reviewed details' : 'Review details'}</Heading>
-            <DrawerContext>{isProcessed ? <>
+            <Heading id="review-details-title" level={3} size="card">{report.status === 'dismissed' ? 'Report details' : isClosed ? 'Reviewed details' : 'Review details'}</Heading>
+            <DrawerContext>{isClosed ? <>
             <DrawerContextValue label="Colony" value={colonyName} />
             <DrawerContextValue label="Cat" value={catName} />
           </> : <>
-            <DrawerContextField><Label htmlFor="report-colony">Colony</Label><SelectField id="report-colony" disabled={saving} required value={draft.colonyId} onChange={(event) => editDraft({ colonyId: event.target.value, catId: '' })}><option value="">Colony unknown</option>{data.colonies.map((colony) => <option key={colony.id} value={colony.id}>{colony.name}</option>)}</SelectField></DrawerContextField>
-            <DrawerContextField><Label htmlFor="report-cat">Cat (optional)</Label><SelectField id="report-cat" value={draft.catId} disabled={saving || !draft.colonyId} onChange={(event) => editDraft({ catId: event.target.value })}><option value="">Unconfirmed</option>{matchingCats.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}{cat.colonyId !== draft.colonyId ? ' (not currently in this colony)' : ''}</option>)}</SelectField></DrawerContextField>
+            <DrawerContextField><Label htmlFor="report-colony">Colony (optional)</Label><SelectField id="report-colony" disabled={saving} value={draft.colonyId} onChange={(event) => editDraft({ colonyId: event.target.value, catId: '' })}><option value="">Colony unknown</option>{data.colonies.map((colony) => <option key={colony.id} value={colony.id}>{colony.name}</option>)}</SelectField></DrawerContextField>
+            <DrawerContextField><Label htmlFor="report-cat">Cat (optional)</Label><SelectField id="report-cat" value={draft.catId} disabled={saving} onChange={(event) => editDraft({ catId: event.target.value })}><option value="">Unconfirmed</option>{matchingCats.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}{cat.colonyId !== draft.colonyId ? ' (not currently in this colony)' : ''}</option>)}</SelectField></DrawerContextField>
           </>}</DrawerContext>
             {finishHint ? <Text id="review-finish-hint" size="caption" tone="muted" role="status">{finishHint}</Text> : null}
             {report.duplicateOf ? <Card size="sm"><CardContent className="space-y-1"><Text size="label">Linked as a duplicate</Text><Text size="small">{duplicateTarget?.title ?? 'Existing report'}</Text></CardContent></Card> : null}
-            {isProcessed ? report.careNote.trim() && report.careNote.trim() !== report.message.trim() ?
+            {isClosed ? report.careNote.trim() && report.careNote.trim() !== report.message.trim() ?
               <dl><div className="space-y-1"><Text render={<dt />} size="caption" tone="muted">Care note</Text><Text render={<dd />} size="small" className="whitespace-pre-wrap wrap-anywhere">{report.careNote}</Text></div></dl> : null : <>
               <div className="flex items-center gap-3"><Checkbox id="report-urgent" checked={draft.urgent} onCheckedChange={(checked) => editDraft({ urgent: checked === true })} /><Label htmlFor="report-urgent">Needs urgent attention</Label></div>
               <Disclosure title="Care note (optional)" open={openCareNotes[report.id] ?? Boolean(report.careNote.trim() && report.careNote.trim() !== report.message.trim())} onToggle={(event) => { const opened = event.currentTarget.open; setOpenCareNotes((items) => ({ ...items, [report.id]: opened })) }}>
                 <div className="grid gap-2"><Label htmlFor="report-care-note">Care note</Label><Textarea id="report-care-note" maxLength={4000} value={draft.careNote} onChange={(event) => editDraft({ careNote: event.target.value })} placeholder="Add details for the team" /></div>
               </Disclosure>
             </>}
-            <div className="space-y-2"><Text size="label">Add a related record</Text><div className="flex flex-wrap gap-2"><NewRecordButton kind="cat" variant="outline" colonyId={draft.colonyId} onCreated={linkCreatedRecord} /><NewRecordButton kind="colony" variant="outline" onCreated={linkCreatedRecord} /></div><Text size="caption" tone="muted">{isProcessed ? 'Reopen this report to change its linked records.' : 'New records are linked when you save the review.'}</Text></div>
+            <div className="space-y-2"><Text size="label">Add a related record</Text><div className="flex flex-wrap gap-2"><NewRecordButton kind="cat" variant="outline" colonyId={draft.colonyId} onCreated={linkCreatedRecord} /><NewRecordButton kind="colony" variant="outline" onCreated={linkCreatedRecord} /></div><Text size="caption" tone="muted">{isClosed ? 'Reopen this report to change its linked records.' : 'New records are linked when you save the review.'}</Text></div>
           </section>
           <Separator />
           <section aria-labelledby="care-tasks-title" className="space-y-3">
@@ -443,12 +457,13 @@ export function ReportReviewDrawer({ report, reports, data, open, onClose, onNot
         {action !== 'suggestions' ? <DrawerFooter layout={action ? 'actions' : 'stack'}>
           {action ? <Button type="submit" form={actionFormId} loading={saving} disabled={action === 'question' ? !actionDraft?.question.trim() : action === 'task' || action === 'edit-task' ? !activeTaskDraft?.taskTitle.trim() || !validTaskOwner : !duplicateChoice}>{action === 'question' ? 'Add question and wait' : action === 'task' ? 'Create task' : action === 'edit-task' ? 'Save task' : 'Link and finish'}</Button> : <>
           {error && !action ? <Alert>{error}</Alert> : null}
-          {isProcessed ? <Button variant="outline" loading={saving} onClick={reopen}><RotateCcw aria-hidden="true" />Reopen report</Button> : <>
+          {isClosed ? <Button variant="outline" loading={saving} onClick={reopen}><RotateCcw aria-hidden="true" />Reopen report</Button> : <>
 
             <div className="grid gap-2 min-[360px]:grid-cols-2">
               {report.anonymous ? <Text size="caption" tone="muted">{report.contact ? 'Use the follow-up contact details to ask the sender a question.' : 'The sender cannot receive questions.'}</Text> : <Button ref={questionTrigger} variant="outline" disabled={saving} onClick={() => openAction('question')}>Ask for details</Button>}
-              <Button onClick={finishReview} loading={saving} disabled={!draft.colonyId} aria-describedby={finishHint ? 'review-finish-hint' : undefined}><Check aria-hidden="true" />Save and finish</Button>
+              <Button onClick={finishReview} loading={saving && !dismissing} disabled={dismissing} aria-describedby={finishHint ? 'review-finish-hint' : undefined}><Check aria-hidden="true" />Save and finish</Button>
             </div>
+            <Button variant="ghost" loading={dismissing} disabled={saving && !dismissing} onClick={dismiss}>Dismiss report</Button>
           </>}
           </>}
         </DrawerFooter> : null}

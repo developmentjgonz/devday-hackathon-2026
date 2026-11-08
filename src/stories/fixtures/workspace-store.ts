@@ -1,3 +1,4 @@
+import { isReportClosed } from '../../../shared/types/workspace'
 import type { SessionUser } from '../../../shared/types/auth'
 import type { CareRule, Report, Task, WorkspaceSnapshot } from '../../../shared/types/workspace'
 import type { WorkspaceStore } from '@/features/inbox/workspace-api'
@@ -69,9 +70,9 @@ export function storyWorkspaceStore(user: SessionUser, initial: WorkspaceSnapsho
     },
     async searchDuplicateReports(id, query, offset) {
       const source = report(id)
-      if (!source.colonyId || source.status === 'processed' || data.reports.some((item) => item.duplicateOf === id)) return { reports: [], hasMore: false }
+      if (!source.colonyId || isReportClosed(source.status) || data.reports.some((item) => item.duplicateOf === id)) return { reports: [], hasMore: false }
       const words = query.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []
-      const matches = data.reports.filter((item) => item.id !== id && !item.duplicateOf && item.colonyId === source.colonyId && words.every((word) => `${item.title} ${item.message}`.toLocaleLowerCase().includes(word)))
+      const matches = data.reports.filter((item) => item.id !== id && !item.duplicateOf && item.status !== 'dismissed' && item.colonyId === source.colonyId && words.every((word) => `${item.title} ${item.message}`.toLocaleLowerCase().includes(word)))
         .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt) || a.id.localeCompare(b.id))
       return { reports: matches.slice(offset, offset + 15).map((item) => ({ id: item.id, title: item.title, message: item.message, reporter: item.reporter, submittedAt: item.submittedAt, cat: '' })), hasMore: offset + 15 < matches.length }
     },
@@ -82,6 +83,7 @@ export function storyWorkspaceStore(user: SessionUser, initial: WorkspaceSnapsho
       return structuredClone(item)
     },
     async finishReport(id, input) { const item = report(id); const before = structuredClone(item); Object.assign(item, input, { status: 'processed' }); item.history.push(`${user.name} saved the confirmed report details and finished the review.`); activity?.report(`Report reviewed: ${item.title}`, item, before); return structuredClone(item) },
+    async dismissReport(id) { const item = report(id); const before = structuredClone(item); item.status = 'dismissed'; item.history.push(`${user.name} dismissed the report. No further action is needed.`); activity?.report(`Report dismissed: ${item.title}`, item, before); return structuredClone(item) },
     async reopenReport(id) { const item = report(id); item.status = 'pending'; delete item.duplicateOf; item.history.push(`${user.name} reopened the report for review.`); activity?.report(`Report reopened: ${item.title}`, item); return structuredClone(item) },
     async askQuestion(id, text) { const item = report(id); item.status = 'waiting'; item.thread.push({ id: crypto.randomUUID(), author: user.name, text }); item.history.push(`${user.name} requested more details.`); activity?.report(`More details requested: ${item.title}`, item); return structuredClone(item) },
     async linkDuplicate(id, targetId) { const item = report(id); item.status = 'processed'; item.duplicateOf = targetId; item.history.push(`${user.name} linked this duplicate to an existing report.`); activity?.report(`Duplicate report linked: ${item.title}`, item); return structuredClone(item) },
