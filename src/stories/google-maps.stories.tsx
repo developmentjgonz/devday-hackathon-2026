@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { GoogleColonyMapDemo, GoogleLocationPickerDemo } from './google-maps-demo'
+import { GoogleCatDraftDemo, GoogleColonyMapDemo, GoogleLocationPickerDemo, GoogleSearchFormDemo } from './google-maps-demo'
 
 const meta = {
   title: 'Experiments/Google Maps',
@@ -14,3 +14,5 @@ type Story = StoryObj<typeof meta>
 export const ColonyMap: Story = { render: () => <GoogleColonyMapDemo /> }
 export const CatsByColony: Story = { render: () => <GoogleColonyMapDemo scope="cats" /> }
 export const LocationPicker: Story = { render: () => <GoogleLocationPickerDemo /> }
+export const SearchInAForm: Story = { render: () => <GoogleSearchFormDemo /> }
+export const AddCatWithColony: Story = { render: () => <GoogleCatDraftDemo /> }

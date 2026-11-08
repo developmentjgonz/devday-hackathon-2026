@@ -9,8 +9,9 @@ import type { TaskResult, WorkspaceStore } from './workspace-api'
 
 type InboxStore = {
   data: InboxData; reports: InboxReport[]; tasks: Task[]; members: WorkspaceMember[]
+  googleMapsEnabled: boolean
   refreshWorkspace: () => Promise<void>
-  addColony: (name: string, coordinates?: Coordinates, address?: string) => Promise<InboxColony>; updateColonyLocation: (colony: InboxColony, coordinates: Coordinates | null, address: string) => Promise<InboxColony>; addCat: (input: CatInput) => Promise<InboxCat>; updateCat: (cat: InboxCat, input: CatInput) => Promise<InboxCat>
+  addColony: (name: string, coordinates?: Coordinates, address?: string, googlePlaceId?: string) => Promise<InboxColony>; updateColonyLocation: (colony: InboxColony, coordinates: Coordinates | null, address: string, googlePlaceId?: string) => Promise<InboxColony>; addCat: (input: CatInput) => Promise<InboxCat>; updateCat: (cat: InboxCat, input: CatInput) => Promise<InboxCat>
   createAttachment: (file: File) => ReportAttachment; discardAttachment: (attachment: ReportAttachment) => void
   createReport: (input: CreateReportInput, attachments: ReportAttachment[]) => Promise<InboxReport>
   finishReport: (id: string, input: FinishReportInput) => Promise<InboxReport>; reopenReport: (id: string) => Promise<InboxReport>
@@ -20,7 +21,7 @@ type InboxStore = {
 }
 const InboxContext = createContext<InboxStore | null>(null)
 
-export function InboxProvider({ data, workspace, directoryStore, workspaceStore, children }: { data: InboxData; workspace: WorkspaceSnapshot; directoryStore: DirectoryStore; workspaceStore: WorkspaceStore; children: ReactNode }) {
+export function InboxProvider({ data, workspace, directoryStore, workspaceStore, googleMapsEnabled = false, children }: { data: InboxData; workspace: WorkspaceSnapshot; directoryStore: DirectoryStore; workspaceStore: WorkspaceStore; googleMapsEnabled?: boolean; children: ReactNode }) {
   const [reports, setReports] = useState(() => structuredClone(workspace.reports))
   const [tasks, setTasks] = useState(() => structuredClone(workspace.tasks))
   const [members, setMembers] = useState(() => structuredClone(workspace.members))
@@ -105,13 +106,13 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
     objectUrls.current.delete(attachment.url)
     attachmentFiles.current.delete(attachment.id)
   }
-  async function addColony(name: string, coordinates?: Coordinates, address?: string): Promise<InboxColony> {
-    const colony = await directoryStore.addColony(name, coordinates, address)
+  async function addColony(name: string, coordinates?: Coordinates, address?: string, googlePlaceId?: string): Promise<InboxColony> {
+    const colony = await directoryStore.addColony(name, coordinates, address, googlePlaceId)
     setDirectory((current) => ({ ...current, colonies: [...current.colonies, colony] }))
     return colony
   }
-  async function updateColonyLocation(existing: InboxColony, coordinates: Coordinates | null, address: string): Promise<InboxColony> {
-    const colony = await directoryStore.updateColonyLocation(existing, coordinates, address)
+  async function updateColonyLocation(existing: InboxColony, coordinates: Coordinates | null, address: string, googlePlaceId?: string): Promise<InboxColony> {
+    const colony = await directoryStore.updateColonyLocation(existing, coordinates, address, googlePlaceId)
     setDirectory((current) => ({ ...current, colonies: current.colonies.map((item) => item.id === colony.id ? colony : item) }))
     return colony
   }
@@ -159,7 +160,7 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
   const createTask = useCallback((input: TaskInput) => mutateWorkspace(async () => applyTask(await workspaceStore.createTask(input))), [workspaceStore, applyTask, mutateWorkspace])
   const editTask = useCallback((id: string, input: TaskInput) => mutateWorkspace(async () => applyTask(await workspaceStore.editTask(id, input))), [workspaceStore, applyTask, mutateWorkspace])
   const changeTaskStatus = useCallback((id: string, status: TaskStatus) => mutateWorkspace(async () => applyTask(await workspaceStore.changeTaskStatus(id, status))), [workspaceStore, applyTask, mutateWorkspace])
-  return <InboxContext value={{ data: workspaceData, reports, tasks, members, refreshWorkspace, addColony, updateColonyLocation, addCat, updateCat, createAttachment, discardAttachment, createReport, finishReport, reopenReport, askQuestion, linkDuplicate, markReports, createTask, editTask, changeTaskStatus }}>{children}</InboxContext>
+  return <InboxContext value={{ data: workspaceData, reports, tasks, members, googleMapsEnabled, refreshWorkspace, addColony, updateColonyLocation, addCat, updateCat, createAttachment, discardAttachment, createReport, finishReport, reopenReport, askQuestion, linkDuplicate, markReports, createTask, editTask, changeTaskStatus }}>{children}</InboxContext>
 }
 export function useInbox() {
   const store = useContext(InboxContext)

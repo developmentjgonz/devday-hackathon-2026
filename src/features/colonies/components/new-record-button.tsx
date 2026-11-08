@@ -17,7 +17,7 @@ export function NewRecordButton({ kind, colonyId: defaultColonyId = '', onCreate
   colonyId?: string
   onCreated?: () => void
 }) {
-  const { data, addColony, addCat } = useInbox()
+  const { data, addColony, addCat, googleMapsEnabled } = useInbox()
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [colonyId, setColonyId] = useState('')
@@ -42,8 +42,8 @@ export function NewRecordButton({ kind, colonyId: defaultColonyId = '', onCreate
   const isCat = kind === 'cat'
   const canAddCat = data.colonies.some((colony) => colony.id === colonyId)
   const initialCenter = data.colonies.find((colony) => colony.coordinates)?.coordinates ?? [-80.1918, 25.7617] as [number, number]
-  const validLocation = locationIsEmpty(location) || Boolean(locationCoordinates(location))
-  const validNewColonyLocation = locationIsEmpty(newColonyLocation) || Boolean(locationCoordinates(newColonyLocation))
+  const validLocation = locationIsEmpty(location) || Boolean(locationCoordinates(location) || location.googlePlaceId)
+  const validNewColonyLocation = locationIsEmpty(newColonyLocation) || Boolean(locationCoordinates(newColonyLocation) || newColonyLocation.googlePlaceId)
 
   function begin() {
     setName('')
@@ -65,8 +65,9 @@ export function NewRecordButton({ kind, colonyId: defaultColonyId = '', onCreate
     setSavingColony(true)
     setColonyError('')
     try {
-      const coordinates = locationCoordinates(newColonyLocation) ?? undefined
-      const colony = await addColony(trimmedName, coordinates, coordinates ? newColonyLocation.address.trim() : '')
+      const placeId = newColonyLocation.googlePlaceId || undefined
+      const coordinates = placeId ? undefined : locationCoordinates(newColonyLocation) ?? undefined
+      const colony = await addColony(trimmedName, coordinates, coordinates ? newColonyLocation.address.trim() : '', placeId)
       setColonyId(colony.id)
       setNewColonyName('')
       setAddingColony(false)
@@ -83,8 +84,9 @@ export function NewRecordButton({ kind, colonyId: defaultColonyId = '', onCreate
     try {
       if (isCat) await addCat({ name: trimmedName, colonyId, birthDate: details.birthDate, birthDateEstimated: details.birthDateEstimated, description: details.description, photo: details.photo })
       else {
-        const coordinates = locationCoordinates(location) ?? undefined
-        await addColony(trimmedName, coordinates, coordinates ? location.address.trim() : '')
+        const placeId = location.googlePlaceId || undefined
+        const coordinates = placeId ? undefined : locationCoordinates(location) ?? undefined
+        await addColony(trimmedName, coordinates, coordinates ? location.address.trim() : '', placeId)
       }
       setOpen(false)
       onCreated?.()
@@ -107,7 +109,7 @@ export function NewRecordButton({ kind, colonyId: defaultColonyId = '', onCreate
           <div className="grid gap-2"><Label htmlFor={nameId}>{isCat ? 'Cat name' : 'Colony name'}</Label><Input id={nameId} required disabled={saving || details.photoReading} maxLength={120} value={name} onChange={(event) => setName(event.target.value)} /></div>
           {!isCat ? <div className="space-y-3">
             <Button type="button" variant="outline" size="sm" disabled={saving} onClick={() => { if (showLocation) setLocation(locationDraft()); setShowLocation(!showLocation) }}><MapPin aria-hidden="true" />{showLocation ? 'Remove location' : 'Add location (optional)'}</Button>
-            {showLocation ? <LocationPicker value={location} onChange={setLocation} initialCenter={initialCenter} disabled={saving} onLocatingChange={setLocating} /> : null}
+            {showLocation ? <LocationPicker value={location} onChange={setLocation} initialCenter={initialCenter} disabled={saving} googleMaps={googleMapsEnabled} onLocatingChange={setLocating} /> : null}
           </div> : null}
           {isCat ? <div className="grid gap-2">
             <div className="flex items-center justify-between gap-3"><Label htmlFor={colonyIdField}>Colony</Label><Button ref={addColonyTrigger} type="button" variant="link" size="sm" disabled={saving || details.photoReading} onClick={() => { setNewColonyName(''); setNewColonyLocation(locationDraft()); setShowNewColonyLocation(false); setColonyError(''); setAddingColony(true) }}><Plus aria-hidden="true" />Add colony</Button></div>
@@ -126,7 +128,7 @@ export function NewRecordButton({ kind, colonyId: defaultColonyId = '', onCreate
               {colonyError ? <Alert>{colonyError}</Alert> : null}
               <div className="grid gap-2"><Label htmlFor={newColonyNameId}>Colony name</Label><Input id={newColonyNameId} required disabled={savingColony} maxLength={120} value={newColonyName} onChange={(event) => setNewColonyName(event.target.value)} /></div>
               <div className="space-y-3"><Button type="button" variant="outline" size="sm" disabled={savingColony} onClick={() => { if (showNewColonyLocation) setNewColonyLocation(locationDraft()); setShowNewColonyLocation(!showNewColonyLocation) }}><MapPin aria-hidden="true" />{showNewColonyLocation ? 'Remove location' : 'Add location (optional)'}</Button>
-                {showNewColonyLocation ? <LocationPicker value={newColonyLocation} onChange={setNewColonyLocation} initialCenter={initialCenter} disabled={savingColony} onLocatingChange={setLocatingColony} /> : null}
+                {showNewColonyLocation ? <LocationPicker value={newColonyLocation} onChange={setNewColonyLocation} initialCenter={initialCenter} disabled={savingColony} googleMaps={googleMapsEnabled} onLocatingChange={setLocatingColony} /> : null}
               </div>
             </DialogBody>
             <DialogFooter><Button type="button" variant="outline" disabled={savingColony} onClick={() => setAddingColony(false)}>Cancel</Button><Button type="submit" loading={savingColony} disabled={!newColonyName.trim() || locatingColony || !validNewColonyLocation}>Add colony</Button></DialogFooter>

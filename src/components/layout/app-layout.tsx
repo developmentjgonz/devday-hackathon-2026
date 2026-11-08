@@ -8,6 +8,7 @@ import { WorkspaceHeader } from '@/components/ui/workspace-header'
 import { ReportComposerProvider } from '@/features/inbox/components/report-composer'
 import type { InboxData } from '@/features/inbox/types'
 import type { Params } from 'react-router'
+import { googleMapsEnabled } from '@/lib/google-maps'
 import { databaseDirectory, type DirectoryStore } from '@/features/colonies/directory-api'
 import { databaseWorkspace, type WorkspaceStore } from '@/features/inbox/workspace-api'
 
@@ -17,7 +18,7 @@ export function AppLayout({ directoryStore = databaseDirectory, workspaceStore =
   const { user, directory, workspace } = useLoaderData() as WorkspaceData
   const data = useMemo(() => ({ ...directory, reports: workspace.reports, tasks: workspace.tasks, members: workspace.members.map((member) => member.name) }), [directory, workspace])
   return (
-    <InboxProvider data={data} workspace={workspace} directoryStore={directoryStore} workspaceStore={workspaceStore}>
+    <InboxProvider data={data} workspace={workspace} directoryStore={directoryStore} workspaceStore={workspaceStore} googleMapsEnabled={directoryStore === databaseDirectory && googleMapsEnabled}>
       <ReportComposerProvider>
         <WorkspaceFrame user={user} />
       </ReportComposerProvider>

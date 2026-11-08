@@ -17,6 +17,7 @@ export type {
   MapInitialView,
 } from './map/types'
 const MapCanvas = lazy(() => import('./map/map-canvas'))
+const GoogleMapCanvas = lazy(() => import('./map/google-map'))
 const statusLabels = {
   routine: 'Routine care',
   'needs-visit': 'Needs a visit',
@@ -28,6 +29,8 @@ const statusLabels = {
 export type ColonyMapProps = {
   data: ColonyMapData
   title?: string
+  /** Google is available for team locations in the local demo. */
+  provider?: 'default' | 'google'
   state?: 'ready' | 'loading' | 'error'
   /** Supply an account's saved map view. Otherwise the map fits its data. */
   initialView?: MapInitialView
@@ -57,6 +60,7 @@ function LoadingMap() {
 export function ColonyMap({
   data,
   title = 'Colony map',
+  provider = 'default',
   state = 'ready',
   initialView,
   snapshotLabel,
@@ -137,13 +141,20 @@ export function ColonyMap({
                 : 'Colony locations will appear here when available.'} />
         ) : visible ? (
           <Suspense fallback={<LoadingMap />}>
-            <MapCanvas
+            {provider === 'google' && data.audience === 'team' ? <GoogleMapCanvas
+              colonies={data.colonies}
+              selectedColony={selected?.id}
+              onSelectColony={selectFromMap}
+              animateSelection={Boolean(selection?.pointer)}
+              initialCenter={initialView ? { lng: initialView.center[0], lat: initialView.center[1] } : undefined}
+              initialZoom={initialView?.zoom}
+            /> : <MapCanvas
               data={data}
               selection={selected ? selection : null}
               onSelect={selectFromMap}
               styleUrl={mapStyleUrl}
               initialView={initialView}
-            />
+            />}
           </Suspense>
         ) : (
           <LoadingMap />
