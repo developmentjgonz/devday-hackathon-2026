@@ -40,6 +40,20 @@ Do not use real messages, photos, people, or locations in the demo.
 
 ## Six-minute judge flow
 
+### Optional: start a fresh rehearsal without deleting prior work
+
+The website currently contains persisted demonstration records. Replaying the same source preserves earlier imports and human decisions. To demonstrate the original **4 records → 3 active cats** merge again, first finish any pending outbox deliveries, stop the local dev process with Ctrl+C in its terminal, then run these commands from the repository root:
+
+```sh
+mews_archive_dir="$(mktemp -d .wrangler/demo-backup.XXXXXX)"
+mv .wrangler/local-demo "$mews_archive_dir/"
+npm run dev:full
+```
+
+This archives the local synthetic database and photo files together; it does not delete them. Sign in again, then import the original WhatsApp and SMS fixtures. For the merge, explicitly select **Marmalade candidate (CAT-02-ALT)** as source and **Marmalade (CAT-02)** as target. Do not select an unrelated cat. If those two records have already been merged, use the archived/fresh rehearsal procedure instead of making another merge.
+
+The archive remains beneath `.wrangler/demo-backup.*`. Restore it only while the server is stopped, after archiving the new rehearsal directory separately. This procedure is for this isolated fictional local runtime only.
+
 ### 1. Sign in to the local care workspace — 45 seconds
 
 On **Care workspace**, sign in as `coordinator@mangrovemews.demo` with the local-only password above. The status message should identify the server account and role. Explain that the full local demo writes only made-up records to the loopback SQLite adapter.
