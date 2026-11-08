@@ -113,14 +113,17 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
     observedAt: `Live source updated ${snapshot.updatedAt}`,
   })), [weather]);
   const visibleRecords = useMemo(() => [...records, ...weatherRecords].filter((record) => activeLayers.has(record.layer)), [records, weatherRecords, activeLayers]);
-  const renderedRecords = useMemo(() => visibleRecords.map((record) => record.id !== "live-scout" ? record : {
-    ...record,
-    position: {
+  const renderedRecords = useMemo(() => visibleRecords.map((record) => {
+    const simulatedPosition = record.id === "live-scout" && scope !== "public" ? {
       lat: record.position.lat + Math.sin(trackerTick / 2) * .0022,
       lng: record.position.lng + Math.cos(trackerTick / 2) * .0028,
-    },
-    observedAt: `Live demo ping · ${trackerTick * 6 || 2} sec ago`,
-  }), [trackerTick, visibleRecords]);
+    } : record.position;
+    return {
+      ...record,
+      position: scope === "public" ? { lat: Math.round(simulatedPosition.lat * 100) / 100, lng: Math.round(simulatedPosition.lng * 100) / 100 } : simulatedPosition,
+      observedAt: record.id === "live-scout" ? "Simulated tracker · updates every 6 sec" : record.observedAt,
+    };
+  }), [trackerTick, visibleRecords, scope]);
 
   useEffect(() => {
     const interval = window.setInterval(() => setTrackerTick((tick) => tick + 1), 6000);
@@ -215,15 +218,15 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
       const marker = new Maps.Marker({
         map,
         position: record.position,
-        title: record.id === "live-scout" ? "LIVE demo tracker · Skipper" : record.layer === "weather" ? `${record.title} · live weather planning` : `${record.title} · synthetic demo`,
-        label: record.id === "live-scout" ? { text: "LIVE", color: "#123f54", fontWeight: "700", fontSize: "9px" } : undefined,
+        title: scope === "public" && record.layer !== "weather" ? `${record.layer} activity area · synthetic demo` : record.id === "live-scout" ? "LIVE demo tracker · Skipper" : record.layer === "weather" ? `${record.title} · live weather planning` : `${record.title} · synthetic demo`,
+        label: record.id === "live-scout" && scope !== "public" ? { text: "LIVE", color: "#123f54", fontWeight: "700", fontSize: "9px" } : undefined,
         icon: { path: 0, fillColor: record.id === "live-scout" ? "#43b8df" : colors[record.layer], fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2, scale: record.id === "live-scout" ? 14 : record.layer === "urgent" ? 9 : record.layer === "weather" ? 11 : 7 },
       });
       marker.addListener("click", () => onSelect(record));
       nextOverlays.push(circle, marker);
     });
     overlays.current = nextOverlays;
-  }, [onSelect, scope, renderedRecords]);
+  }, [googleReady, onSelect, scope, renderedRecords]);
 
   return <div className="field-map" aria-label="Interactive South Florida field map">
     <div ref={mapHost} className={googleReady ? "google-map active" : "google-map"} aria-hidden={!googleReady} />
