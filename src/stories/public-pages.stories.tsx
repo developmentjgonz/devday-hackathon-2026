@@ -3,7 +3,6 @@ import { useEffect } from 'react'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router'
 import { SiteLayout } from '@/components/layout/site-layout'
 import { LandingPage } from '@/features/landing/pages/landing-page'
-import { AboutPage } from '@/features/about/pages/about-page'
 import { PrivacyPage, TermsPage } from '@/features/legal/pages/legal-page'
 import { CommunityPage } from '@/features/community/pages/community-page'
 import { NotFoundPage } from '@/pages/not-found-page'
@@ -26,7 +25,6 @@ function PublicPages({ initialPath = '/' }: { initialPath?: string }) {
       <Routes>
         <Route element={<SiteLayout />}>
           <Route index element={<LandingPage initialContent={storyPublicContent} />} />
-          <Route path="about" element={<AboutPage />} />
           <Route path="community" element={<CommunityPage initialContent={storyPublicContent} />} />
           <Route path="privacy" element={<PrivacyPage />} />
           <Route path="terms" element={<TermsPage />} />
@@ -49,11 +47,11 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Landing: Story = {}
-export const About: Story = { args: { initialPath: '/about' } }
+export const About: Story = { args: { initialPath: '/#about' } }
 export const Community: Story = {
   args: { initialPath: '/community' },
   parameters: {
-    docs: { description: { story: 'Three fictional volunteer openings and three fictional news posts show the community board layout. Content is stored in src/features/community/data/sample-posts.ts. There is no live feed, application flow, or publishing service.' } },
+    docs: { description: { story: 'Fictional volunteer openings and news show the public board layout. In the app, only published posts from D1 appear here. Active administrators manage sections and posts from Community board in the workspace.' } },
   },
 }
 export const Privacy: Story = { args: { initialPath: '/privacy' } }

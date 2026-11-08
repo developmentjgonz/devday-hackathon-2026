@@ -3,7 +3,7 @@ import type { ActivityChange, RecordActivity, RecordType } from '../../shared/ty
 
 type ActivityInput = {
   operationId: string
-  actor: SessionUser
+  actor: Pick<SessionUser, 'name'> & { id: string | null }
   kind: RecordActivity['kind']
   summary: string
   changes?: ActivityChange[]
@@ -20,10 +20,12 @@ export function activityStatement(db: D1Database, type: RecordType, recordId: st
 
 // Resolve related records inside the same database batch as the change. A task
 // can reach a colony through either a directly linked cat or its linked report.
+// D1 allows at most five terms in a compound SELECT.
 const taskTargets = `
   SELECT 'cat' AS type, a.record_id AS id FROM task_associations a, target WHERE a.task_id = target.id AND a.type = 'cat'
-  UNION SELECT 'colony', a.record_id FROM task_associations a, target WHERE a.task_id = target.id AND a.type = 'colony'
-  UNION SELECT 'colony', c.colony_id FROM task_associations a JOIN cats c ON c.id = a.record_id, target WHERE a.task_id = target.id AND a.type = 'cat'
+  UNION SELECT 'colony', CASE WHEN a.type = 'colony' THEN a.record_id ELSE c.colony_id END
+    FROM task_associations a LEFT JOIN cats c ON a.type = 'cat' AND c.id = a.record_id, target
+    WHERE a.task_id = target.id AND a.type IN ('cat', 'colony')
   UNION SELECT 'cat', r.cat_id FROM tasks t JOIN reports r ON r.id = t.report_id, target WHERE t.id = target.id AND r.cat_id IS NOT NULL
   UNION SELECT 'colony', r.colony_id FROM tasks t JOIN reports r ON r.id = t.report_id, target WHERE t.id = target.id AND r.colony_id IS NOT NULL
   UNION SELECT 'colony', c.colony_id FROM tasks t JOIN reports r ON r.id = t.report_id JOIN cats c ON c.id = r.cat_id, target WHERE t.id = target.id

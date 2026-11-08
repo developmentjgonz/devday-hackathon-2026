@@ -16,12 +16,25 @@ const association = z.union([
 ])
 
 export const createReportSchema = z.object({ title, message: text, colonyId: optionalId, catId: optionalId, urgent: z.boolean() })
-export const finishReportSchema = z.object({ colonyId: id, catId: optionalId, careNote: text, urgent: z.boolean() })
+export const finishReportSchema = z.object({ colonyId: id, catId: optionalId, careNote: z.string().trim().max(4000), urgent: z.boolean() })
 export const questionSchema = z.object({ text })
 export const duplicateSchema = z.object({ targetId: id })
 export const taskInputSchema = z.object({ title, ownerId: id, due, reportId: id.optional(), associations: z.array(association).max(30) })
-export const taskStatusSchema = z.object({ status: z.enum(['open', 'completed']) })
+export const taskStatusSchema = z.object({
+  status: z.enum(['open', 'completed']),
+  completionNote: z.string().trim().max(4000).optional(),
+}).refine((input) => input.status === 'completed' || !input.completionNote, { path: ['completionNote'], message: 'Add a note when completing a task.' })
+export const careRuleInputSchema = z.object({
+  title,
+  ownerId: id,
+  recordType: z.enum(['cat', 'colony']),
+  recordId: id,
+  repeatDays: z.number().int().min(1).max(365),
+  startDate: due.refine((value) => Boolean(value), 'Choose a first due date'),
+})
+export const careRuleStatusSchema = z.object({ active: z.boolean() })
 
 export type CreateReportInput = z.output<typeof createReportSchema>
 export type FinishReportInput = z.output<typeof finishReportSchema>
 export type TaskInput = z.output<typeof taskInputSchema>
+export type CareRuleInput = z.output<typeof careRuleInputSchema>

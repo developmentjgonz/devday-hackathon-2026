@@ -1,3 +1,5 @@
+import { MemoryRouter } from 'react-router'
+import { Brand } from '@/components/brand'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { CareSticker, CatMark, CatPawPrint, MewsWordmark } from '@/components/brand-assets'
 import { Heading, Text } from '@/components/ui/typography'
@@ -62,7 +64,7 @@ export const CatPrints: Story = {
 export const CommunityIllustration: Story = {
   render: () => <CommunityCat className="w-full max-w-xl" />,
   parameters: {
-    docs: { description: { story: 'Responsive brand artwork featuring a cat and kitten, shared by the landing and About pages. Colors use the same theme tokens as the component library.' } },
+    docs: { description: { story: 'Responsive brand artwork featuring a cat and kitten, shared by the landing hero and About section. Colors use the same theme tokens as the component library.' } },
   },
 }
 
@@ -102,4 +104,9 @@ export const DisplayHeading: Story = {
       <Text tone="muted">Keep track of feeding visits, fresh water, and the cats who count on you.</Text>
     </div>
   ),
+}
+
+export const HeaderLinks: Story = {
+  render: () => <MemoryRouter><div className="flex items-center gap-6"><Brand to="/app" /><Brand to="/app" variant="mark" /></div></MemoryRouter>,
+  parameters: { docs: { description: { story: 'Brand renders a home link with a 44px minimum touch target. Use the default wordmark in the desktop sidebar and the mark variant in the single mobile workspace header.' } } },
 }

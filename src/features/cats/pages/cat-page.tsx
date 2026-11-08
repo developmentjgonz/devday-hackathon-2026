@@ -13,19 +13,11 @@ import { RecordTimeline } from '@/features/colonies/components/record-timeline'
 import { RecordActions } from '@/features/colonies/components/record-actions'
 import { recentReports } from '@/features/colonies/directory-data'
 import { resolveTasks, tasksForRecord } from '@/features/tasks/task-data'
+import { CareRules } from '@/features/tasks/components/care-rules'
 import { EditCatButton } from '../components/edit-cat-button'
+import { catAge } from '@/lib/cat-age'
 
 const birthDateFormat = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
-function catAge(date: string, estimated: boolean) {
-  const [year, month, day] = date.split('-').map(Number)
-  if (!year || !month || !day) return ''
-  const today = new Date()
-  const months = Math.max(0, (today.getFullYear() - year) * 12 + today.getMonth() + 1 - month - (today.getDate() < day ? 1 : 0))
-  const years = Math.floor(months / 12)
-  const remainder = months % 12
-  const parts = [years ? `${years} ${years === 1 ? 'year' : 'years'}` : '', remainder || !years ? `${remainder} ${remainder === 1 ? 'month' : 'months'}` : ''].filter(Boolean)
-  return `${estimated ? 'About ' : ''}${parts.join(', ')}`
-}
 
 export function CatPage() {
   const { catId } = useParams()
@@ -37,17 +29,18 @@ export function CatPage() {
   const tasks = tasksForRecord(resolveTasks(allTasks, reports, data), 'cat', cat.id)
 
   return <>
-    <title>{cat.name} · Mews</title>
+    <title>{`${cat.name} · Mews`}</title>
     <div className="space-y-8">
       <RecordActions colonyId={cat.colonyId} catId={cat.id}><EditCatButton cat={cat} /></RecordActions>
       <section aria-labelledby="cat-details" className="space-y-3">
         <Heading id="cat-details" level={2} size="card">Details</Heading>
-        <Card size="sm"><CardContent className="space-y-4"><div className="flex items-center gap-4"><RecordAvatar name={cat.name} kind="cat" src={cat.photoUrl} size="lg" /><div><Text size="caption" tone="muted">Colony</Text>{colony ? <TextLink render={<Link to={`/app/colonies/${encodeURIComponent(colony.id)}`} />}>{colony.name}</TextLink> : <Text size="small">Unknown</Text>}</div></div>
+        <Card size="sm"><CardContent className="space-y-4"><div className="flex min-w-0 items-start gap-4"><RecordAvatar name={cat.name} kind="cat" src={cat.photoUrl} size="lg" /><div className="min-w-0 flex-1 space-y-1"><Heading level={3} size="card" className="wrap-anywhere">{cat.name}</Heading><Text size="caption" tone="muted">Colony</Text>{colony ? <TextLink render={<Link to={`/app/colonies/${encodeURIComponent(colony.id)}`} />}>{colony.name}</TextLink> : <Text size="small">No colony</Text>}</div></div>
           {cat.birthDate ? <dl className="grid gap-3 sm:grid-cols-2"><div><Text render={<dt />} size="caption" tone="muted">{cat.birthDateEstimated ? 'Estimated birth date' : 'Birth date'}</Text><Text render={<dd />} size="small">{birthDateFormat.format(new Date(`${cat.birthDate}T00:00:00Z`))}</Text></div><div><Text render={<dt />} size="caption" tone="muted">Age</Text><Text render={<dd />} size="small">{catAge(cat.birthDate, Boolean(cat.birthDateEstimated))}</Text></div></dl> : null}
           {cat.description ? <div><Text size="caption" tone="muted">Details</Text><Text size="small" className="whitespace-pre-wrap wrap-anywhere">{cat.description}</Text></div> : null}
         </CardContent></Card>
       </section>
       <RecordTasks type="cat" tasks={tasks} />
+      <CareRules recordType="cat" recordId={cat.id} recordName={cat.name} />
       <section aria-labelledby="cat-reports" className="space-y-3">
         <Heading id="cat-reports" level={2} size="card">Recent associated reports</Heading>
         <ReportActivity reports={recentReports(associatedReports).slice(0, 5)} />

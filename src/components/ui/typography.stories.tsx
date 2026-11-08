@@ -81,3 +81,8 @@ export const Playground: Story = {}
 export const InlineText: Story = {
   render: () => <Text size="small">Reviewed by <Text render={<span />} size="small" weight="semibold">Maya Rivera</Text>.</Text>,
 }
+
+export const FocusTarget: Story = {
+  args: { children: 'Your report has been sent', focusTarget: true },
+  parameters: { docs: { description: { story: 'A heading can receive programmatic focus after a form completes. It stays outside the Tab order and has no control-like outline; interactive actions keep their own focus indicators.' } } },
+}

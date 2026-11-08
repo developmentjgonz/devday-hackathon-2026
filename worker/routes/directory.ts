@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { colonyLocationSchema, createCatSchema, createColonySchema } from '../../shared/schemas/directory.ts'
-import { getCatPhoto, insertColony, listDirectory, saveCat, updateColonyLocation } from '../db/directory.ts'
+import { catColonySchema, colonyLocationSchema, createCatSchema, createColonySchema, updateCatSchema } from '../../shared/schemas/directory.ts'
+import { changeCatColony, getCatPhoto, insertColony, listDirectory, saveCat, updateColonyLocation } from '../db/directory.ts'
 import { listRecordActivity } from '../db/record-activity.ts'
 import { requireActiveUser, requireSameOrigin } from '../middleware/auth.ts'
 import { limitCatBody, limitFormBody, requireJson, validateJson } from '../middleware/validation.ts'
@@ -26,10 +26,17 @@ directoryRoutes.post('/cats', requireSameOrigin, requireJson, limitCatBody, vali
   if (!cat) throw new HTTPException(404, { message: 'Choose an existing colony.' })
   return c.json({ cat }, 201)
 })
-directoryRoutes.patch('/cats/:id', requireSameOrigin, requireJson, limitCatBody, validateJson(createCatSchema), async (c) => {
+directoryRoutes.patch('/cats/:id', requireSameOrigin, requireJson, limitCatBody, validateJson(updateCatSchema), async (c) => {
   const cat = await saveCat(c.env.DB, c.req.valid('json'), c.get('user'), c.req.param('id'))
   if (!cat) throw new HTTPException(404, { message: 'The cat or colony was not found.' })
   return c.json({ cat })
+})
+directoryRoutes.patch('/cats/:id/colony', requireSameOrigin, requireJson, limitFormBody, validateJson(catColonySchema), async (c) => {
+  const { colonyId, expectedColonyId } = c.req.valid('json')
+  const result = await changeCatColony(c.env.DB, c.req.param('id'), colonyId, expectedColonyId, c.get('user'))
+  if (result.status === 'ok') return c.json({ cat: result.cat })
+  if (result.status === 'missing') throw new HTTPException(404, { message: 'The cat or colony was not found.' })
+  throw new HTTPException(409, { message: "The cat's colony changed. Reload and try again." })
 })
 directoryRoutes.get('/:kind{cats|colonies}/:id/activity', async (c) => {
   const type = c.req.param('kind') === 'cats' ? 'cat' : 'colony'

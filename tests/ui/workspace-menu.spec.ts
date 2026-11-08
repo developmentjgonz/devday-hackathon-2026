@@ -19,7 +19,7 @@ for (const width of [320, 390]) {
       await expect(navigation.getByRole('link', { name, exact: true })).toBeVisible()
     }
     await expect(navigation.getByRole('link', { name: 'Overview' })).toHaveAttribute('aria-current', 'page')
-    await expect(navigation.getByRole('link', { name: 'Team' })).toHaveCount(0)
+    await expect(navigation.getByRole('link', { name: 'Team', exact: true })).toHaveCount(0)
     await expect(menu.getByText('Maya Rivera')).toBeVisible()
     const profile = menu.getByRole('link', { name: 'Profile', exact: true })
     const signOut = menu.getByRole('button', { name: 'Sign out', exact: true })

@@ -24,6 +24,6 @@ export function RecordAvatar({ name, kind, src, size = 'default', fallback = 'ic
   )}>
     {showPhoto ? <img src={src} alt="" className="h-full w-full object-cover" onError={() => setFailedSrc(src)} />
       : fallback === 'illustration' ? <Illustration aria-hidden="true" role="presentation" className="h-full w-full" />
-        : <Icon aria-hidden="true" className="h-1/2 w-1/2" />}
+        : <Icon aria-hidden="true" className="size-1/2" />}
   </span>
 }

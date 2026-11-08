@@ -21,8 +21,8 @@ export async function signInGoogleUser(db: D1Database, identity: GoogleIdentity,
     await db.batch([
       db.prepare(`INSERT INTO users (id, name, email, role, status)
         VALUES (?, ?, ?,
-          CASE WHEN ? = 1 AND NOT EXISTS (SELECT 1 FROM users WHERE role = 'administrator') THEN 'administrator' ELSE 'member' END,
-          CASE WHEN ? = 1 AND NOT EXISTS (SELECT 1 FROM users WHERE role = 'administrator') THEN 'active' ELSE 'pending' END)`)
+          CASE WHEN ? = 1 AND NOT EXISTS (SELECT 1 FROM users admin WHERE admin.role = 'administrator' AND NOT EXISTS (SELECT 1 FROM sign_in_identities i WHERE i.user_id = admin.id AND i.provider = 'demo-admin')) THEN 'administrator' ELSE 'member' END,
+          CASE WHEN ? = 1 AND NOT EXISTS (SELECT 1 FROM users admin WHERE admin.role = 'administrator' AND NOT EXISTS (SELECT 1 FROM sign_in_identities i WHERE i.user_id = admin.id AND i.provider = 'demo-admin')) THEN 'active' ELSE 'pending' END)`)
         .bind(id, identity.name, identity.email, Number(eligibleAdmin), Number(eligibleAdmin)),
       db.prepare("INSERT INTO sign_in_identities (provider, subject, user_id) VALUES ('google', ?, ?)").bind(identity.subject, id),
     ])

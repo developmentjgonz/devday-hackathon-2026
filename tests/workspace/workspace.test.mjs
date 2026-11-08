@@ -65,6 +65,26 @@ test('local completed task examples survive re-seeding without overwriting chang
   assert.equal(sqlite.prepare("SELECT COUNT(*) AS count FROM tasks WHERE id LIKE 'sample-complete-%'").get().count, 8);
 });
 
+test('a report can be linked to a cat without a colony', async (t) => {
+  const { sqlite, request, signIn, reportForm } = fixture(t);
+  const cookie = await signIn('local-admin');
+  sqlite.prepare('UPDATE cats SET colony_id = NULL WHERE id = ?').run('miso');
+  const created = await request('/api/reports', { method: 'POST', cookie, form: reportForm({ title: 'Miso sighting', message: 'Miso was seen near the garden.', colonyId: '', catId: 'miso', urgent: false }) });
+  assert.equal(created.status, 201);
+  const { report } = await created.json();
+  assert.equal(report.colonyId, '');
+  assert.equal(report.catId, 'miso');
+  assert.equal(sqlite.prepare('SELECT cat_id FROM reports WHERE id = ?').get(report.id).cat_id, 'miso');
+  const reviewed = await request(`/api/reports/${report.id}/finish`, { method: 'POST', cookie, body: { colonyId: 'canal', catId: 'miso', careNote: 'Sighting reviewed.', urgent: false } });
+  assert.equal(reviewed.status, 200);
+  assert.equal((await reviewed.json()).report.catId, 'miso');
+  const historical = await request('/api/reports/report-sighting/finish', { method: 'POST', cookie, body: { colonyId: 'canal', catId: 'miso', careNote: 'Sighting reviewed.', urgent: false } });
+  assert.equal(historical.status, 200);
+  assert.equal((await historical.json()).report.catId, 'miso');
+  const wrongCat = await request('/api/reports', { method: 'POST', cookie, form: reportForm({ title: 'Other sighting', message: 'A cat was seen.', colonyId: '', catId: 'pepper', urgent: false }) });
+  assert.equal(wrongCat.status, 400);
+});
+
 test('reports, attachments, and review status are shared across members', async (t) => {
   const { request, signIn, reportForm } = fixture(t);
   const admin = await signIn('local-admin');
@@ -97,27 +117,36 @@ test('tasks use member IDs and persist with related records and report history',
   const { request, signIn } = fixture(t);
   const admin = await signIn('local-admin');
   const member = await signIn('local-member');
-  const input = { title: 'Check water', ownerId: 'local-member', due: '2026-11-12', reportId: 'report-injury', associations: [{ type: 'cat', id: 'pepper' }, { type: 'colony', id: 'riverside' }, { type: 'person', label: 'Dr. Lane' }, { type: 'paperwork', label: 'Clinic form' }, { type: 'other', label: 'Water bowls' }] };
+  const input = { title: 'Check water', ownerId: 'local-member', due: '2026-11-12', reportId: 'report-injury', associations: [{ type: 'cat', id: 'pepper' }, { type: 'cat', id: 'miso' }, { type: 'colony', id: 'riverside' }, { type: 'colony', id: 'canal' }, { type: 'person', label: 'Dr. Lane' }, { type: 'paperwork', label: 'Clinic form' }, { type: 'other', label: 'Water bowls' }] };
   const response = await request('/api/tasks', { method: 'POST', cookie: admin, body: input });
   assert.equal(response.status, 201);
   const { task, report } = await response.json();
   assert.equal(task.ownerId, 'local-member');
   assert.deepEqual(task.associations, input.associations);
   assert.match(report.history.at(-1), /created a task/);
-  const completedResponse = await request(`/api/tasks/${task.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } });
+  const completedResponse = await request(`/api/tasks/${task.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed', completionNote: '  Refilled both bowls.  ' } });
   assert.equal(completedResponse.status, 200);
   const completed = (await completedResponse.json()).task;
+  assert.equal(completed.completionNote, 'Refilled both bowls.');
   assert.ok(Number.isFinite(Date.parse(completed.completedAt)));
   const data = await (await request('/api/workspace-data', { cookie: member })).json();
   assert.equal(data.tasks.find((item) => item.id === task.id).status, 'completed');
+  assert.deepEqual(data.tasks.find((item) => item.id === task.id).associations, input.associations);
   assert.equal(data.tasks.find((item) => item.id === task.id).completedAt, completed.completedAt);
+  assert.equal(data.tasks.find((item) => item.id === task.id).completionNote, 'Refilled both bowls.');
+  const activity = (await (await request('/api/directory/cats/pepper/activity', { cookie: member })).json()).activity;
+  assert.ok(activity.some((event) => event.changes.some((change) => change.field === 'Completion note' && change.after === 'Refilled both bowls.')));
   assert.ok(data.reports.find((item) => item.id === 'report-injury').history.some((item) => item.includes('completed task')));
   const unchanged = await request(`/api/tasks/${task.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } });
   assert.equal((await unchanged.json()).task.completedAt, completed.completedAt);
   const reopened = await request(`/api/tasks/${task.id}/status`, { method: 'POST', cookie: member, body: { status: 'open' } });
-  assert.equal((await reopened.json()).task.completedAt, undefined);
+  const reopenedTask = (await reopened.json()).task;
+  assert.equal(reopenedTask.completedAt, undefined);
+  assert.equal(reopenedTask.completionNote, 'Refilled both bowls.');
   const recompleted = await request(`/api/tasks/${task.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } });
-  assert.ok(Number.isFinite(Date.parse((await recompleted.json()).task.completedAt)));
+  const recompletedTask = (await recompleted.json()).task;
+  assert.ok(Number.isFinite(Date.parse(recompletedTask.completedAt)));
+  assert.equal(recompletedTask.completionNote, undefined);
   const other = await request('/api/tasks', { method: 'POST', cookie: admin, body: { ...input, ownerId: 'local-admin' } });
   const otherTask = (await other.json()).task;
   assert.equal((await request(`/api/tasks/${otherTask.id}/status`, { method: 'POST', cookie: member, body: { status: 'completed' } })).status, 403);
@@ -170,13 +199,13 @@ test('invalid and unauthorized operations do not create records or leave files',
 test('public content exposes only published area summaries and posts', async (t) => {
   const { sqlite, request } = fixture(t);
   sqlite.prepare("INSERT INTO public_areas (id, name, boundary, activity, colony_count_band, published) VALUES ('private-area', 'Unpublished', '{}', 'low', '0', 0)").run();
-  sqlite.prepare("INSERT INTO community_posts (id, kind, title, description, published) VALUES ('private-post', 'news', 'Unpublished', 'Hidden', 0)").run();
+  sqlite.prepare("INSERT INTO community_posts (id, section_id, title, description, published) VALUES ('private-post', 'community-news', 'Unpublished', 'Hidden', 0)").run();
   const response = await request('/api/public-content');
   assert.equal(response.status, 200);
   const content = await response.json();
   assert.equal(content.areas.length, 3);
-  assert.equal(content.openings.length, 3);
-  assert.equal(content.news.length, 3);
+  assert.equal(content.board.posts.filter((post) => post.sectionId === 'volunteer-openings').length, 3);
+  assert.equal(content.board.posts.filter((post) => post.sectionId === 'community-news').length, 3);
   assert.ok(content.areas.every((area) => !('colonyId' in area) && !('coordinates' in area)));
   assert.ok(!JSON.stringify(content).includes('Unpublished'));
 });

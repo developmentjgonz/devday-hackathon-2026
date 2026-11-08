@@ -1,11 +1,15 @@
+import { userPortraitUrl } from '../../seeds/user-portraits'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { MemoryRouter, useLocation } from 'react-router'
 import { AppSidebar } from '@/components/layout/app-sidebar'
-import { Heading } from '@/components/ui/typography'
+import { MobileWorkspaceMenu } from '@/components/layout/mobile-workspace-menu'
+import { Brand } from '@/components/brand'
+import { WorkspaceHeader } from '@/components/ui/workspace-header'
+import { Text } from '@/components/ui/typography'
 import type { SessionUser } from '../../shared/types/auth'
 
-const member: SessionUser = { id: 'maya', name: 'Maya Rivera', email: 'maya@mews.test', phone: null, role: 'member', status: 'active' }
-const labels: Record<string, string> = { '/app': 'Overview', '/app/colonies': 'Colonies', '/app/cats': 'Cats', '/app/reports': 'Reports', '/app/tasks': 'My Tasks', '/app/team': 'Team', '/app/configuration': 'Configuration', '/app/profile': 'Profile', '/sign-in': 'Sign in' }
+const member: SessionUser = { id: 'maya', name: 'Maya Rivera', email: 'maya@mews.test', phone: null, avatarUrl: userPortraitUrl('Maya Rivera'), role: 'member', status: 'active' }
+const labels: Record<string, string> = { '/app': 'Overview', '/app/colonies': 'Colonies', '/app/cats': 'Cats', '/app/reports': 'Reports', '/app/tasks': 'My Tasks', '/app/community': 'Community board', '/app/team': 'Team', '/app/configuration': 'Configuration', '/app/profile': 'Profile', '/sign-in': 'Sign in' }
 
 function WorkspaceMenuExample({ user = member }: { user?: SessionUser }) {
   return <MemoryRouter initialEntries={['/app']}><WorkspaceMenuShell user={user} /></MemoryRouter>
@@ -15,7 +19,10 @@ function WorkspaceMenuShell({ user }: { user: SessionUser }) {
   const { pathname } = useLocation()
   return <div className="min-h-svh md:grid md:grid-cols-[248px_minmax(0,1fr)]">
     <AppSidebar user={user} />
-    <main id="main-content" tabIndex={-1} className="p-6"><Heading level={1} size="title">{labels[pathname] ?? 'Page not found'}</Heading></main>
+    <div className="min-w-0">
+      <WorkspaceHeader title={labels[pathname] ?? 'Page not found'} mobileStart={<Brand to="/app" variant="mark" />} mobileEnd={<MobileWorkspaceMenu user={user} />} />
+      <main id="main-content" tabIndex={-1} aria-labelledby="workspace-page-title" className="p-6 outline-none"><Text>{labels[pathname] ?? 'Page not found'}</Text></main>
+    </div>
   </div>
 }
 

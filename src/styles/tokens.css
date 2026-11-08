@@ -1,5 +1,6 @@
 /* Mews · Warm company. Primitive colors feed semantic component tokens. */
 :root {
+  color-scheme: light;
   --cream-50: #fffaf2;
   --cream-100: #ffecd4;
   --cream-200: #f5dcc0;
@@ -44,6 +45,8 @@
   --warning: #ffe1a3;
   --warning-foreground: #754308;
   --destructive: #b12f35;
+  --destructive-surface: #fbeded;
+  --destructive-surface-hover: #f6dddd;
   --border: var(--stone-200);
   --input: var(--stone-400);
   --ring: #805400;
@@ -87,6 +90,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: #24231f;
   --brand-background: #24231f;
   --foreground: #fff1df;
@@ -114,6 +118,8 @@
   --warning: #584020;
   --warning-foreground: #ffdc9e;
   --destructive: #ff9b9f;
+  --destructive-surface: #493334;
+  --destructive-surface-hover: #52383a;
   --border: #5b5042;
   --input: #8a7862;
   --ring: #ffb95e;
@@ -125,4 +131,12 @@
   --sidebar-accent-foreground: var(--foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
+}
+
+/* A touch target stays at least 44px, including compact toolbar controls. */
+@media (any-pointer: coarse) {
+  :root {
+    --control-height-sm: 2.75rem;
+    --control-height-xs: 2.75rem;
+  }
 }

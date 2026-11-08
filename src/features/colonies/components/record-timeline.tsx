@@ -8,11 +8,13 @@ import { LoadingIndicator } from '@/components/ui/loading-indicator'
 import { TextLink } from '@/components/ui/text-link'
 import { Heading, Text } from '@/components/ui/typography'
 import { useInbox } from '@/features/inbox/inbox-context'
+import { useReportDetailLink } from '@/features/inbox/components/report-detail-context'
 import type { RecordActivity, RecordType } from '../../../../shared/types/record-activity'
 import { formatReportTime } from '../directory-data'
 
 export function RecordTimeline({ type, id }: { type: RecordType; id: string }) {
   const { getRecordActivity, activityRevision } = useInbox()
+  const reportLink = useReportDetailLink()
   const [activity, setActivity] = useState<RecordActivity[] | null>(null)
   const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -37,7 +39,7 @@ export function RecordTimeline({ type, id }: { type: RecordType; id: string }) {
                 <Text render={<dt />} size="caption" tone="muted">{change.field}</Text>
                 <Text render={<dd />} size="small" className="whitespace-pre-wrap wrap-anywhere">{change.before || 'None'} → {change.after || 'None'}</Text>
               </div>)}</dl> : null}
-              {event.reportId ? <TextLink render={<Link to={`/app/reports?report=${encodeURIComponent(event.reportId)}`} />}>View report</TextLink> : null}
+              {event.reportId ? <TextLink render={<Link {...reportLink(event.reportId, `record-event:${event.id}`)} />}>View report</TextLink> : null}
             </li>)}
           </ol></CardContent></Card>}
   </section>

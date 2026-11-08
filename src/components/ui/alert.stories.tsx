@@ -9,3 +9,5 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 export const Error: Story = {}
+
+export const LongError: Story = { args: { children: 'Could not save the attachment CommunityGardenFeedingStationEveningCareVisitNovemberPhotograph.jpg. Try a smaller file.' }, decorators: [(Story) => <div className="w-full max-w-xs"><Story /></div>] }

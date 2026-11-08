@@ -8,6 +8,11 @@ import { reportStatusLabels } from '../types'
 const column = createDataColumnHelper<InboxReport>()
 const dateFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })
 
+export function formatReceivedDate(value: string) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? 'Date unavailable' : dateFormat.format(date)
+}
+
 export function ReportStatusText({ report }: { report: InboxReport }) {
   return <Text size="small" tone="muted">{reportStatusLabels[report.status]}</Text>
 }
@@ -48,7 +53,7 @@ export function useInboxColumns(data: InboxData) {
       column.accessor('reporter', { header: 'From', cell: ({ getValue }) => <Text size="small" className="truncate">{getValue()}</Text> }),
       column.accessor((report) => Date.parse(report.submittedAt), {
         id: 'received', header: 'Received', sortDescFirst: true,
-        cell: ({ row }) => <Text render={<time dateTime={row.original.submittedAt} />} size="caption" tone="muted">{dateFormat.format(new Date(row.original.submittedAt))}</Text>,
+        cell: ({ row }) => <Text render={<time dateTime={row.original.submittedAt} />} size="caption" tone="muted">{formatReceivedDate(row.original.submittedAt)}</Text>,
       }),
     ])
   }, [data])

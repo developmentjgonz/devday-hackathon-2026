@@ -25,6 +25,12 @@ Active users can open **Profile** from the account menu. They can update their n
 
 The administrator role includes management of workspace accounts. Additional roles and rescue permissions remain open.
 
+The named local and Storybook accounts use fictional profile portraits made with ImageGen. The portrait sheet is in `public/fixtures/generated-user-portraits.svg`; `seeds/user-portraits.ts` maps each person to one portrait. The SVG views keep each face centered in the shared avatar without changing its styles.
+
+`npm run db:seed:user-photos` fills missing photos for the designated local accounts, the existing Casey test account, and the demo administrator if present. Local setup runs this command after the account seeds. It uses the existing `user_photos` table and protected photo endpoint. It does not replace uploaded photos or assign photos to Google accounts. A user can replace or remove a photo in Profile. Running the photo seed again restores any missing fixture photos. These trusted SVG assets are seed data only; the upload API still accepts only JPEG, PNG, and WebP.
+
+To publish these photos to existing designated demo accounts, use `npm run db:seed:user-photos -- --remote`. This command only fills missing photos on matching accounts. It does not create accounts or change their roles, status, or other data. The photos are stored in D1, so the existing live photo endpoint can serve them without a code deployment. Do not run the full local account or workspace seeds against the live database.
+
 ## Test approval
 
 Sign in as Alex Morgan, open **Team**, and review Jordan Lee's request. Select **Approve access**. Jordan can then select **Check access** on the account status page. Team also supports role changes and suspending or restoring access.
@@ -55,6 +61,8 @@ Keep `--local` on this command. See [Team management](team-management.md) for th
 Sessions expire after 12 hours. D1 stores token hashes; the browser receives an HttpOnly, SameSite cookie. HTTPS responses also use Secure cookies. Protected requests read the current user, so approval, suspension, and role changes take effect within an existing session.
 
 Test sign-in requires `LOCAL_TEST_SIGN_IN=true` and an HTTP localhost request. The development command supplies the flag; deployment configuration does not. Public hostnames cannot expose local sign-in even if the flag is set by mistake. Mutations must come from `APP_ORIGIN`.
+
+An administrator can separately enable demo sign-in for designated fictional member accounts over HTTPS. This gives anyone with the site URL member access to workspace data. See [administrator configuration](configuration.md). The local signup route remains unavailable on public hostnames.
 
 Google sign-in uses the existing identity and approval model. The first administrator and live credentials must be configured before release; see [Google sign-in](google-sign-in.md). Invitations and public production signup flows remain open.
 

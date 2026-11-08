@@ -1,14 +1,29 @@
 import { Hono } from 'hono'
 import { bodyLimit } from 'hono/body-limit'
 import { HTTPException } from 'hono/http-exception'
-import { createReportSchema, duplicateSchema, finishReportSchema, questionSchema, taskInputSchema, taskStatusSchema } from '../../shared/schemas/workspace.ts'
-import { addQuestion, changeTaskStatus, createTask, editTask, findAttachment, finishReport, insertReport, linkDuplicate, listReports, listWorkspace, reopenReport, type StoredAttachment } from '../db/workspace.ts'
+import { careRuleInputSchema, careRuleStatusSchema, createReportSchema, duplicateSchema, finishReportSchema, questionSchema, taskInputSchema, taskStatusSchema } from '../../shared/schemas/workspace.ts'
+import { addQuestion, changeTaskStatus, createTask, editTask, findAttachment, finishReport, insertReport, linkDuplicate, listReports, listTasks, listWorkspace, reopenReport, type StoredAttachment } from '../db/workspace.ts'
+import { createCareRule, editCareRule, generateCareTasks, listCareRules, setCareRuleActive } from '../db/care-rules.ts'
+import { hasOpenAiConfiguration } from '../db/configuration.ts'
+import { configurationKey } from '../lib/configuration-secret.ts'
 import { requireActiveUser, requireSameOrigin } from '../middleware/auth.ts'
 import { requireJson, validateJson } from '../middleware/validation.ts'
+import { reportAnalysisAllowed } from '../services/report-analysis.ts'
+import { searchDuplicateReports } from '../db/duplicate-reports.ts'
 import type { AppEnv } from '../types.ts'
 
 export const workspaceDataRoutes = new Hono<AppEnv>()
-workspaceDataRoutes.get('/workspace-data', requireActiveUser, async (c) => c.json(await listWorkspace(c.env.DB)))
+workspaceDataRoutes.get('/workspace-data', requireActiveUser, async (c) => {
+  let careGenerationFailed = false
+  try { await generateCareTasks(c.env.DB) }
+  catch (error) { careGenerationFailed = true; console.error('Care task generation failed', error) }
+  const [workspace, allowed, configured] = await Promise.all([
+    listWorkspace(c.env.DB),
+    reportAnalysisAllowed(c.req.raw, c.env, c.get('user').id),
+    c.env.AI_ANALYSIS_RATE_LIMITER ? configurationKey(c.env.CONFIG_ENCRYPTION_KEY).then((key) => hasOpenAiConfiguration(c.env.DB, key)) : Promise.resolve(false),
+  ])
+  return c.json({ ...workspace, careGenerationFailed, aiAnalysisEnabled: allowed && configured })
+})
 const limitWorkspaceBody = bodyLimit({ maxSize: 32 * 1024, onError: () => { throw new HTTPException(413, { message: 'Form data is too large.' }) } })
 
 const imageTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'])
@@ -61,6 +76,12 @@ workspaceDataRoutes.post('/reports', requireActiveUser, requireSameOrigin, bodyL
 workspaceDataRoutes.post('/reports/:id/finish', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(finishReportSchema), async (c) => c.json({ report: await finishReport(c.env.DB, c.req.param('id'), c.get('user'), c.req.valid('json')) }))
 workspaceDataRoutes.post('/reports/:id/reopen', requireActiveUser, requireSameOrigin, async (c) => c.json({ report: await reopenReport(c.env.DB, c.req.param('id'), c.get('user')) }))
 workspaceDataRoutes.post('/reports/:id/questions', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(questionSchema), async (c) => c.json({ report: await addQuestion(c.env.DB, c.req.param('id'), c.get('user'), c.req.valid('json').text) }))
+workspaceDataRoutes.get('/reports/:id/duplicate-candidates', requireActiveUser, async (c) => {
+  const query = c.req.query('q') ?? ''
+  const offset = Number(c.req.query('offset') ?? '0')
+  if (query.length > 200 || !Number.isSafeInteger(offset) || offset < 0 || offset > 1000000) throw new HTTPException(400, { message: 'Invalid report search.' })
+  return c.json(await searchDuplicateReports(c.env.DB, c.req.param('id'), query, offset))
+})
 workspaceDataRoutes.post('/reports/:id/duplicate', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(duplicateSchema), async (c) => c.json({ report: await linkDuplicate(c.env.DB, c.req.param('id'), c.req.valid('json').targetId, c.get('user')) }))
 
 workspaceDataRoutes.post('/tasks', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(taskInputSchema), async (c) => {
@@ -74,9 +95,36 @@ workspaceDataRoutes.post('/tasks/:id/edit', requireActiveUser, requireSameOrigin
   return c.json({ task, report })
 })
 workspaceDataRoutes.post('/tasks/:id/status', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(taskStatusSchema), async (c) => {
-  const task = await changeTaskStatus(c.env.DB, c.req.param('id'), c.get('user'), c.req.valid('json').status)
+  const { status, completionNote } = c.req.valid('json')
+  const task = await changeTaskStatus(c.env.DB, c.req.param('id'), c.get('user'), status, completionNote)
   const report = task.reportId ? (await listReports(c.env.DB, task.reportId))[0] ?? null : null
   return c.json({ task, report })
+})
+
+async function careRuleResult(db: D1Database, id: string) {
+  // A failed generation can be retried by the next scheduler run or workspace refresh.
+  let generated: string[] = []
+  let generationFailed = false
+  try { generated = await generateCareTasks(db, new Date(), id) }
+  catch (error) { generationFailed = true; console.error('Care task generation failed', error) }
+  const [rule, tasks] = await Promise.all([listCareRules(db, id), generated.length ? listTasks(db) : Promise.resolve([])])
+  const generatedIds = new Set(generated)
+  return { rule: rule[0]!, tasks: tasks.filter((task) => generatedIds.has(task.id)), generationFailed }
+}
+
+workspaceDataRoutes.post('/care-rules', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(careRuleInputSchema), async (c) => {
+  const id = await createCareRule(c.env.DB, c.get('user'), c.req.valid('json'))
+  return c.json(await careRuleResult(c.env.DB, id), 201)
+})
+workspaceDataRoutes.post('/care-rules/:id/edit', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(careRuleInputSchema), async (c) => {
+  const id = c.req.param('id')
+  await editCareRule(c.env.DB, id, c.get('user'), c.req.valid('json'))
+  return c.json(await careRuleResult(c.env.DB, id))
+})
+workspaceDataRoutes.post('/care-rules/:id/status', requireActiveUser, requireSameOrigin, requireJson, limitWorkspaceBody, validateJson(careRuleStatusSchema), async (c) => {
+  const id = c.req.param('id')
+  await setCareRuleActive(c.env.DB, id, c.get('user'), c.req.valid('json').active)
+  return c.json(await careRuleResult(c.env.DB, id))
 })
 
 workspaceDataRoutes.get('/attachments/:id', requireActiveUser, async (c) => {

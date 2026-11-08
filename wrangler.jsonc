@@ -4,6 +4,7 @@
   "main": "worker/index.ts",
   "compatibility_date": "2026-11-07",
   "workers_dev": true,
+  "triggers": { "crons": ["0 * * * *"] },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
@@ -21,6 +22,33 @@
     {
       "binding": "UPLOADS",
       "bucket_name": "devday-js-2026-uploads"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "PUBLIC_REPORT_RATE_LIMITER",
+      "namespace_id": "9147270630",
+      "simple": { "limit": 5, "period": 60 }
+    },
+    {
+      "name": "DEMO_ADMIN_RATE_LIMITER",
+      "namespace_id": "9147270629",
+      "simple": { "limit": 10, "period": 60 }
+    },
+    {
+      "name": "AI_ANALYSIS_RATE_LIMITER",
+      "namespace_id": "9147270631",
+      "simple": { "limit": 5, "period": 60 }
+    },
+    {
+      "name": "PUBLIC_CHAT_RATE_LIMITER",
+      "namespace_id": "9147270632",
+      "simple": { "limit": 10, "period": 60 }
+    },
+    {
+      "name": "PUBLIC_CHAT_TOTAL_LIMITER",
+      "namespace_id": "9147270633",
+      "simple": { "limit": 30, "period": 60 }
     }
   ]
 }

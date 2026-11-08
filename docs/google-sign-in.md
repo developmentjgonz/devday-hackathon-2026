@@ -4,6 +4,8 @@ The live workspace uses Google OpenID Connect and the existing D1 session and ap
 
 The OAuth flow uses a signed, short-lived HttpOnly state cookie, PKCE, nonce, and a server-side code exchange. The Worker verifies the ID token signature, issuer, audience, expiry, nonce, and verified email against Google's public keys. Google access and ID tokens are not retained. The app creates its existing 12-hour, server-side session after sign-in.
 
+When someone opens a workspace link before signing in, the app returns them to that path after sign-in or account approval. Only paths inside `/app` are accepted as return destinations.
+
 ## Google Cloud configuration
 
 Use a dedicated Google Cloud project and configure Google Auth Platform for an external app. The support address is displayed on the Google consent screen. Google restricts it to the signed-in Google account or a Google Group that account manages. Add the following web application redirect URI to the OAuth client:
@@ -25,6 +27,6 @@ Apply migrations to the intended remote D1 database and create the private R2 bu
 
 For example, `npx wrangler secret put GOOGLE_CLIENT_SECRET` prompts for a value without requiring it in a shell command. Configure all four before deploying the release branch. Google sign-in is hidden when configuration is incomplete. A local HTTP callback is allowed only on localhost; live callback URIs must use HTTPS.
 
-Do not run `seeds/local.sql` or `seeds/workspace.sql` on the live database: these contain fictional accounts, care records, and public content. The live database starts empty. Create real records after the administrator signs in. The local and live databases are separate.
+The live database currently contains the fictional demo records requested for the hackathon. Local and live databases are separate. Do not apply local seed files to live data without reviewing the target and the contents. An administrator can turn demo sign-in on or off in [configuration](configuration.md); Google sign-in remains separate.
 
 Verify a release by signing in as the designated administrator, creating a colony, cat, report with a small attachment, and task, and checking them after refresh. Then check a second Google account remains pending until approved. Remove any disposable verification records through supported product workflows when available; do not assume refreshing resets live data.

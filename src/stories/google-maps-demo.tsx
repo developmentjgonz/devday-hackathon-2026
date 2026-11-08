@@ -1,5 +1,7 @@
+import { userPortraitUrl } from '../../seeds/user-portraits'
 /// <reference types="google.maps" />
 import { useState } from 'react'
+import { createMemoryRouter, RouterProvider } from 'react-router'
 import { MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
@@ -29,14 +31,19 @@ export function GoogleSearchFormDemo() {
   </form>
 }
 
-export function GoogleCatDraftDemo() {
+function GoogleCatDraftContent() {
   const [created, setCreated] = useState(false)
-  const user: SessionUser = { id: 'storybook-member', name: 'Maya Rivera', email: 'maya@mews.test', phone: null, role: 'member', status: 'active' }
+  return <><NewRecordButton kind="cat" onCreated={() => setCreated(true)} />
+    {created ? <Text role="status" size="small">Cat added</Text> : null}</>
+}
+
+export function GoogleCatDraftDemo() {
+  const user: SessionUser = { id: 'storybook-member', name: 'Maya Rivera', email: 'maya@mews.test', phone: null, avatarUrl: userPortraitUrl('Maya Rivera'), role: 'member', status: 'active' }
   const [workspace] = useState(() => storyWorkspace(user, localInboxData).workspace)
   const [workspaceStore] = useState(() => storyWorkspaceStore(user, workspace))
+  const [router] = useState(() => createMemoryRouter([{ path: '/', element: <GoogleCatDraftContent /> }]))
   return <InboxProvider data={localInboxData} workspace={workspace} directoryStore={storyDirectoryStore} workspaceStore={workspaceStore} googleMapsEnabled>
-    <NewRecordButton kind="cat" onCreated={() => setCreated(true)} />
-    {created ? <Text role="status" size="small">Cat added</Text> : null}
+    <RouterProvider router={router} />
   </InboxProvider>
 }
 const demoCats = [

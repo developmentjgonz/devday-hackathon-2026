@@ -12,6 +12,7 @@ const meta = {
   title: 'Forms/Checkbox',
   component: Checkbox,
   args: { disabled: false },
+  parameters: { docs: { description: { component: 'A compact checkbox with a centered 44px hit area. An adjacent shared Label keeps the row at least 44px high and activates the same control.' } } },
   render: (args) => <CheckboxPreview {...args} />,
 } satisfies Meta<typeof Checkbox>
 

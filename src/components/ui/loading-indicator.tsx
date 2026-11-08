@@ -3,7 +3,8 @@ import { CatPawPrint } from '@/components/brand-assets'
 import { cn } from 'cn'
 
 export type LoadingIndicatorProps = Omit<ComponentProps<'span'>, 'children'> & {
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  tone?: 'inherit' | 'brand'
   label?: string
   /** Freeze the current animation frame without resetting it. */
   paused?: boolean
@@ -13,6 +14,7 @@ export type LoadingIndicatorProps = Omit<ComponentProps<'span'>, 'children'> & {
 
 export function LoadingIndicator({
   size = 'md',
+  tone = 'inherit',
   label = 'Loading',
   decorative = false,
   paused = false,
@@ -24,6 +26,7 @@ export function LoadingIndicator({
       {...props}
       data-slot="loading-indicator"
       data-size={size}
+      data-tone={tone}
       data-paused={paused || undefined}
       className={cn(
         'mews-loader inline-flex shrink-0 items-center justify-center align-middle',

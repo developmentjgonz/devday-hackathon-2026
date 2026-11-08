@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { addressResults } from '../../src/lib/address-search.ts'
+import { addressResults } from '../../shared/address-search.ts'
 
 test('address results keep useful labels and valid point coordinates', () => {
   const results = addressResults({ features: [
@@ -10,8 +10,8 @@ test('address results keep useful labels and valid point coordinates', () => {
     { properties: { name: 'Not a point' }, geometry: { type: 'Polygon', coordinates: [] } },
   ] })
   assert.deepEqual(results, [
-    { label: 'Garden Center', detail: '701 Brickell Avenue, Miami, Florida, United States', coordinates: [-80.19, 25.77] },
-    { label: '701 Brickell Avenue', detail: 'Miami', coordinates: [-80.2, 25.8] },
+    { label: 'Garden Center', detail: '701 Brickell Avenue, Miami, Florida, United States', coordinates: [-80.19, 25.77], areas: ['Miami', 'Florida', 'United States'] },
+    { label: '701 Brickell Avenue', detail: 'Miami', coordinates: [-80.2, 25.8], areas: ['Miami'] },
   ])
 })
 

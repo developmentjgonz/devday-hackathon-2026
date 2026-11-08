@@ -1,0 +1,39 @@
+.paw-stage-story {
+  width: min(600px, calc(100vw - 32px));
+}
+
+.paw-stage .ss-stage {
+  overflow: hidden;
+  background: var(--background);
+  --ss-chrome: var(--card);
+  --ss-line: var(--border);
+  --ss-font: 'Geist Variable', sans-serif;
+}
+
+.paw-stage-window {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  width: 500px;
+  translate: -50% 0;
+}
+
+.paw-stage .ss-stage[data-layout='compact'] .paw-stage-window {
+  top: 16px;
+  left: 16px;
+  width: 420px;
+  translate: none;
+}
+
+.paw-stage-screen {
+  display: grid;
+  height: 346px;
+  padding-bottom: 24px;
+  place-items: center;
+  background: var(--background);
+}
+
+.paw-stage .ss-stage[data-layout='compact'] .paw-stage-screen {
+  width: 342px;
+  padding-bottom: 60px;
+}

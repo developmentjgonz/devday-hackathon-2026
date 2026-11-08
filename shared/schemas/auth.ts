@@ -5,6 +5,10 @@ export const localSignInSchema = z.object({
   userId: z.string('Choose a test account').min(1, 'Choose a test account').max(100, 'Choose a test account'),
 })
 
+export const demoAdminSignInSchema = z.strictObject({
+  code: z.string().min(1, 'Enter the administrator code.').max(128, 'Enter the administrator code.'),
+})
+
 export const signUpSchema = z.object({
   name: z.string('Enter a name with 1 to 120 characters').trim()
     .min(1, 'Enter a name with 1 to 120 characters').max(120, 'Enter a name with 1 to 120 characters'),

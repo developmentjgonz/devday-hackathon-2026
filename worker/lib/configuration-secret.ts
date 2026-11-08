@@ -37,3 +37,13 @@ export async function canReadConfigurationSecret(key: CryptoKey | null, secret: 
     return false
   }
 }
+
+export async function decryptConfigurationSecret(key: CryptoKey | null, secret: EncryptedSecret): Promise<string> {
+  if (!key) throw new HTTPException(503, { message: 'The OpenAI key is unavailable. Ask an administrator to check AI settings.' })
+  try {
+    const plaintext = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromBase64(secret.nonce) }, key, fromBase64(secret.ciphertext))
+    return new TextDecoder().decode(plaintext)
+  } catch {
+    throw new HTTPException(503, { message: 'The OpenAI key is unavailable. Ask an administrator to check AI settings.' })
+  }
+}

@@ -9,6 +9,7 @@ export type DirectoryStore = {
   updateColonyLocation: (colony: Colony, coordinates: Coordinates | null, address: string, googlePlaceId?: string) => Promise<Colony>
   addCat: (input: CatInput) => Promise<Cat>
   updateCat: (cat: Cat, input: CatInput) => Promise<Cat>
+  changeCatColony: (cat: Cat, colonyId: string) => Promise<Cat>
 }
 
 export const databaseDirectory: DirectoryStore = {
@@ -30,6 +31,10 @@ export const databaseDirectory: DirectoryStore = {
   },
   async updateCat(existing, input) {
     const { cat } = await authRequest<{ cat: Cat }>(`/api/directory/cats/${encodeURIComponent(existing.id)}`, { method: 'PATCH', body: JSON.stringify(input) })
+    return cat
+  },
+  async changeCatColony(existing, colonyId) {
+    const { cat } = await authRequest<{ cat: Cat }>(`/api/directory/cats/${encodeURIComponent(existing.id)}/colony`, { method: 'PATCH', body: JSON.stringify({ colonyId, expectedColonyId: existing.colonyId }) })
     return cat
   },
 }

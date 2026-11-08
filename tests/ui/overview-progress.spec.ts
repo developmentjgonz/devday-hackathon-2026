@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { confirmTaskCompletion } from './task-confirmation'
 
 async function openOverview(page: Page, dark: boolean, story = 'progress-overview') {
   await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -10,9 +11,10 @@ async function openOverview(page: Page, dark: boolean, story = 'progress-overvie
 
 test('overview shows open work and recent completions, and updates after completion and undo', async ({ page }, info) => {
   await openOverview(page, info.project.name === 'dark')
-  const mine = page.getByRole('region', { name: 'My tasks', exact: true })
-  const team = page.getByRole('region', { name: 'Team tasks', exact: true })
-  const reports = page.getByRole('region', { name: 'Report reviews', exact: true })
+  const summary = page.getByRole('region', { name: 'Workspace summary' })
+  const mine = summary.getByRole('region', { name: 'My tasks', exact: true })
+  const team = summary.getByRole('region', { name: 'Team tasks', exact: true })
+  const reports = summary.getByRole('region', { name: 'Report reviews', exact: true })
   await expect(mine).toContainText('3 open')
   await expect(mine).toContainText('1 completed in the last 30 days')
   await expect(team).toContainText('4 open')
@@ -27,9 +29,13 @@ test('overview shows open work and recent completions, and updates after complet
   await expect(chart.getByRole('listitem')).toContainText('1 task')
   await expect(page.getByRole('list', { name: 'Tasks', exact: true })).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'Team summary', exact: true })).toHaveCount(0)
-  await page.getByRole('link', { name: 'View my tasks', exact: true }).click()
-  await page.getByRole('button', { name: 'Complete task: Arrange a care check', exact: true }).click()
-  await page.getByRole('dialog', { name: 'Complete this task?', exact: true }).getByRole('button', { name: 'Complete task', exact: true }).click()
+  const taskLink = mine.getByRole('link', { name: 'My tasks', exact: true })
+  await expect(taskLink).toHaveAttribute('href', '/app/tasks')
+  await mine.getByText('3 open', { exact: true }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'My Tasks', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Mark complete: Arrange a care check', exact: true }).click()
+  await confirmTaskCompletion(page)
+  await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeVisible()
   await page.getByRole('navigation', { name: 'Workspace navigation', exact: true }).getByRole('link', { name: 'Overview', exact: true }).click()
   await expect(mine).toContainText('2 open')
   await expect(mine).toContainText('2 completed in the last 30 days')
@@ -45,7 +51,8 @@ test('overview shows open work and recent completions, and updates after complet
   await expect(team).toContainText('1 completed in the last 30 days')
   await expect(wins).toContainText('Your team completed 1 task in the last 30 days.')
   await expect(chart.getByRole('listitem')).toContainText('1 task')
-  await page.getByRole('link', { name: 'View my tasks', exact: true }).click()
+  await taskLink.focus()
+  await taskLink.press('Enter')
   await expect(page.getByRole('heading', { level: 1, name: 'My Tasks', exact: true })).toBeVisible()
 })
 

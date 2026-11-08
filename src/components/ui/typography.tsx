@@ -25,16 +25,18 @@ const headingVariants = cva('font-heading text-balance', {
 export function Heading({
   level = 2,
   size = 'section',
+  focusTarget = false,
   className,
   ...props
 }: ComponentProps<'h2'> &
-  VariantProps<typeof headingVariants> & { level?: 1 | 2 | 3 | 4 | 5 | 6 }) {
+  VariantProps<typeof headingVariants> & { level?: 1 | 2 | 3 | 4 | 5 | 6; focusTarget?: boolean }) {
   const Tag = `h${level}` as const
   return (
     <Tag
+      tabIndex={focusTarget ? -1 : undefined}
       {...props}
       data-slot="heading"
-      className={cn(headingVariants({ size }), className)}
+      className={cn(headingVariants({ size }), focusTarget && 'outline-none', className)}
     />
   )
 }

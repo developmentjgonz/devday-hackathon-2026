@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { selectReportFilter } from './report-filters'
 
 test('a focus refresh finds new reports', async ({ page }) => {
   await page.goto('/iframe.html?id=pages-reports--incoming-report&viewMode=story', { waitUntil: 'domcontentloaded' })
@@ -9,7 +10,7 @@ test('a focus refresh finds new reports', async ({ page }) => {
 
 test('a stale refresh cannot undo a completed review', async ({ page }) => {
   await page.goto('/iframe.html?id=pages-reports--stale-refresh&viewMode=story', { waitUntil: 'domcontentloaded' })
-  await page.getByLabel('Filter by status').selectOption('all')
+  await selectReportFilter(page, 'status', 'all')
   const report = page.getByRole('button', { name: 'Review Orange cat by the Canal entrance' })
   const row = page.getByRole('row').filter({ has: report })
   await expect(row).toContainText('Needs review')

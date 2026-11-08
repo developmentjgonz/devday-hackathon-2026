@@ -15,5 +15,5 @@ export const Workspace: Story = {
 }
 
 export const Public: Story = {
-  decorators: [(Story) => <MemoryRouter initialEntries={['/about']}><Story /></MemoryRouter>],
+  decorators: [(Story) => <MemoryRouter initialEntries={['/community']}><Story /></MemoryRouter>],
 }

@@ -59,10 +59,13 @@ test('keyboard focus is visible and Enter changes the current route', async ({ p
   expect(currentRing).not.toBe('none')
   expect(await background(overview)).toBe(selectedFill)
 
-  for (const name of ['Colonies', 'Cats', 'Reports']) {
+  for (const name of ['My Tasks', 'Reports', 'Colonies', 'Cats']) {
     await page.keyboard.press('Tab')
     await expect(navigation.getByRole('link', { name, exact: true })).toBeFocused()
   }
+  await page.keyboard.press('Shift+Tab')
+  await page.keyboard.press('Shift+Tab')
+  await expect(inbox).toBeFocused()
   expect(await inbox.evaluate((element) => getComputedStyle(element).boxShadow)).toBe(currentRing)
   expect(await background(inbox)).not.toBe(selectedFill)
   await page.keyboard.press('Enter')

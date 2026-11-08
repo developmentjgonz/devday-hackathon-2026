@@ -1,7 +1,9 @@
+import { userPortraitUrl } from '../../seeds/user-portraits'
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { createMemoryRouter, RouterProvider, useRevalidator, useRouteLoaderData } from 'react-router'
 import { AppLayout } from '@/components/layout/app-layout'
+import { OverviewPage } from '@/features/overview/pages/overview-page'
 import { ProfileScreen } from '@/features/auth/components/profile-screen'
 import { localInboxData } from '@/features/inbox/data/local-inbox'
 import type { SessionUser } from '../../shared/types/auth'
@@ -10,7 +12,7 @@ import { storyDirectoryStore, storyWorkspace } from './fixtures/directory-store'
 import { storyWorkspaceStore } from './fixtures/workspace-store'
 import { waitForStoryRequest } from './fixtures/controlled-request'
 
-const initialUser: SessionUser = { id: 'profile-member', name: 'Maya Rivera', email: 'maya@mews.test', phone: '+1 305 555 0131', role: 'member', status: 'active' }
+const initialUser: SessionUser = { id: 'profile-member', name: 'Maya Rivera', email: 'maya@mews.test', phone: '+1 305 555 0131', avatarUrl: userPortraitUrl('Maya Rivera'), role: 'member', status: 'active' }
 
 function ProfileStory({ fail = false, delayed = false }: { fail?: boolean; delayed?: boolean }) {
   const [router] = useState(() => {
@@ -30,7 +32,7 @@ function ProfileStory({ fail = false, delayed = false }: { fail?: boolean; delay
     return createMemoryRouter([{
       path: '/app', id: 'workspace', loader: () => storyWorkspace(current, localInboxData),
       element: <AppLayout directoryStore={storyDirectoryStore} workspaceStore={storyWorkspaceStore(current, storyWorkspace(current, localInboxData).workspace)} />,
-      children: [{ path: 'profile', Component: Screen, handle: { breadcrumb: 'Profile' } }],
+      children: [{ path: 'profile', Component: Screen, handle: { breadcrumb: 'Profile' } }, { index: true, Component: OverviewPage, handle: { breadcrumb: 'Overview' } }],
     }], { initialEntries: ['/app/profile'] })
   })
   return <RouterProvider router={router} />

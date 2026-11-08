@@ -2,6 +2,7 @@ import type { InboxData, InboxReport, Task, TaskAssociation } from '@/features/i
 
 export type RelatedItem = { type: TaskAssociation['type']; label: string; id?: string }
 export type AssignedTask = Task & { reportTitle: string; related: RelatedItem[]; colony: string; catName: string }
+export type TaskRecordContext = { colonies: string[]; cats: string[]; emptyColony: string }
 
 /** Resolve direct associations and the current details of a linked report. */
 export function resolveTasks(tasks: Task[], reports: InboxReport[], data: Pick<InboxData, 'colonies' | 'cats'>): AssignedTask[] {
@@ -34,8 +35,21 @@ export function resolveTasks(tasks: Task[], reports: InboxReport[], data: Pick<I
   })
 }
 
-export function getAssignedTasks(tasks: Task[], reports: InboxReport[], data: Pick<InboxData, 'colonies' | 'cats'>, currentUser: string): AssignedTask[] {
-  return resolveTasks(tasks.filter((task) => task.ownerId === currentUser), reports, data)
+/** Summarize all record links, including links inherited from a report or cat. */
+export function resolveTaskRecordContext(task: Task, reports: InboxReport[], data: Pick<InboxData, 'colonies' | 'cats'>): TaskRecordContext {
+  const resolved = resolveTasks([task], reports, data)[0]!
+  const report = task.reportId ? reports.find((item) => item.id === task.reportId) : undefined
+  const missingColony = Boolean((report?.colonyId && !data.colonies.some((item) => item.id === report.colonyId)) || task.associations.some((item) => item.type === 'colony' && !data.colonies.some((colony) => colony.id === item.id)))
+  const missingCat = Boolean((report?.catId && !data.cats.some((item) => item.id === report.catId)) || task.associations.some((item) => item.type === 'cat' && !data.cats.some((cat) => cat.id === item.id)))
+  const colonies = resolved.related.filter((item) => item.type === 'colony').map((item) => item.label)
+  const cats = resolved.related.filter((item) => item.type === 'cat').map((item) => item.label)
+  if (missingColony) colonies.push('Colony unavailable')
+  if (missingCat) cats.push('Cat unavailable')
+  return { colonies, cats, emptyColony: resolved.colony || 'No colony' }
+}
+
+export function getAssignedTasks(tasks: Task[], reports: InboxReport[], data: Pick<InboxData, 'colonies' | 'cats'>, currentUser?: string): AssignedTask[] {
+  return resolveTasks(currentUser === undefined ? tasks : tasks.filter((task) => task.ownerId === currentUser), reports, data)
     .sort((a, b) => (a.due || '9999-12-31').localeCompare(b.due || '9999-12-31') || a.title.localeCompare(b.title) || a.id.localeCompare(b.id))
 }
 

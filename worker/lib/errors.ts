@@ -6,9 +6,11 @@ export const handleError: ErrorHandler<AppEnv> = (error, c) => {
   if (error instanceof HTTPException) {
     return c.json({ error: error.message }, error.status)
   }
-  console.error('API request failed', { method: c.req.method, path: c.req.path, error })
+  console.error('API request failed', { method: c.req.method, path: c.req.path, error: String(error), cause: error instanceof Error && error.cause ? String(error.cause) : undefined })
   const message = c.req.path.startsWith('/api/directory') ? 'The directory is unavailable. Try again.'
     : c.req.path.startsWith('/api/public-content') ? 'Public content is unavailable. Try again.'
+    : c.req.path.startsWith('/api/community-board') ? 'The community board is unavailable. Try again.'
+    : c.req.path.startsWith('/api/public-reports') ? 'Could not send your report. Try again.'
     : c.req.path.startsWith('/api/configuration') ? 'Configuration is unavailable. Try again.'
     : /^\/api\/(workspace-data|reports|tasks|attachments)(\/|$)/.test(c.req.path) ? 'The workspace is unavailable. Try again.' : 'Account service is unavailable. Try again.'
   return c.json({ error: message }, 503)

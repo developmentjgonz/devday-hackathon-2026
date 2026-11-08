@@ -6,7 +6,7 @@ export function Alert({ children }: { children: ReactNode }) {
   return (
     <div role="alert" className="flex items-start gap-3 rounded-surface border border-destructive/30 bg-card p-4">
       <CircleAlert className="mt-1 size-4 shrink-0 text-destructive" aria-hidden="true" />
-      <Text size="small" tone="danger">{children}</Text>
+      <Text size="small" tone="danger" className="min-w-0 wrap-anywhere">{children}</Text>
     </div>
   )
 }

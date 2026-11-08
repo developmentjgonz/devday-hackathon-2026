@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { test } from 'node:test';
 import worker from '../../worker/index.ts';
@@ -7,7 +7,7 @@ import worker from '../../worker/index.ts';
 function fixture(t) {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec('PRAGMA foreign_keys = ON');
-  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0012_user_photos.sql', '../../migrations/0013_colony_addresses.sql', '../../migrations/0014_google_place_ids.sql', '../../migrations/0015_record_activity.sql', '../../seeds/local.sql']) {
+  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0010_reports_and_tasks.sql', '../../migrations/0012_user_photos.sql', '../../migrations/0013_colony_addresses.sql', '../../migrations/0014_google_place_ids.sql', '../../migrations/0015_record_activity.sql', '../../migrations/0019_session_auth_method.sql', '../../migrations/0021_cats_without_colonies.sql', '../../seeds/local.sql']) {
     sqlite.exec(readFileSync(new URL(file, import.meta.url), 'utf8'));
   }
   t.after(() => sqlite.close());
@@ -42,6 +42,57 @@ function fixture(t) {
   }
   return { sqlite, request, signIn };
 }
+
+test('cat colony migration preserves cats, photos, and report links', (t) => {
+  const sqlite = new DatabaseSync(':memory:');
+  t.after(() => sqlite.close());
+  sqlite.exec('PRAGMA foreign_keys = ON');
+  const migrations = new URL('../../migrations/', import.meta.url);
+  for (const file of readdirSync(migrations).filter((name) => name.endsWith('.sql') && name < '0021').sort()) sqlite.exec(readFileSync(new URL(file, migrations), 'utf8'));
+  for (const file of ['../../seeds/local.sql', '../../seeds/workspace.sql']) {
+    // This migration test needs directory fixtures only, before the later board schema.
+    const seed = readFileSync(new URL(file, import.meta.url), 'utf8').split('\n').filter((line) => !line.startsWith('INSERT OR IGNORE INTO community_posts')).join('\n');
+    sqlite.exec(seed);
+  }
+  sqlite.prepare('INSERT INTO cat_photos (cat_id, mime_type, data, revision) VALUES (?, ?, ?, ?)').run('miso', 'image/png', 'sample', 'revision');
+  const tables = ['cats', 'cat_photos', 'reports', 'tasks'];
+  const snapshot = () => tables.map((table) => sqlite.prepare(`SELECT * FROM ${table} ORDER BY rowid`).all());
+  const before = snapshot();
+  sqlite.exec('BEGIN');
+  sqlite.exec(readFileSync(new URL('../../migrations/0021_cats_without_colonies.sql', import.meta.url), 'utf8'));
+  sqlite.exec('COMMIT');
+  assert.deepEqual(snapshot(), before);
+  assert.deepEqual(sqlite.prepare('PRAGMA foreign_key_check').all(), []);
+  sqlite.prepare('UPDATE cats SET colony_id = NULL WHERE id = ?').run('miso');
+  assert.equal(sqlite.prepare('SELECT colony_id FROM cats WHERE id = ?').get('miso').colony_id, null);
+});
+
+test('cats can be removed from and added to colonies without changing their profiles', async (t) => {
+  const { sqlite, request, signIn } = fixture(t);
+  const cookie = await signIn('local-admin');
+  const change = (id, colonyId, expectedColonyId) => request(`/api/directory/cats/${id}/colony`, { method: 'PATCH', cookie, body: { colonyId, expectedColonyId } });
+  const original = (await (await request('/api/directory', { cookie })).json()).cats.find((cat) => cat.id === 'miso');
+  const removed = await change('miso', '', 'canal');
+  assert.equal(removed.status, 200);
+  assert.deepEqual((await removed.json()).cat, { ...original, colonyId: '' });
+  assert.equal(sqlite.prepare('SELECT colony_id FROM cats WHERE id = ?').get('miso').colony_id, null);
+  const edited = await request('/api/directory/cats/miso', { method: 'PATCH', cookie, body: { name: original.name, colonyId: '', description: 'White paws' } });
+  assert.equal(edited.status, 200);
+  assert.equal((await edited.json()).cat.colonyId, '');
+  assert.equal((await change('miso', 'riverside', 'canal')).status, 409);
+  assert.equal((await change('miso', 'missing', '')).status, 404);
+  assert.equal((await change('missing', 'riverside', '')).status, 404);
+  assert.equal((await change('miso', 'riverside', '')).status, 200);
+  const persisted = (await (await request('/api/directory', { cookie })).json()).cats.find((cat) => cat.id === 'miso');
+  assert.deepEqual(persisted, { ...original, colonyId: 'riverside', description: 'White paws' });
+  const catActivity = (await (await request('/api/directory/cats/miso/activity', { cookie })).json()).activity;
+  assert.ok(catActivity.some((entry) => entry.changes.some((item) => item.field === 'Colony' && item.before === 'Canal' && item.after === '')));
+  assert.ok(catActivity.some((entry) => entry.changes.some((item) => item.field === 'Colony' && item.before === '' && item.after === 'Riverside')));
+  assert.ok((await (await request('/api/directory/colonies/canal/activity', { cookie })).json()).activity.some((entry) => entry.summary === 'Cat moved out: Miso'));
+  assert.ok((await (await request('/api/directory/colonies/riverside/activity', { cookie })).json()).activity.some((entry) => entry.summary === 'Cat moved in: Miso'));
+  assert.equal((await request('/api/directory/cats/miso/colony', { method: 'PATCH', body: { colonyId: '', expectedColonyId: 'riverside' } })).status, 401);
+  assert.equal((await request('/api/directory/cats/miso/colony', { method: 'PATCH', cookie, origin: 'https://other.example', body: { colonyId: '', expectedColonyId: 'riverside' } })).status, 403);
+});
 
 test('signed-in members can create a colony and cat that persist across requests', async (t) => {
   const { sqlite, request, signIn } = fixture(t);

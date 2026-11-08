@@ -1,0 +1,30 @@
+.mews-bubble-drift {
+  animation: mews-bubble-drift 8s var(--ease-in-out) infinite;
+}
+
+.mews-bubble-viewport[data-dragging] {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.mews-bubble-viewport[data-dragging] .mews-bubble-drift,
+.mews-bubble-viewport:focus-within .mews-bubble-drift {
+  animation-play-state: paused;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mews-bubble-viewport:hover .mews-bubble-drift {
+    animation-play-state: paused;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mews-bubble-drift {
+    animation: none;
+  }
+}
+
+@keyframes mews-bubble-drift {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}

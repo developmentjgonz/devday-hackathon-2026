@@ -3,22 +3,27 @@ import type { InboxCat, InboxColony, InboxData, InboxReport, ReportAttachment, T
 import type { CatInput } from '../../../shared/schemas/directory'
 import type { Coordinates } from '../../../shared/types/directory'
 import type { DirectoryStore } from '@/features/colonies/directory-api'
-import type { CreateReportInput, FinishReportInput, TaskInput } from '../../../shared/schemas/workspace'
-import type { TaskStatus, WorkspaceMember, WorkspaceSnapshot } from '../../../shared/types/workspace'
+import type { CareRuleInput, CreateReportInput, FinishReportInput, TaskInput } from '../../../shared/schemas/workspace'
+import type { CareRule, DuplicateSearchResult, TaskStatus, WorkspaceMember, WorkspaceSnapshot } from '../../../shared/types/workspace'
 import type { RecordActivity, RecordType } from '../../../shared/types/record-activity'
-import type { TaskResult, WorkspaceStore } from './workspace-api'
+import type { CareRuleResult, TaskResult, WorkspaceStore } from './workspace-api'
+import type { ReportAnalysis } from '../../../shared/schemas/report-analysis'
 
 type InboxStore = {
-  data: InboxData; reports: InboxReport[]; tasks: Task[]; members: WorkspaceMember[]
-  googleMapsEnabled: boolean
-  refreshWorkspace: () => Promise<void>; refreshingWorkspace: boolean; workspaceRefreshFailed: boolean
+  data: InboxData; reports: InboxReport[]; tasks: Task[]; members: WorkspaceMember[]; careRules: CareRule[]; careGenerationFailed: boolean
+  googleMapsEnabled: boolean; aiAnalysisEnabled: boolean
+  refreshWorkspace: (options?: { invalidate?: boolean }) => Promise<void>; refreshingWorkspace: boolean; workspaceRefreshFailed: boolean
+  analyzeReport: (id: string, signal?: AbortSignal) => Promise<ReportAnalysis>
+  searchDuplicateReports: (id: string, query: string, offset: number, signal?: AbortSignal) => Promise<DuplicateSearchResult>
   getRecordActivity: (type: RecordType, id: string, signal?: AbortSignal) => Promise<RecordActivity[]>; activityRevision: number
   addColony: (name: string, coordinates?: Coordinates, address?: string, googlePlaceId?: string) => Promise<InboxColony>; updateColonyLocation: (colony: InboxColony, coordinates: Coordinates | null, address: string, googlePlaceId?: string) => Promise<InboxColony>; addCat: (input: CatInput) => Promise<InboxCat>; updateCat: (cat: InboxCat, input: CatInput) => Promise<InboxCat>
+  changeCatColony: (cat: InboxCat, colonyId: string) => Promise<InboxCat>
   createAttachment: (file: File) => ReportAttachment; discardAttachment: (attachment: ReportAttachment) => void
   createReport: (input: CreateReportInput, attachments: ReportAttachment[]) => Promise<InboxReport>
   finishReport: (id: string, input: FinishReportInput) => Promise<InboxReport>; reopenReport: (id: string) => Promise<InboxReport>
   askQuestion: (id: string, text: string) => Promise<InboxReport>; linkDuplicate: (id: string, targetId: string) => Promise<InboxReport>
-  createTask: (input: TaskInput) => Promise<Task>; editTask: (id: string, input: TaskInput) => Promise<Task>; changeTaskStatus: (id: string, status: TaskStatus) => Promise<Task>
+  createTask: (input: TaskInput) => Promise<Task>; editTask: (id: string, input: TaskInput) => Promise<Task>; changeTaskStatus: (id: string, status: TaskStatus, completionNote?: string) => Promise<Task>
+  createCareRule: (input: CareRuleInput) => Promise<CareRule>; editCareRule: (id: string, input: CareRuleInput) => Promise<CareRule>; setCareRuleActive: (id: string, active: boolean) => Promise<CareRule>
 }
 const InboxContext = createContext<InboxStore | null>(null)
 
@@ -26,8 +31,13 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
   const [reports, setReports] = useState(() => structuredClone(workspace.reports))
   const [tasks, setTasks] = useState(() => structuredClone(workspace.tasks))
   const [members, setMembers] = useState(() => structuredClone(workspace.members))
+  const [careRules, setCareRules] = useState(() => structuredClone(workspace.careRules))
+  const [aiAnalysisEnabled, setAiAnalysisEnabled] = useState(workspace.aiAnalysisEnabled)
+  const [careGenerationFailed, setCareGenerationFailed] = useState(Boolean(workspace.careGenerationFailed))
   const [activityRevision, setActivityRevision] = useState(0)
   const getRecordActivity = useCallback((type: RecordType, id: string, signal?: AbortSignal) => directoryStore.getActivity(type, id, signal), [directoryStore])
+  const analyzeReport = useCallback((id: string, signal?: AbortSignal) => workspaceStore.analyzeReport(id, signal), [workspaceStore])
+  const searchDuplicateReports = useCallback((id: string, query: string, offset: number, signal?: AbortSignal) => workspaceStore.searchDuplicateReports(id, query, offset, signal), [workspaceStore])
   const [directory, setDirectory] = useState(() => ({ colonies: structuredClone(data.colonies), cats: structuredClone(data.cats) }))
   const workspaceData = useMemo(() => ({ ...data, ...directory }), [data, directory])
   const objectUrls = useRef(new Set<string>())
@@ -52,7 +62,8 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
       if (!activeMutations.current && refreshNeeded.current) void refreshCallback.current?.()
     }
   }, [])
-  const refreshWorkspace = useCallback(async function refreshNow() {
+  const refreshWorkspace = useCallback(async function refreshNow(options?: { invalidate?: boolean }) {
+    if (options?.invalidate) { mutationRevision.current += 1; refreshNeeded.current = true }
     if (activeMutations.current) { refreshNeeded.current = true; return }
     if (refreshRequest.current) return refreshRequest.current
     refreshNeeded.current = false
@@ -68,6 +79,9 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
         setReports(snapshot.reports)
         setTasks(snapshot.tasks)
         setMembers(snapshot.members)
+        setCareRules(snapshot.careRules)
+        setAiAnalysisEnabled(snapshot.aiAnalysisEnabled)
+        setCareGenerationFailed(Boolean(snapshot.careGenerationFailed))
         setActivityRevision((revision) => revision + 1)
         setWorkspaceRefreshFailed(false)
       } catch {
@@ -143,6 +157,12 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
     setActivityRevision((revision) => revision + 1)
     return cat
   }
+  async function changeCatColony(existing: InboxCat, colonyId: string): Promise<InboxCat> {
+    const cat = await directoryStore.changeCatColony(existing, colonyId)
+    setDirectory((current) => ({ ...current, cats: current.cats.map((item) => item.id === cat.id ? cat : item) }))
+    setActivityRevision((revision) => revision + 1)
+    return cat
+  }
   const applyReport = useCallback((report: InboxReport) => { setReports((items) => items.map((item) => item.id === report.id ? report : item)); setActivityRevision((revision) => revision + 1); return report }, [])
   const applyTask = useCallback(({ task, report }: TaskResult) => {
     setTasks((items) => items.some((item) => item.id === task.id) ? items.map((item) => item.id === task.id ? task : item) : [...items, task])
@@ -173,8 +193,20 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
   const linkDuplicate = useCallback((id: string, targetId: string) => mutateWorkspace(async () => applyReport(await workspaceStore.linkDuplicate(id, targetId))), [workspaceStore, applyReport, mutateWorkspace])
   const createTask = useCallback((input: TaskInput) => mutateWorkspace(async () => applyTask(await workspaceStore.createTask(input))), [workspaceStore, applyTask, mutateWorkspace])
   const editTask = useCallback((id: string, input: TaskInput) => mutateWorkspace(async () => applyTask(await workspaceStore.editTask(id, input))), [workspaceStore, applyTask, mutateWorkspace])
-  const changeTaskStatus = useCallback((id: string, status: TaskStatus) => mutateWorkspace(async () => applyTask(await workspaceStore.changeTaskStatus(id, status))), [workspaceStore, applyTask, mutateWorkspace])
-  return <InboxContext value={{ data: workspaceData, reports, tasks, members, googleMapsEnabled, getRecordActivity, activityRevision, refreshWorkspace, refreshingWorkspace, workspaceRefreshFailed, addColony, updateColonyLocation, addCat, updateCat, createAttachment, discardAttachment, createReport, finishReport, reopenReport, askQuestion, linkDuplicate, createTask, editTask, changeTaskStatus }}>{children}</InboxContext>
+  const changeTaskStatus = useCallback((id: string, status: TaskStatus, completionNote?: string) => mutateWorkspace(async () => applyTask(await workspaceStore.changeTaskStatus(id, status, completionNote))), [workspaceStore, applyTask, mutateWorkspace])
+  const applyCareRule = useCallback(({ rule, tasks: generated, generationFailed }: CareRuleResult) => {
+    setCareRules((items) => items.some((item) => item.id === rule.id) ? items.map((item) => item.id === rule.id ? rule : item) : [...items, rule])
+    if (generationFailed) setCareGenerationFailed(true)
+    if (generated.length) {
+      setTasks((items) => [...items.filter((item) => !generated.some((task) => task.id === item.id)), ...generated])
+      setActivityRevision((revision) => revision + 1)
+    }
+    return rule
+  }, [])
+  const createCareRule = useCallback((input: CareRuleInput) => mutateWorkspace(async () => applyCareRule(await workspaceStore.createCareRule(input))), [workspaceStore, applyCareRule, mutateWorkspace])
+  const editCareRule = useCallback((id: string, input: CareRuleInput) => mutateWorkspace(async () => applyCareRule(await workspaceStore.editCareRule(id, input))), [workspaceStore, applyCareRule, mutateWorkspace])
+  const setCareRuleActive = useCallback((id: string, active: boolean) => mutateWorkspace(async () => applyCareRule(await workspaceStore.setCareRuleActive(id, active))), [workspaceStore, applyCareRule, mutateWorkspace])
+  return <InboxContext value={{ data: workspaceData, reports, tasks, members, careRules, careGenerationFailed, googleMapsEnabled, aiAnalysisEnabled, getRecordActivity, activityRevision, refreshWorkspace, refreshingWorkspace, workspaceRefreshFailed, analyzeReport, searchDuplicateReports, addColony, updateColonyLocation, addCat, updateCat, changeCatColony, createAttachment, discardAttachment, createReport, finishReport, reopenReport, askQuestion, linkDuplicate, createTask, editTask, changeTaskStatus, createCareRule, editCareRule, setCareRuleActive }}>{children}</InboxContext>
 }
 export function useInbox() {
   const store = useContext(InboxContext)

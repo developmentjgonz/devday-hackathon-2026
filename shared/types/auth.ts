@@ -12,6 +12,7 @@ export interface SessionUser {
 }
 
 export interface ManagedUser extends SessionUser {
+  canBeAssignedTasks: boolean
   /** Unix timestamp in seconds. */
   createdAt: number
 }
@@ -19,12 +20,16 @@ export interface ManagedUser extends SessionUser {
 export interface UserAccessChange {
   role: UserRole
   status: Exclude<AccountStatus, 'pending'>
+  canBeAssignedTasks: boolean
   expectedRole: UserRole
   expectedStatus: AccountStatus
+  expectedCanBeAssignedTasks: boolean
 }
 
 export interface SignInOptions {
   localSignInEnabled: boolean
+  demoSignInEnabled: boolean
+  demoAdminSignInEnabled: boolean
   googleSignInEnabled: boolean
   users: Omit<SessionUser, 'phone' | 'avatarUrl'>[]
 }

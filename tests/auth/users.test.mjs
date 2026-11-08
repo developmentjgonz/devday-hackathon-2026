@@ -7,7 +7,7 @@ import worker from '../../worker/index.ts';
 function fixture(t) {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec('PRAGMA foreign_keys = ON');
-  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0012_user_photos.sql', '../../seeds/local.sql']) {
+  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0012_user_photos.sql', '../../migrations/0019_session_auth_method.sql', '../../migrations/0023_task_assignment_availability.sql', '../../seeds/local.sql']) {
     sqlite.exec(readFileSync(new URL(file, import.meta.url), 'utf8'));
   }
   t.after(() => sqlite.close());
@@ -43,8 +43,8 @@ function fixture(t) {
   return { sqlite, request, signIn };
 }
 
-const approve = { role: 'member', status: 'active', expectedRole: 'member', expectedStatus: 'pending' };
-const suspendMember = { role: 'member', status: 'suspended', expectedRole: 'member', expectedStatus: 'active' };
+const approve = { role: 'member', status: 'active', canBeAssignedTasks: true, expectedCanBeAssignedTasks: true, expectedRole: 'member', expectedStatus: 'pending' };
+const suspendMember = { role: 'member', status: 'suspended', canBeAssignedTasks: true, expectedCanBeAssignedTasks: true, expectedRole: 'member', expectedStatus: 'active' };
 
 test('only active administrators can read or change team accounts', async (t) => {
   const { request, signIn } = fixture(t);
@@ -82,10 +82,10 @@ test('role changes and suspension affect current sessions immediately', async (t
   const { request, signIn } = fixture(t);
   const admin = await signIn('local-admin');
   const member = await signIn('local-member');
-  const promote = { role: 'administrator', status: 'active', expectedRole: 'member', expectedStatus: 'active' };
+  const promote = { role: 'administrator', status: 'active', canBeAssignedTasks: true, expectedCanBeAssignedTasks: true, expectedRole: 'member', expectedStatus: 'active' };
   assert.equal((await request('/api/users/local-member/access', { method: 'POST', cookie: admin, body: promote })).status, 200);
   assert.equal((await request('/api/users', { cookie: member })).status, 200);
-  const suspend = { role: 'administrator', status: 'suspended', expectedRole: 'administrator', expectedStatus: 'active' };
+  const suspend = { role: 'administrator', status: 'suspended', canBeAssignedTasks: true, expectedCanBeAssignedTasks: true, expectedRole: 'administrator', expectedStatus: 'active' };
   assert.equal((await request('/api/users/local-member/access', { method: 'POST', cookie: admin, body: suspend })).status, 200);
   assert.equal((await request('/api/workspace', { cookie: member })).status, 403);
   assert.equal((await request('/api/users', { cookie: member })).status, 403);
@@ -97,7 +97,7 @@ test('changes reject self-edits, stale values, invalid requests, and unknown acc
   const { request, signIn } = fixture(t);
   const admin = await signIn('local-admin');
   const update = (id, body) => request(`/api/users/${id}/access`, { method: 'POST', cookie: admin, body });
-  assert.equal((await update('local-admin', { role: 'member', status: 'active', expectedRole: 'administrator', expectedStatus: 'active' })).status, 400);
+  assert.equal((await update('local-admin', { role: 'member', status: 'active', canBeAssignedTasks: true, expectedCanBeAssignedTasks: true, expectedRole: 'administrator', expectedStatus: 'active' })).status, 400);
   assert.equal((await update('local-pending', { ...approve, role: 'administrator' })).status, 400);
   assert.equal((await update('local-pending', { ...approve, status: 'suspended' })).status, 400);
   assert.equal((await update('local-member', { ...suspendMember, expectedStatus: 'pending' })).status, 400);
@@ -108,12 +108,32 @@ test('changes reject self-edits, stale values, invalid requests, and unknown acc
   }
 });
 
+test('task assignment availability can be changed independently, including for the administrator', async (t) => {
+  const { request, signIn } = fixture(t);
+  const admin = await signIn('local-admin');
+  const member = await signIn('local-member');
+  const update = (id, body, cookie = admin) => request(`/api/users/${id}/access`, { method: 'POST', cookie, body });
+  const memberChange = { role: 'member', status: 'active', canBeAssignedTasks: false, expectedRole: 'member', expectedStatus: 'active', expectedCanBeAssignedTasks: true };
+  assert.equal((await update('local-member', memberChange, member)).status, 403);
+  const disabled = await update('local-member', memberChange);
+  assert.equal(disabled.status, 200);
+  assert.equal((await disabled.json()).user.canBeAssignedTasks, false);
+  assert.equal((await request('/api/workspace', { cookie: member })).status, 200);
+  assert.equal((await update('local-member', memberChange)).status, 409);
+  const enabled = await update('local-member', { ...memberChange, canBeAssignedTasks: true, expectedCanBeAssignedTasks: false });
+  assert.equal((await enabled.json()).user.canBeAssignedTasks, true);
+  const own = { role: 'administrator', status: 'active', canBeAssignedTasks: false, expectedRole: 'administrator', expectedStatus: 'active', expectedCanBeAssignedTasks: true };
+  assert.equal((await update('local-admin', own)).status, 200);
+  assert.equal((await update('local-admin', { ...own, role: 'member', expectedCanBeAssignedTasks: false })).status, 400);
+  assert.equal((await request('/api/users', { cookie: admin })).status, 200);
+});
+
 test('competing administrators cannot both remove the other administrator', async (t) => {
   const { sqlite, request, signIn } = fixture(t);
   sqlite.exec("UPDATE users SET role = 'administrator' WHERE id = 'local-member'");
   const admin = await signIn('local-admin');
   const other = await signIn('local-member');
-  const body = { role: 'member', status: 'active', expectedRole: 'administrator', expectedStatus: 'active' };
+  const body = { role: 'member', status: 'active', canBeAssignedTasks: true, expectedCanBeAssignedTasks: true, expectedRole: 'administrator', expectedStatus: 'active' };
   const responses = await Promise.all([
     request('/api/users/local-member/access', { method: 'POST', cookie: admin, body }),
     request('/api/users/local-admin/access', { method: 'POST', cookie: other, body }),

@@ -10,7 +10,9 @@ import { DataTableToolbar } from '@/components/ui/data-table-toolbar'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toaster'
 import { Heading, Text } from '@/components/ui/typography'
+import { RecordListItem } from '@/components/ui/record-list'
 import { UserAvatar } from '@/components/ui/user-avatar'
+import { useInbox } from '@/features/inbox/inbox-context'
 import type { AccountStatus, ManagedUser, SessionUser, UserRole } from '../../../../shared/types/auth'
 import type { WorkspaceData } from '../../../../shared/types/directory'
 import { UserAccessDrawer } from '../components/user-access-drawer'
@@ -46,6 +48,7 @@ export function UsersPage({ store = databaseUsers }: { store?: UserStore }) {
 
 function UsersScreen({ currentUser, store }: { currentUser: SessionUser; store: UserStore }) {
   const { revalidate } = useRevalidator()
+  const { refreshWorkspace } = useInbox()
   const [users, setUsers] = useState<ManagedUser[]>([])
   const [request, setRequest] = useState<DataTableRequest | undefined>({ status: 'loading' })
   const [reload, setReload] = useState(0)
@@ -55,6 +58,7 @@ function UsersScreen({ currentUser, store }: { currentUser: SessionUser; store: 
   const [selected, setSelected] = useState<ManagedUser | null>(null)
   const [role, setRole] = useState<UserRole>('member')
   const [status, setStatus] = useState<'active' | 'suspended'>('active')
+  const [canBeAssignedTasks, setCanBeAssignedTasks] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const tableRef = useRef<HTMLDivElement>(null)
@@ -83,6 +87,7 @@ function UsersScreen({ currentUser, store }: { currentUser: SessionUser; store: 
     setSelected(user)
     setRole(user.role)
     setStatus(user.status === 'suspended' ? 'suspended' : 'active')
+    setCanBeAssignedTasks(user.canBeAssignedTasks)
     setSaveError('')
   }, [])
   const columns = useMemo(() => column.columns([
@@ -103,7 +108,7 @@ function UsersScreen({ currentUser, store }: { currentUser: SessionUser; store: 
     column.accessor('createdAt', { header: 'Requested', cell: ({ row }) => <Text size="caption" tone="muted">{formatJoined(row.original.createdAt)}</Text> }),
     column.display({ id: 'action', header: 'Action', cell: ({ row }) => {
       const user = row.original
-      const action = user.id === currentUser.id ? 'View' : user.status === 'pending' ? 'Review' : 'Manage'
+      const action = user.status === 'pending' ? 'Review' : 'Manage'
       return <Button variant="outline" size="sm" aria-label={`${action} account: ${user.name}`} onClick={(event) => openUser(user, event.currentTarget)}>{action}</Button>
     } }),
   ]), [currentUser.id, openUser])
@@ -118,11 +123,12 @@ function UsersScreen({ currentUser, store }: { currentUser: SessionUser; store: 
     setSaving(true)
     setSaveError('')
     try {
-      const updated = await store.changeAccess(selected.id, { role, status, expectedRole: selected.role, expectedStatus: selected.status })
+      const updated = await store.changeAccess(selected.id, { role, status, canBeAssignedTasks, expectedRole: selected.role, expectedStatus: selected.status, expectedCanBeAssignedTasks: selected.canBeAssignedTasks })
       setUsers((items) => items.map((item) => item.id === updated.id ? updated : item))
       setSelected(null)
       toast.success(selected.status === 'pending' ? 'Access approved' : 'Access updated', { description: updated.name })
       void revalidate()
+      void refreshWorkspace({ invalidate: true })
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'Could not update access. Try again.')
     } finally {
@@ -147,17 +153,23 @@ function UsersScreen({ currentUser, store }: { currentUser: SessionUser; store: 
         </Button>
       </div></CardContent>
     </Card> : null}
-    <section aria-label="Team accounts" className="space-y-4">
+    <div className="space-y-4">
       <DataTableToolbar label="Team controls"
         search={{ label: 'Search team accounts', placeholder: 'Search by name or email…', value: search, onValueChange: (value) => { setSearch(value); table.firstPage() } }}
         filters={[{ id: 'status', label: 'Filter accounts by access', value: filter, options: statusOptions, onValueChange: (value) => { setFilter(value as StatusFilter); table.firstPage() } }]}
         onReset={() => { setSearch(''); setFilter('all'); table.firstPage() }}
         resetActive={Boolean(query || (filter !== 'all' && !(showRequestCard && viewingRequests)))} />
       <DataTable ref={tableRef} table={table} label="Team accounts" itemName="account" request={request} columnClassName={columnClassName} scrollMode="page"
+        mobileListKey={`${query}:${filter}`}
+        renderMobileRow={(user) => <RecordListItem title={`${user.name}${user.id === currentUser.id ? ' (you)' : ''}`}
+          aria-label={`${user.status === 'pending' ? 'Review' : 'Manage'} account: ${user.name}`} aria-haspopup="dialog"
+          leading={<UserAvatar name={user.name} src={user.avatarUrl} size="sm" />}
+          meta={user.email} description={roleLabel(user.role)} badge={<StatusBadge status={user.status} />}
+          onClick={(event) => openUser(user, event.currentTarget)} />}
         emptyState={<EmptyState icon={query ? <Search /> : <UsersRound />} title={emptyTitle} description={query ? 'Try another name, email, or phone number.' : filter === 'pending' ? 'New requests will appear here.' : undefined} />} />
-    </section>
-    <UserAccessDrawer user={selected} currentUserId={currentUser.id} role={role} status={status} busy={saving} error={saveError}
-      onRoleChange={setRole} onStatusChange={setStatus} onClose={() => setSelected(null)} onSave={saveAccess} onRefresh={refreshList}
+    </div>
+    <UserAccessDrawer user={selected} currentUserId={currentUser.id} role={role} status={status} canBeAssignedTasks={canBeAssignedTasks} busy={saving} error={saveError}
+      onRoleChange={setRole} onStatusChange={setStatus} onCanBeAssignedTasksChange={setCanBeAssignedTasks} onClose={() => setSelected(null)} onSave={saveAccess} onRefresh={refreshList}
       finalFocus={() => { queueMicrotask(() => (triggerRef.current?.isConnected ? triggerRef.current : tableRef.current)?.focus({ preventScroll: true })); return false }} />
   </div>
 }

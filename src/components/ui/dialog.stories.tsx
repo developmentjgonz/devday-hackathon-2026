@@ -8,7 +8,7 @@ import { Label } from './label'
 const meta = {
   title: 'Overlays/Dialog',
   component: Dialog,
-  parameters: { docs: { description: { component: 'DialogContent supports closeDisabled during a pending save. Control onOpenChange as well when dismissal must wait for the save. Its shared dialog-close button size follows the inset curve of the dialog surface.' } } },
+  parameters: { docs: { description: { component: 'Use centered dialogs for short, focused decisions or media. Use drawers for record forms and details. Nested dialogs have their own backdrop so the inactive surface remains visually distinct. DialogContent supports closeDisabled during a pending save. Control onOpenChange as well when dismissal must wait for the save. Its shared dialog-close button size follows the inset curve of the dialog surface.' } } },
   render: () => (
     <Dialog>
       <DialogTrigger render={<Button variant="outline" />}>View last visit</DialogTrigger>
@@ -42,5 +42,5 @@ export const ScrollingForm: Story = {
     <DialogBody>{Array.from({ length: 12 }, (_, index) => <div key={index} className="grid gap-2"><Label htmlFor={`scroll-note-${index}`}>Visit note {index + 1}</Label><Input id={`scroll-note-${index}`} placeholder="Add a care note" /></div>)}</DialogBody>
     <DialogFooter><DialogClose render={<Button variant="outline" />}>Cancel</DialogClose><DialogClose render={<Button />}>Done</DialogClose></DialogFooter>
   </form></DialogContent></Dialog>,
-  parameters: { docs: { description: { story: 'Use DialogContent layout="scroll" with a flex column form, DialogHeader, DialogBody, and DialogFooter. Only the body scrolls. The rounded shell clips the inset scroll track; the heading, close action, and footer remain fixed. The default layout still supports short dialogs. Task creation and editing use this shared layout.' } } },
+  parameters: { docs: { description: { story: 'Use DialogContent layout="scroll" with a flex column form, DialogHeader, DialogBody, and DialogFooter. Only the body scrolls. The rounded shell clips the inset scroll track; the heading, close action, and footer remain fixed. The default layout supports short dialogs.' } } },
 }

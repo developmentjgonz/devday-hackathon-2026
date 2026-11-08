@@ -14,6 +14,8 @@ const meta = {
   },
   args: {
     localSignInEnabled: true,
+    demoSignInEnabled: false,
+    demoAdminSignInEnabled: false,
     googleSignInEnabled: false,
     users: [
       { id: 'story-admin', name: 'Alex Morgan', email: 'admin@mews.test', role: 'administrator', status: 'active' },
@@ -23,11 +25,12 @@ const meta = {
     selected: null,
     error: '',
     onSignIn: () => undefined,
+    onDemoAdminSignIn: () => undefined,
   },
-  argTypes: { onSignIn: { control: false }, users: { control: false } },
+  argTypes: { onSignIn: { control: false }, onDemoAdminSignIn: { control: false }, users: { control: false } },
   render: function Render(args) {
     const [error, setError] = useState('')
-    return <SignInScreen {...args} error={args.error || error} onSignIn={() => setError('We could not sign in. Try again.')} />
+    return <SignInScreen {...args} error={args.error || error} onSignIn={() => setError('We could not sign in. Try again.')} onDemoAdminSignIn={() => setError('The administrator code is not valid.')} />
   },
 } satisfies Meta<typeof SignInScreen>
 export default meta
@@ -37,3 +40,5 @@ export const SigningIn: Story = { args: { selected: 'story-member' } }
 export const Error: Story = { args: { error: 'We could not sign in. Try again.' } }
 export const ContactAdministrator: Story = { args: { localSignInEnabled: false } }
 export const GoogleSignIn: Story = { args: { localSignInEnabled: false, googleSignInEnabled: true } }
+export const DemoSignIn: Story = { args: { localSignInEnabled: false, demoSignInEnabled: true, googleSignInEnabled: true, users: [{ id: 'story-member', name: 'Sam Rivera', email: 'member@mews.test', role: 'member', status: 'active' }] } }
+export const DemoAdministrator: Story = { args: { ...DemoSignIn.args, demoAdminSignInEnabled: true } }

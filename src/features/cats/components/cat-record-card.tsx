@@ -2,6 +2,7 @@ import { House } from 'lucide-react'
 import { Link } from 'react-router'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import { RecordListItem } from '@/components/ui/record-list'
 import { RecordAvatar } from '@/components/ui/record-avatar'
 import { Heading, Text } from '@/components/ui/typography'
 import type { InboxCat } from '@/features/inbox/types'
@@ -27,4 +28,16 @@ export function CatRecordCard({ cat, colonyName, urgentCount, taskCount, heading
       </div>
     </CardContent>
   </Card>
+}
+
+export function CatRecordListItem({ cat, colonyName, urgentCount, taskCount }: {
+  cat: InboxCat
+  colonyName?: string
+  urgentCount: number
+  taskCount: number
+}) {
+  return <RecordListItem render={<Link to={`/app/cats/${encodeURIComponent(cat.id)}`} />} aria-label={cat.name}
+    title={cat.name} leading={<RecordAvatar name={cat.name} kind="cat" src={cat.photoUrl} size="sm" />}
+    meta={[colonyName, taskCount ? `${taskCount} open ${taskCount === 1 ? 'task' : 'tasks'}` : undefined].filter(Boolean).join(' · ')}
+    badge={urgentCount ? <Badge variant="destructive">{urgentCount} urgent {urgentCount === 1 ? 'report' : 'reports'}</Badge> : undefined} />
 }

@@ -16,6 +16,8 @@ function fixture(t) {
   sqlite.exec('PRAGMA foreign_keys = ON')
   sqlite.exec(readFileSync(new URL('../../migrations/0001_accounts.sql', import.meta.url), 'utf8'))
   sqlite.exec(readFileSync(new URL('../../migrations/0012_user_photos.sql', import.meta.url), 'utf8'))
+  sqlite.exec(readFileSync(new URL('../../migrations/0018_demo_access.sql', import.meta.url), 'utf8'))
+  sqlite.exec(readFileSync(new URL('../../migrations/0019_session_auth_method.sql', import.meta.url), 'utf8'))
   t.after(() => sqlite.close())
   const DB = {
     prepare(sql) {
@@ -40,8 +42,8 @@ function fixture(t) {
   return { sqlite, env, request }
 }
 
-async function openFlow(request) {
-  const response = await request('/api/auth/google/start')
+async function openFlow(request, returnTo) {
+  const response = await request(returnTo ? `/api/auth/google/start?returnTo=${encodeURIComponent(returnTo)}` : '/api/auth/google/start')
   assert.equal(response.status, 302)
   const url = new URL(response.headers.get('location'))
   assert.equal(url.origin, 'https://accounts.google.com')
@@ -52,6 +54,21 @@ async function openFlow(request) {
   assert.match(cookie, /HttpOnly; SameSite=Lax; Max-Age=600; Secure/)
   return { url, cookie: cookie.split(';')[0] }
 }
+
+test('Google sign-in returns to a requested workspace path and rejects external redirects', async (t) => {
+  const { request } = fixture(t)
+  let profile = { subject: 'google-admin', email: 'admin@gmail.com', nonce: '' }
+  installGoogle(t, () => profile)
+  const flow = await openFlow(request, '/app/reports/report-injury?view=all')
+  profile.nonce = flow.url.searchParams.get('nonce')
+  assert.equal((await finishFlow(request, flow)).headers.get('location'), '/app/reports/report-injury?view=all')
+  const external = await openFlow(request, '//evil.example/elsewhere')
+  profile.nonce = external.url.searchParams.get('nonce')
+  assert.equal((await finishFlow(request, external)).headers.get('location'), '/app')
+  const pending = await openFlow(request, '/app/tasks/task-1')
+  profile = { subject: 'google-member', email: 'member@gmail.com', nonce: pending.url.searchParams.get('nonce') }
+  assert.equal((await finishFlow(request, pending)).headers.get('location'), '/account-status?returnTo=%2Fapp%2Ftasks%2Ftask-1')
+})
 
 function installGoogle(t, profileForNonce) {
   const originalFetch = globalThis.fetch
@@ -113,6 +130,20 @@ test('Google sign-in creates the specified administrator and leaves new members 
   const suspended = await finishFlow(request, repeat)
   assert.equal(suspended.headers.get('location'), '/account-status')
   assert.equal((await (await request('/api/auth/session', sessionCookie(suspended))).json()).user.status, 'suspended')
+})
+
+test('a demo administrator does not prevent the first real Google administrator', async (t) => {
+  const { request, sqlite } = fixture(t)
+  sqlite.exec(readFileSync(new URL('../../seeds/demo-administrator.sql', import.meta.url), 'utf8'))
+  let profile = { subject: 'google-admin', email: 'admin@gmail.com', name: 'Admin', nonce: '' }
+  installGoogle(t, () => profile)
+  const flow = await openFlow(request)
+  profile.nonce = flow.url.searchParams.get('nonce')
+  const response = await finishFlow(request, flow)
+  assert.equal(response.headers.get('location'), '/app')
+  const user = (await (await request('/api/auth/session', sessionCookie(response))).json()).user
+  assert.equal(user.role, 'administrator')
+  assert.equal(user.status, 'active')
 })
 
 test('Google callback rejects forged state, nonce, audience, and unverified email', async (t) => {

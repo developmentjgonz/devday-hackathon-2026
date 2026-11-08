@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { Alert } from '@/components/ui/alert'
+import { DiscardOnNavigation } from '@/components/layout/discard-on-navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { LoadingIndicator } from '@/components/ui/loading-indicator'
+import { PhotoUpload } from '@/components/ui/photo-upload'
 import { toast } from '@/components/ui/toaster'
 import { Heading, Text } from '@/components/ui/typography'
 import { UserAvatar } from '@/components/ui/user-avatar'
@@ -73,15 +74,7 @@ export function ProfileScreen({ user, onSave }: { user: SessionUser; onSave: (pr
     </div>
     <Card><CardContent>
       <form onSubmit={submit} className="space-y-6">
-        <div className="grid gap-3">
-          <Label htmlFor="profile-photo">Profile photo (optional)</Label>
-          <UserAvatar name={name.trim() || 'You'} src={photoUrl} size="lg" />
-          <Input id="profile-photo" type="file" accept="image/jpeg,image/png,image/webp" disabled={saving || photoReading} aria-describedby="profile-photo-help" onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ''; void selectPhoto(file) }} />
-          <Text id="profile-photo-help" size="caption" tone="muted">JPEG, PNG, or WebP, up to 10 MB. Large photos are resized.</Text>
-          {photoReading ? <div className="flex items-center gap-2"><LoadingIndicator size="sm" label="Preparing photo" /><Text size="caption" tone="muted">Preparing photo…</Text></div> : null}
-          {photoError ? <><Text role="alert" size="small" tone="danger">{photoError}</Text><div><Button type="button" size="sm" variant="outline" onClick={() => setPhotoError('')}>Clear photo error</Button></div></> : null}
-          {photoUrl ? <div><Button type="button" size="sm" variant="outline" disabled={saving || photoReading} onClick={() => { setPhoto(null); setPhotoError('') }}>Remove photo</Button></div> : null}
-        </div>
+        <PhotoUpload label="Profile photo (optional)" preview={<UserAvatar name={name.trim() || 'You'} src={photoUrl} size="lg" />} hasPhoto={Boolean(photoUrl)} disabled={saving} loading={photoReading} error={photoError} onChoose={(file) => void selectPhoto(file)} onRemove={() => { setPhoto(null); setPhotoError('') }} onClearError={() => setPhotoError('')} />
         <div className="grid gap-2">
           <Label htmlFor="profile-name">Name</Label>
           <Input id="profile-name" autoComplete="name" required maxLength={120} disabled={saving} value={name} onChange={(event) => setName(event.target.value)} />
@@ -98,5 +91,6 @@ export function ProfileScreen({ user, onSave }: { user: SessionUser; onSave: (pr
         <Button type="submit" loading={saving} disabled={!changed || photoReading || Boolean(photoError)}>Save changes</Button>
       </form>
     </CardContent></Card>
+    {changed && !saving ? <DiscardOnNavigation warnBeforeUnload /> : null}
   </div>
 }

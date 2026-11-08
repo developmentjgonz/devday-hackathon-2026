@@ -1,6 +1,6 @@
-import type { Coordinates } from '../../shared/types/directory'
+import type { Coordinates } from './types/directory.ts'
 
-export type AddressResult = { label: string; detail: string; coordinates: Coordinates }
+export type AddressResult = { label: string; detail: string; coordinates: Coordinates; areas?: string[]; bounds?: [number, number, number, number] }
 
 export function addressLabel(result: AddressResult): string {
   return [result.label, result.detail].filter(Boolean).join(', ').slice(0, 500)
@@ -34,6 +34,11 @@ export function addressResults(data: unknown): AddressResult[] {
     const detail = [street, city, field(properties?.state), field(properties?.postcode), field(properties?.country)]
       .filter((part) => { const key = part.toLocaleLowerCase(); if (!part || seen.has(key)) return false; seen.add(key); return true })
       .join(', ')
-    return [{ label, detail, coordinates: [longitude, latitude] }]
+    const extent = properties?.extent
+    const bounds = Array.isArray(extent) && extent.length === 4 && extent.every((value) => typeof value === 'number' && Number.isFinite(value))
+      && extent[0] >= -180 && extent[2] <= 180 && extent[0] < extent[2] && extent[3] >= -90 && extent[1] <= 90 && extent[3] < extent[1]
+      ? [extent[0], extent[3], extent[2], extent[1]] as [number, number, number, number] : undefined
+    const areas = [...new Set(['city', 'locality', 'district', 'county', 'state', 'country'].map((key) => field(properties?.[key])).filter(Boolean))]
+    return [{ label, detail, coordinates: [longitude, latitude], ...(areas.length ? { areas } : {}), ...(bounds ? { bounds } : {}) }]
   }).slice(0, 5)
 }

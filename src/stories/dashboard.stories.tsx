@@ -1,3 +1,4 @@
+import { userPortraitUrl } from '../../seeds/user-portraits'
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { createMemoryRouter, RouterProvider } from 'react-router'
@@ -7,6 +8,8 @@ import { SiteLayout } from '@/components/layout/site-layout'
 import { AppLayout } from '@/components/layout/app-layout'
 import { InboxPage } from '@/features/inbox/pages/inbox-page'
 import { MyTasksPage } from '@/features/tasks/pages/my-tasks-page'
+import { TeamTasksPage } from '@/features/tasks/pages/team-tasks-page'
+import { TaskPage } from '@/features/tasks/pages/task-page'
 import { NotFoundPage } from '@/pages/not-found-page'
 import type { SessionUser } from '../../shared/types/auth'
 import { localInboxData } from '@/features/inbox/data/local-inbox'
@@ -15,7 +18,7 @@ import { storyDirectoryStore, storyWorkspace } from './fixtures/directory-store'
 import { storyWorkspaceStore } from './fixtures/workspace-store'
 import { storyPublicContent } from './fixtures/public-content'
 
-const user: SessionUser = { id: 'storybook-member', name: 'Maya Rivera', email: 'maya@mews.test', phone: null, role: 'member', status: 'active' }
+const user: SessionUser = { id: 'storybook-member', name: 'Maya Rivera', email: 'maya@mews.test', phone: null, avatarUrl: userPortraitUrl('Maya Rivera'), role: 'member', status: 'active' }
 const completedTasks = [
   ['Refresh water at Riverside', 'Alex Morgan'],
   ['Clean feeding bowls at Canal', 'Alex Morgan'],
@@ -37,8 +40,9 @@ function DashboardStory() {
   const [router] = useState(() => createMemoryRouter([
     { path: '/app', id: 'workspace', loader: () => storyWorkspace(user, dashboardData), element: <AppLayout directoryStore={storyDirectoryStore} workspaceStore={storyWorkspaceStore(user, storyWorkspace(user, dashboardData).workspace)} />, children: [
       { index: true, Component: OverviewPage, handle: { breadcrumb: 'Overview' } },
-      { path: 'tasks', Component: MyTasksPage, handle: { breadcrumb: 'My Tasks' } },
-      { path: 'reports', Component: InboxPage, handle: { breadcrumb: 'Reports' } },
+      { path: 'tasks', handle: { breadcrumb: 'My Tasks' }, children: [{ index: true, Component: MyTasksPage }, { path: ':taskId', Component: TaskPage, handle: { breadcrumb: 'Task' } }] },
+      { path: 'team-tasks', Component: TeamTasksPage, handle: { breadcrumb: 'Team Tasks' } },
+      { path: 'reports/:reportId?', Component: InboxPage, handle: { breadcrumb: 'Reports' } },
       { path: '*', element: <NotFoundPage homePath="/app" /> },
     ] },
     { path: '/', Component: SiteLayout, children: [{ index: true, element: <LandingPage initialContent={storyPublicContent} /> }] },
@@ -48,7 +52,7 @@ function DashboardStory() {
 const meta = {
   title: 'Pages/Dashboard',
   component: DashboardStory,
-  parameters: { layout: 'fullscreen', docs: { description: { component: 'The workspace overview shows open tasks, tasks completed in the last 30 days, and reports pending review or waiting for details. The team chart groups recent completed tasks by assignee. It links to My Tasks and Reports and keeps full lists on those pages. Storybook uses isolated fictional records.' } } },
+  parameters: { layout: 'fullscreen', docs: { description: { component: 'The workspace overview shows open tasks, tasks completed in the last 30 days, and reports pending review or waiting for details. The My tasks and Report reviews cards open their respective pages. The team chart groups recent completed tasks by assignee. Storybook uses isolated fictional records.' } } },
 } satisfies Meta<typeof DashboardStory>
 export default meta
 type Story = StoryObj<typeof meta>

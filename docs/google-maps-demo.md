@@ -33,7 +33,8 @@ the quota resets. To use the standard map and search in the meantime, set
 details, even when the standard map is selected.
 
 The demo loads Google's map and Places services directly from Google. Address search
-queries and map use are sent to Google. Only fictional colony locations belong in
+queries are sent as the user types, after a short pause. Suggestions for one place
+selection share a session token. Map use is also sent to Google. Only fictional colony locations belong in
 the Storybook fixture.
 
 ## Before production

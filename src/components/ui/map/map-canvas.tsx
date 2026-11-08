@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   Map as MapLibreMap,
   setWorkerUrl,
@@ -7,10 +7,10 @@ import {
 } from 'maplibre-gl'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { CircleAlert, Plus, Minus } from 'lucide-react'
+import { CircleAlert, Plus, Minus, X } from 'lucide-react'
 import { Button } from '../button'
 import { LoadingIndicator } from '../loading-indicator'
-import { Text } from '../typography'
+import { Heading, Text } from '../typography'
 import { Card } from '../card'
 import { EmptyState } from '../empty-state'
 import { areaCenter, type ColonyMapData, type MapInitialView } from './types'
@@ -73,32 +73,42 @@ export default function MapCanvas({
   data,
   selection,
   onSelect,
+  onClearSelection,
   styleUrl,
   initialView,
   locationView = false,
+  browse = 'list',
   title,
+  selectionContent,
 }: {
   data: ColonyMapData
   selection: MapSelection | null
   onSelect: (id: string) => void
+  onClearSelection: () => void
   styleUrl: string
   initialView?: MapInitialView
   locationView?: boolean
+  browse?: 'list' | 'popover'
   title: string
+  selectionContent?: ReactNode
 }) {
   const container = useRef<HTMLDivElement>(null)
+  const popup = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
   const previousSelection = useRef<MapSelection | null>(null)
-  const latest = useRef({ data, onSelect })
+  const latest = useRef({ data, onSelect, onClearSelection })
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [attempt, setAttempt] = useState(0)
   const [zoom, setZoom] = useState(0)
   const initialLng = initialView?.center[0]
   const initialLat = initialView?.center[1]
   const initialZoom = initialView?.zoom
+  const selectedArea = data.audience === 'public'
+    ? data.areas.find((area) => area.id === selection?.id)
+    : undefined
 
   useEffect(() => {
-    latest.current = { data, onSelect }
+    latest.current = { data, onSelect, onClearSelection }
     const map = mapRef.current
     if (!map?.getSource('areas')) return
     const sources = createMapSources(data)
@@ -106,7 +116,7 @@ export default function MapCanvas({
       const source = map.getSource(name) as GeoJSONSource
       void source.setData(sources[name]).catch(() => setStatus('error'))
     }
-  }, [data, onSelect])
+  }, [data, onSelect, onClearSelection])
 
   useEffect(() => {
     const element = container.current
@@ -148,8 +158,8 @@ export default function MapCanvas({
           locationView
             ? `${title}. Use the map or zoom controls to explore.`
             : data.audience === 'public'
-            ? 'Public area activity map. Use the area buttons below for keyboard selection.'
-            : 'Team colony map. Use the colony buttons below for keyboard selection.',
+            ? 'Public area activity map. Select a highlighted area, or use Browse areas to choose one.'
+            : browse === 'popover' ? 'Team colony map. Use Find colony for keyboard selection.' : 'Team colony map. Use the colony buttons below for keyboard selection.',
         )
       map.on('error', () => {
         if (!loaded && !disposed) setStatus('error')
@@ -258,6 +268,13 @@ export default function MapCanvas({
             if (map) map.getCanvas().style.cursor = ''
           })
         }
+        if (current.audience === 'public' && !locationView) {
+          map.on('click', (event) => {
+            if (map && !map.queryRenderedFeatures(event.point, { layers: ['area-fill'] }).length) {
+              latest.current.onClearSelection()
+            }
+          })
+        }
         theme = new MutationObserver(() => {
           if (map && !disposed) applyTheme(map, element)
         })
@@ -282,7 +299,7 @@ export default function MapCanvas({
       map?.remove()
       mapRef.current = null
     }
-  }, [data.audience, styleUrl, attempt, initialLng, initialLat, initialZoom, locationView, title])
+  }, [data.audience, styleUrl, attempt, initialLng, initialLat, initialZoom, locationView, title, browse])
 
   useEffect(() => {
     const map = mapRef.current
@@ -314,14 +331,77 @@ export default function MapCanvas({
     }
   }, [selection, data, status])
 
+  useEffect(() => {
+    const map = mapRef.current
+    const element = popup.current
+    if (status !== 'ready' || !map || !element || !selectedArea) return
+
+    const positionPopup = () => {
+      const point = map.project(areaCenter(selectedArea))
+      const bounds = map.getContainer().getBoundingClientRect()
+      if (point.x < 0 || point.x > bounds.width || point.y < 0 || point.y > bounds.height) {
+        element.style.visibility = 'hidden'
+        return
+      }
+      const width = element.offsetWidth
+      const left = Math.max(12, Math.min(point.x - width / 2, bounds.width - width - 12))
+      const attribution = map.getContainer().querySelector('.maplibregl-ctrl-attrib')?.getBoundingClientRect()
+      const overlapsAttribution = attribution && left < attribution.right - bounds.left && left + width > attribution.left - bounds.left
+      const bottom = overlapsAttribution ? attribution.top - bounds.top - 12 : bounds.height - 12
+      element.style.maxHeight = `${Math.max(0, bottom - 56)}px`
+      const height = element.offsetHeight
+      const below = point.y + 12
+      const preferredTop = below + height <= bottom ? below : point.y - height - 12
+      const top = Math.max(56, Math.min(preferredTop, bottom - height))
+      element.style.left = `${left}px`
+      element.style.top = `${top}px`
+      element.style.visibility = 'visible'
+    }
+    positionPopup()
+    const resize = new ResizeObserver(positionPopup)
+    resize.observe(element)
+    const attribution = map.getContainer().querySelector('.maplibregl-ctrl-attrib')
+    if (attribution) resize.observe(attribution)
+    map.on('move', positionPopup)
+    map.on('resize', positionPopup)
+    return () => {
+      resize.disconnect()
+      map.off('move', positionPopup)
+      map.off('resize', positionPopup)
+    }
+  }, [selectedArea, status])
+
   return (
     <div className="relative h-full w-full" data-map-status={status}>
       <div ref={container} className="h-full w-full" />
       {status === 'ready' ? (
-        <Card padding="none" role="group" aria-label="Map zoom" className="absolute top-3 right-3 w-fit">
-          <Button variant="ghost" size="icon-group" aria-label="Zoom in" disabled={zoom >= (data.audience === 'public' ? 11 : 18)} onClick={() => mapRef.current?.zoomIn({ duration: 0 })}><Plus aria-hidden="true" /></Button>
-          <Button variant="ghost" size="icon-group" aria-label="Zoom out" disabled={zoom <= 0} onClick={() => mapRef.current?.zoomOut({ duration: 0 })}><Minus aria-hidden="true" /></Button>
-        </Card>
+        <>
+          {data.audience === 'public' && !locationView ? (
+            <Card padding="none" size="sm" role="group" aria-label="Area activity: low to high" className="absolute top-3 right-3">
+              <div className="flex items-center gap-2 px-3 py-2">
+                <Text render={<span />} size="caption" tone="muted">Lower activity</Text>
+                <span aria-hidden="true" className="h-2 w-16 rounded-full" style={{ background: 'linear-gradient(to right, var(--secondary), var(--primary))' }} />
+                <Text render={<span />} size="caption" tone="muted">Higher</Text>
+              </div>
+            </Card>
+          ) : null}
+          <Card padding="none" role="group" aria-label="Map zoom" className={`absolute top-3 ${data.audience === 'public' && !locationView ? 'left-3' : 'right-3'} w-fit`}>
+            <Button variant="ghost" size="icon-group" aria-label="Zoom in" disabled={zoom >= (data.audience === 'public' ? 11 : 18)} onClick={() => mapRef.current?.zoomIn({ duration: 0 })}><Plus aria-hidden="true" /></Button>
+            <Button variant="ghost" size="icon-group" aria-label="Zoom out" disabled={zoom <= 0} onClick={() => mapRef.current?.zoomOut({ duration: 0 })}><Minus aria-hidden="true" /></Button>
+          </Card>
+          {selectedArea && !locationView ? (
+            <Card ref={popup} padding="none" size="sm" role="region" aria-label={`${selectedArea.name} details`} className="absolute z-10 w-56 max-w-[calc(100%-24px)] overflow-y-auto" style={{ visibility: 'hidden' }}>
+              <div className="flex items-start gap-2 p-3">
+                <div className="min-w-0 flex-1">
+                  <Heading level={3} size="compact" className="wrap-anywhere">{selectedArea.name}</Heading>
+                  <Text size="caption" tone="muted" className="mt-1">{selectedArea.colonyCountBand} colonies · {selectedArea.activity} activity</Text>
+                  {selectionContent ? <div className="mt-2">{selectionContent}</div> : null}
+                </div>
+                <Button variant="ghost" size="icon-sm" aria-label="Close area details" onClick={onClearSelection}><X aria-hidden="true" /></Button>
+              </div>
+            </Card>
+          ) : null}
+        </>
       ) : null}
       {status === 'loading' ? (
         <div
@@ -337,7 +417,7 @@ export default function MapCanvas({
           role="alert"
           className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-card/95 px-6 text-center"
         >
-          <EmptyState tone="danger" title="Map background unavailable" description={locationView ? 'Check your connection and retry. The location is still available below.' : 'Check your connection and retry. You can still use the location list below.'} icon={<CircleAlert />} action={<Button
+          <EmptyState tone="danger" title="Map background unavailable" description={locationView ? 'Check your connection and retry. The location is still available below.' : data.audience === 'public' ? 'Check your connection and retry. You can still browse areas above.' : browse === 'popover' ? 'Check your connection and retry. You can still use Find colony.' : 'Check your connection and retry. You can still use the location list below.'} icon={<CircleAlert />} action={<Button
             size="sm"
             variant="outline"
             onClick={() => setAttempt((previous) => previous + 1)}

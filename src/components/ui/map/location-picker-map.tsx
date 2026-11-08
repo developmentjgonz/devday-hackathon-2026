@@ -42,7 +42,7 @@ export default function LocationPickerMap({ initialCenter, selected, onPick, cen
       map = new MapLibreMap({ container: element, style: 'https://tiles.openfreemap.org/styles/positron', center: initial.current.center, zoom: initial.current.zoom, minZoom: 0, maxZoom: 18, dragRotate: false, touchPitch: false, renderWorldCopies: false, attributionControl: { compact: true } })
       mapRef.current = map
       map.touchZoomRotate.disableRotation()
-      map.getCanvas().setAttribute('aria-label', 'Location map. Choose coordinates using the fields below.')
+      map.getCanvas().setAttribute('aria-label', 'Location map. Choose coordinates in the location details below.')
       map.getCanvas().style.cursor = 'crosshair'
       map.on('click', (event) => {
         if (!latest.current.disabled) {
@@ -78,6 +78,6 @@ export default function LocationPickerMap({ initialCenter, selected, onPick, cen
       <Button type="button" variant="ghost" size="icon" aria-label="Zoom out" onClick={() => mapRef.current?.zoomOut({ duration: 0 })}><Minus aria-hidden="true" /></Button>
     </Card> : null}
     {status === 'loading' ? <div role="status" className="absolute inset-0 flex items-center justify-center gap-3 bg-card/90"><LoadingIndicator decorative /><Text size="small" tone="muted">Loading map…</Text></div> : null}
-    {status === 'error' ? <div className="absolute inset-0 bg-card/95"><EmptyState role="alert" className="h-full" tone="danger" icon={<CircleAlert />} title="Map background unavailable" description="Enter coordinates below or retry the map." action={<Button type="button" variant="outline" size="sm" onClick={() => setAttempt((current) => current + 1)}>Retry map</Button>} /></div> : null}
+    {status === 'error' ? <div className="absolute inset-0 bg-card/95"><EmptyState role="alert" className="h-full" tone="danger" icon={<CircleAlert />} title="Map background unavailable" description="Enter coordinates in the location details or retry the map." action={<Button type="button" variant="outline" size="sm" onClick={() => setAttempt((current) => current + 1)}>Retry map</Button>} /></div> : null}
   </div>
 }

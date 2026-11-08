@@ -1,5 +1,7 @@
 # Mews — Team JS
 
+Licensed under the [MIT License](LICENSE). Third-party code and assets retain their own licenses and notices.
+
 Mews is Team JS's project for the [DevDay Exchange Community Hackathon](https://deepstation.ai/hackathons/vtl7ctbeihnikitvjwl3941h). We have chosen the **Mangrove Mews cat colony tracking challenge**.
 
 The project aims to help cat rescue coordinators and volunteers track colonies, cats, feeding visits, and care needs in one place. The project direction is confirmed; the first user flow and MVP scope still need to be agreed. Mews remains the working name.
@@ -31,6 +33,7 @@ Storybook runs locally and is not deployed. The live database has the current mi
 - [Component library](docs/component-library.md): where components and theme tokens live, and how to extend the gallery.
 - [Map motion](docs/map-motion.md): how map selection handles pointer, keyboard, and reduced-motion input.
 - [Infrastructure](docs/infrastructure.md): dedicated Cloudflare resources, deployment, and health checks.
+- [Public reporting](docs/public-reporting.md): anonymous submissions and team review.
 - [Local accounts](docs/local-accounts.md): seeded users, signup, sessions, and approval checks.
 - [Google sign-in](docs/google-sign-in.md): live identity, Cloudflare secrets, and deployment setup.
 - [Local skills](.agents/skills/README.md): installed guidance and source revisions.
@@ -64,7 +67,7 @@ npm ci
 npm run dev
 ```
 
-The development command applies local migrations, adds missing fictional seed records, and starts the frontend and API. Open [the landing page](http://127.0.0.1:5197/) or [local sign-in](http://127.0.0.1:5197/sign-in). Select Alex Morgan (`admin@mews.test`) for administrator access. Saved accounts, colonies, cats, reports, tasks, and public content persist in local D1. Report attachments persist in local R2 emulation. Re-running the seed does not replace saved records.
+The development command applies local migrations, adds missing fictional seed records, and starts the frontend and API. A fresh local database includes 25 colonies and 200 cats with generated portraits. Open [the landing page](http://127.0.0.1:5197/) or [local sign-in](http://127.0.0.1:5197/sign-in). Select Alex Morgan (`admin@mews.test`) for administrator access. Saved accounts, colonies, cats, reports, tasks, and public content persist in local D1. Report attachments persist in local R2 emulation. Re-running the seed does not replace saved records.
 
 Start the component workspace separately:
 
@@ -89,7 +92,7 @@ The frontend uses React, TypeScript, Vite, React Router in Data Mode, Tailwind C
 
 The local backend uses Hono and TypeScript on Cloudflare Workers, with D1 for application records and private R2 storage for report attachments. Shared Zod schemas validate inputs. Routes handle HTTP, middleware checks access, services own account operations, and `worker/db/` owns SQL. Builds check the backend with strict TypeScript settings. See the [backend decision](docs/decisions/0004-hono-typescript-backend.md).
 
-Administrators can save phone, email, and OpenAI configuration. Channel connections, AI analysis, and public reporting are not active. See [administrator configuration](docs/configuration.md) for key storage and setup.
+Administrators can enable an AI report chat, download its QR code, and choose whether to show phone and email contact details on the public report form. The standard form remains available separately. Calls, texts, and emails go directly to those contacts and do not enter Mews. Team members can request AI suggestions while reviewing reports. Anonymous reports submitted through the chat or form enter the team inbox for review. See [administrator configuration](docs/configuration.md) for setup and key storage.
 
 React Doctor is installed as a development dependency for manual checks only:
 

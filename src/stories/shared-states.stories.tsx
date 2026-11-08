@@ -86,6 +86,7 @@ export const Links: Story = {
   render: () => <MemoryRouter><div className="grid max-w-xl gap-6 p-2">
     <Brand to="/" />
     <TextLink href="#destination">About Mews</TextLink><TextLink size="sm" href="#destination">Care details</TextLink>
+    <TextLink variant="underlined" size="sm" href="#destination">View report</TextLink>
     <TextLink href="#destination" aria-current="page">Current page</TextLink>
     <TextLink variant="navigation" href="#destination">Other page</TextLink><TextLink variant="navigation" href="#destination" aria-current="page">Current workspace page</TextLink>
     <TextLink variant="skip" href="#destination">Skip to content</TextLink>
@@ -98,5 +99,5 @@ export const Links: Story = {
 
 export const OfflineMap: Story = {
   render: () => <ColonyMap data={publicMapData} mapStyleUrl={`data:application/json,${encodeURIComponent(JSON.stringify({ version: 8, sources: {}, layers: [] }))}`} />,
-  parameters: { docs: { description: { story: 'Fictional locations and an empty local map style avoid external tile requests. The production location buttons, map zoom controls, and selection feedback remain active.' } } },
+  parameters: { docs: { description: { story: 'Fictional locations and an empty local map style avoid external tile requests. Browse areas, map zoom controls, and the selected area summary remain active.' } } },
 }

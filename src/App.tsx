@@ -10,6 +10,18 @@ export default function App() {
   const previousPath = useRef(pathname)
 
   useEffect(() => {
+    const publicPage = ['/', '/community', '/report', '/privacy', '/terms'].includes(pathname)
+    const updateChrome = () => {
+      const color = getComputedStyle(document.documentElement).getPropertyValue(publicPage ? '--brand-background' : '--background').trim()
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color)
+    }
+    updateChrome()
+    const observer = new MutationObserver(updateChrome)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => observer.disconnect()
+  }, [pathname])
+
+  useEffect(() => {
     if (previousPath.current !== pathname) {
       document.getElementById('main-content')?.focus({ preventScroll: true })
       previousPath.current = pathname

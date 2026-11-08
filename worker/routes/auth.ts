@@ -1,16 +1,18 @@
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { localSignInSchema, profileSchema, signUpSchema } from '../../shared/schemas/auth.ts'
+import { demoAdminSignInSchema, localSignInSchema, profileSchema, signUpSchema } from '../../shared/schemas/auth.ts'
 import type { SignInOptions } from '../../shared/types/auth.ts'
 import type { AppEnv } from '../types.ts'
-import { findUserByEmail, listLocalUsers } from '../db/accounts.ts'
+import { findDemoAdministrator, findDemoUser, findUserByEmail, listDemoUsers, listLocalUsers } from '../db/accounts.ts'
+import { demoAccessEnabled } from '../db/demo-access.ts'
 import { getUserPhoto, saveProfile } from '../db/user-profile.ts'
 import { localSignInEnabled, requireActiveUser, requireLocalSignIn, requireSameOrigin } from '../middleware/auth.ts'
 import { limitFormBody, limitProfileBody, requireJson, validateJson } from '../middleware/validation.ts'
 import { signInLocalUser, signUpLocalUser } from '../services/accounts.ts'
-import { createSession, endSession, getSessionUser } from '../services/session.ts'
+import { createDemoSession, createSession, endSession, getSessionUser } from '../services/session.ts'
 import { signInGoogleUser } from '../db/google-identities.ts'
 import { clearGoogleCookie, googleConfig, startGoogleSignIn, verifyGoogleCallback } from '../services/google-auth.ts'
+import { demoAdminCodeConfigured, verifyDemoAdminCode } from '../services/demo-admin-code.ts'
 
 export const authRoutes = new Hono<AppEnv>()
 
@@ -42,7 +44,8 @@ authRoutes.get('/photos/:id', requireActiveUser, async (c) => {
 
 authRoutes.get('/options', async (c) => {
   const enabled = localSignInEnabled(c.req.raw, c.env)
-  const options: SignInOptions = { localSignInEnabled: enabled, googleSignInEnabled: Boolean(googleConfig(c.env)), users: enabled ? await listLocalUsers(c.env.DB) : [] }
+  const demo = new URL(c.req.url).protocol === 'https:' && await demoAccessEnabled(c.env.DB)
+  const options: SignInOptions = { localSignInEnabled: enabled, demoSignInEnabled: demo, demoAdminSignInEnabled: demo && demoAdminCodeConfigured(c.env.DEMO_ADMIN_CODE) && Boolean(c.env.DEMO_ADMIN_RATE_LIMITER), googleSignInEnabled: Boolean(googleConfig(c.env)), users: enabled ? await listLocalUsers(c.env.DB) : demo ? await listDemoUsers(c.env.DB) : [] }
   return c.json(options)
 })
 
@@ -64,7 +67,9 @@ authRoutes.get('/google/callback', async (c) => {
     const identity = await verifyGoogleCallback(c.req.raw, config)
     const user = await signInGoogleUser(c.env.DB, identity, config.adminEmail)
     c.header('Set-Cookie', await createSession(c.req.raw, c.env.DB, user.id), { append: true })
-    return c.redirect(user.status === 'active' ? '/app' : '/account-status', 302)
+    const destination = identity.returnTo
+    const next = user.status === 'active' ? destination : destination === '/app' ? '/account-status' : `/account-status?returnTo=${encodeURIComponent(destination)}`
+    return c.redirect(next, 302)
   } catch {
     return c.redirect('/sign-in?google=error', 302)
   }
@@ -82,6 +87,26 @@ authRoutes.post('/local/sign-up', requireSameOrigin, requireJson, limitFormBody,
   const user = await signUpLocalUser(c.env.DB, c.req.valid('json'))
   c.header('Set-Cookie', await createSession(c.req.raw, c.env.DB, user.id))
   return c.json({ user }, 201)
+})
+
+authRoutes.post('/demo/sign-in', requireSameOrigin, requireJson, limitFormBody, validateJson(localSignInSchema), async (c) => {
+  if (new URL(c.req.url).protocol !== 'https:' || !await demoAccessEnabled(c.env.DB)) throw new HTTPException(404, { message: 'Not found' })
+  const user = await findDemoUser(c.env.DB, c.req.valid('json').userId)
+  if (!user) throw new HTTPException(404, { message: 'Demo account was not found.' })
+  c.header('Set-Cookie', await createDemoSession(c.req.raw, c.env.DB, user.id))
+  return c.json({ user })
+})
+
+authRoutes.post('/demo-admin/sign-in', requireSameOrigin, requireJson, limitFormBody, validateJson(demoAdminSignInSchema), async (c) => {
+  const secret = c.env.DEMO_ADMIN_CODE
+  if (new URL(c.req.url).protocol !== 'https:' || !demoAdminCodeConfigured(secret) || !c.env.DEMO_ADMIN_RATE_LIMITER || !await demoAccessEnabled(c.env.DB)) throw new HTTPException(404, { message: 'Not found' })
+  const { success } = await c.env.DEMO_ADMIN_RATE_LIMITER.limit({ key: 'demo-administrator' })
+  if (!success) throw new HTTPException(429, { message: 'Too many attempts. Try again in a minute.' })
+  if (!await verifyDemoAdminCode(c.req.valid('json').code, secret)) throw new HTTPException(401, { message: 'The administrator code is not valid.' })
+  const user = await findDemoAdministrator(c.env.DB)
+  if (!user) throw new HTTPException(401, { message: 'The administrator code is not valid.' })
+  c.header('Set-Cookie', await createDemoSession(c.req.raw, c.env.DB, user.id, 'demo-admin'))
+  return c.json({ user })
 })
 
 authRoutes.post('/sign-out', requireSameOrigin, async (c) => {

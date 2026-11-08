@@ -55,6 +55,19 @@ export function storyActivityStore(user: SessionUser, initial: InboxData) {
       cats.set(updated.id, updated)
       return updated
     },
+    async changeCatColony(cat, colonyId) {
+      const current = cats.get(cat.id)
+      if (!current || current.colonyId !== cat.colonyId) throw new Error("The cat's colony changed. Reload and try again.")
+      const updated = await storyDirectoryStore.changeCatColony(current, colonyId)
+      const changes = catChanges(current, updated)
+      if (changes.length) {
+        add([target('cat', current.id)], 'profile', 'Cat profile updated', changes)
+        add([target('colony', current.colonyId)], 'profile', `Cat moved out: ${current.name}`)
+        add([target('colony', updated.colonyId)], 'profile', `Cat moved in: ${updated.name}`)
+      }
+      cats.set(updated.id, updated)
+      return updated
+    },
   }
   return {
     directory,
@@ -64,6 +77,7 @@ export function storyActivityStore(user: SessionUser, initial: InboxData) {
       const changes = before ? [
         ...changed('Title', before.title, task.title), ...changed('Assignee', before.owner, task.owner),
         ...changed('Due date', before.due, task.due), ...changed('Status', before.status === 'open' ? 'Open' : 'Completed', task.status === 'open' ? 'Open' : 'Completed'),
+        ...(task.status === 'completed' && before.status !== task.status && task.completionNote ? [{ field: 'Completion note', before: '', after: task.completionNote }] : []),
         ...changed('Related items', describe(before), describe(task)),
       ] : []
       if (before && !changes.length) return

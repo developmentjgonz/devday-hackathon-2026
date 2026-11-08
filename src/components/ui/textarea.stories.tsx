@@ -22,3 +22,4 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {}
 export const Disabled: Story = { args: { disabled: true } }
 export const EnteredValue: Story = { args: { defaultValue: 'Food and fresh water are available.' } }
+export const Composer: Story = { args: { variant: 'composer', placeholder: 'Write a message…', rows: 1 }, parameters: { docs: { description: { story: 'The composer variant fits inside the shared chat composer, with its surface and actions supplied by that component.' } } } }

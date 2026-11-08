@@ -4,6 +4,8 @@ import { createMemoryRouter, Link, Outlet, RouterProvider } from 'react-router'
 import { NavigationPending } from '@/components/layout/navigation-pending'
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
+import { RouteLoadingPage } from '@/pages/route-loading-page'
+import { PawLoadingStage } from './stageshow/paw-loading'
 import { waitForStoryRequest } from './fixtures/controlled-request'
 
 function ExamplePage({ title }: { title: string }) {
@@ -39,3 +41,11 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 export const RouteTransitions: Story = {}
+export const RouteFallback: Story = {
+  render: () => <RouteLoadingPage />,
+  parameters: { docs: { description: { story: 'The centered paw shown while the app opens.' } } },
+}
+export const PawInWindow: Story = {
+  render: () => <PawLoadingStage />,
+  parameters: { docs: { description: { story: 'A Stageshow view of the opening paw inside a browser window.' } } },
+}

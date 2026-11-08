@@ -162,9 +162,10 @@ test('tabs keep a selected underline; hover is not selection', async ({ page }, 
 test('disclosure separates hover, keyboard focus, and open state', async ({ page }, info) => {
   await openStateStory(page, 'selection', info.project.name === 'dark')
   const summary = page.locator('summary')
-  const idle = await appearance(summary)
+  const label = summary.locator('[data-slot="text"]')
+  const idle = await appearance(label)
   await summary.hover()
-  await expect.poll(() => appearance(summary)).not.toEqual(idle)
+  await expect.poll(() => appearance(label)).not.toEqual(idle)
   await leavePointer(page)
   await expectFocusRing(page, summary)
   await page.keyboard.press('Enter')
@@ -175,7 +176,7 @@ test('disclosure separates hover, keyboard focus, and open state', async ({ page
 
 test('links, rendered card, text, brand, and skip link retain visible keyboard focus', async ({ page }, info) => {
   await openStateStory(page, 'links', info.project.name === 'dark')
-  for (const name of ['Mews home', 'About Mews', 'Care details', 'Current page', 'Other page', 'Current workspace page', 'Skip to content', 'Open colony card', 'Care text link']) {
+  for (const name of ['Mews home', 'About Mews', 'Care details', 'View report', 'Current page', 'Other page', 'Current workspace page', 'Skip to content', 'Open colony card', 'Care text link']) {
     const link = page.getByRole('link', { name, exact: true })
     await expectFocusRing(page, link)
     if (name === 'Skip to content') {

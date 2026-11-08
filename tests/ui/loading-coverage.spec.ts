@@ -25,7 +25,7 @@ test('new report submission shows loading until the report is saved', async ({ p
   await expect(submit.locator('[data-slot="loading-indicator"]')).toBeVisible()
   await expect(drawer.getByRole('button', { name: 'Cancel' })).toBeDisabled()
   await page.evaluate(() => window.dispatchEvent(new Event('storybook:release-report-write')))
-  await expect(page.getByRole('dialog', { name: 'Fresh water delivered' })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Report', exact: true })).toBeVisible()
 })
 
 test('the Team list shows the shared loader while the first request waits', async ({ page }) => {

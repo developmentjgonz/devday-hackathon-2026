@@ -4,13 +4,17 @@ import { AppLayout } from '@/components/layout/app-layout'
 import { SiteLayout } from '@/components/layout/site-layout'
 import { AccountLayout } from '@/components/layout/account-layout'
 import { LandingPage } from '@/features/landing/pages/landing-page'
-import { AboutPage } from '@/features/about/pages/about-page'
 import { PrivacyPage, TermsPage } from '@/features/legal/pages/legal-page'
 import { CommunityPage } from '@/features/community/pages/community-page'
+import { CommunityAdminPage } from '@/features/community/pages/community-admin-page'
+import { PublicReportPage } from '@/features/public-reports/pages/public-report-page'
 import { OverviewPage } from '@/features/overview/pages/overview-page'
 import { InboxPage } from '@/features/inbox/pages/inbox-page'
 import { MyTasksPage } from '@/features/tasks/pages/my-tasks-page'
+import { TeamTasksPage } from '@/features/tasks/pages/team-tasks-page'
+import { TaskPage } from '@/features/tasks/pages/task-page'
 import { ColoniesPage } from '@/features/colonies/pages/colonies-page'
+import { ColonyBubblesPage } from '@/features/colonies/pages/colony-bubbles-page'
 import { ColonyPage } from '@/features/colonies/pages/colony-page'
 import { CatsPage } from '@/features/cats/pages/cats-page'
 import { CatPage } from '@/features/cats/pages/cat-page'
@@ -38,8 +42,9 @@ export const router = createBrowserRouter([
         Component: SiteLayout,
         children: [
           { index: true, Component: LandingPage },
-          { path: 'about', Component: AboutPage },
           { path: 'community', Component: CommunityPage },
+          { path: 'report', Component: PublicReportPage },
+          { path: 'report/chat', element: <PublicReportPage preferChat /> },
           { path: 'privacy', Component: PrivacyPage },
           { path: 'terms', Component: TermsPage },
           { path: '*', Component: NotFoundPage },
@@ -60,16 +65,22 @@ export const router = createBrowserRouter([
         Component: AppLayout,
         children: [
           { index: true, Component: OverviewPage, handle: { breadcrumb: 'Overview' } },
+          { path: 'community', Component: CommunityAdminPage, handle: { breadcrumb: 'Community board' } },
           { path: 'colonies', handle: { breadcrumb: 'Colonies' }, children: [
             { index: true, Component: ColoniesPage },
+            { path: 'bubbles', Component: ColonyBubblesPage, handle: { breadcrumb: 'Colony bubbles' } },
             { path: ':colonyId', Component: ColonyPage, handle: { breadcrumb: (params: Params, data: InboxData) => data.colonies.find((colony) => colony.id === params.colonyId)?.name ?? 'Colony not found' } },
           ] },
           { path: 'cats', handle: { breadcrumb: 'Cats' }, children: [
             { index: true, Component: CatsPage },
             { path: ':catId', Component: CatPage, handle: { breadcrumb: (params: Params, data: InboxData) => data.cats.find((cat) => cat.id === params.catId)?.name ?? 'Cat not found' } },
           ] },
-          { path: 'tasks', Component: MyTasksPage, handle: { breadcrumb: 'My Tasks' } },
-          { path: 'reports', Component: InboxPage, handle: { breadcrumb: 'Reports' } },
+          { path: 'tasks', handle: { breadcrumb: 'My Tasks' }, children: [
+            { index: true, Component: MyTasksPage },
+            { path: ':taskId', Component: TaskPage, handle: { breadcrumb: 'Task' } },
+          ] },
+          { path: 'reports/:reportId?', Component: InboxPage, handle: { breadcrumb: 'Reports' } },
+          { path: 'team-tasks', Component: TeamTasksPage, handle: { breadcrumb: 'Team Tasks' } },
           { path: 'team', Component: UsersPage, handle: { breadcrumb: 'Team' } },
           { path: 'configuration/:section?', Component: ConfigurationPage, handle: { breadcrumb: 'Configuration' } },
           { path: 'profile', Component: ProfilePage, handle: { breadcrumb: 'Profile' } },

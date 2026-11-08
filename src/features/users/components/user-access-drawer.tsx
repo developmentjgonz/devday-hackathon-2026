@@ -1,7 +1,9 @@
 import { Alert } from '@/components/ui/alert'
+import { DiscardOnNavigation } from '@/components/layout/discard-on-navigation'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { DialogTitle } from '@/components/ui/dialog'
+import { DiscardChangesDialog, useDiscardConfirmation } from '@/components/ui/discard-changes-dialog'
 import { Drawer, DrawerBody, DrawerContent, DrawerFooter, DrawerHeader } from '@/components/ui/drawer'
 import { Label } from '@/components/ui/label'
 import { SelectField } from '@/components/ui/select-field'
@@ -10,15 +12,17 @@ import { UserAvatar } from '@/components/ui/user-avatar'
 import type { AccountStatus, ManagedUser, UserRole } from '../../../../shared/types/auth'
 import { formatJoined, roleLabel, statusLabel } from '../user-display'
 
-export function UserAccessDrawer({ user, currentUserId, role, status, busy, error, onRoleChange, onStatusChange, onClose, onSave, onRefresh, finalFocus }: {
+export function UserAccessDrawer({ user, currentUserId, role, status, canBeAssignedTasks, busy, error, onRoleChange, onStatusChange, onCanBeAssignedTasksChange, onClose, onSave, onRefresh, finalFocus }: {
   user: ManagedUser | null
   currentUserId: string
   role: UserRole
   status: Exclude<AccountStatus, 'pending'>
+  canBeAssignedTasks: boolean
   busy: boolean
   error: string
   onRoleChange: (role: UserRole) => void
   onStatusChange: (status: Exclude<AccountStatus, 'pending'>) => void
+  onCanBeAssignedTasksChange: (enabled: boolean) => void
   onClose: () => void
   onSave: () => void
   onRefresh: () => void
@@ -26,8 +30,11 @@ export function UserAccessDrawer({ user, currentUserId, role, status, busy, erro
 }) {
   const pending = user?.status === 'pending'
   const ownAccount = user?.id === currentUserId
-  const changed = user && (pending || role !== user.role || status !== user.status)
-  return <Drawer open={Boolean(user)} onOpenChange={(open) => { if (!open && !busy) onClose() }}>
+  const changed = user && (pending || role !== user.role || status !== user.status || canBeAssignedTasks !== user.canBeAssignedTasks)
+  const hasChanges = Boolean(user && ((!pending && (role !== user.role || status !== user.status)) || canBeAssignedTasks !== user.canBeAssignedTasks))
+  const discard = useDiscardConfirmation(hasChanges)
+  function close() { discard.requestDiscard(onClose) }
+  return <Drawer open={Boolean(user)} onOpenChange={(open, event) => { if (!open) { if (busy || hasChanges) event.cancel(); if (!busy) close() } }}>
     <DrawerContent closeLabel="Close account details" closeDisabled={busy} finalFocus={finalFocus}>
       <DrawerHeader>
         <DialogTitle>{pending ? 'Review access request' : 'Account details'}</DialogTitle>
@@ -71,13 +78,24 @@ export function UserAccessDrawer({ user, currentUserId, role, status, busy, erro
               <Text size="caption" tone="muted">{status === 'suspended' ? 'This person cannot enter the workspace while access is suspended.' : 'This person can enter the workspace.'}</Text>
             </div>
           </section>}
-          {error ? <div className="space-y-3"><Alert>{error}</Alert><Button variant="outline" size="sm" onClick={onRefresh}>Refresh team list</Button></div> : null}
+          <section className="space-y-3" aria-labelledby="task-assignments-heading">
+            <Heading id="task-assignments-heading" level={3} size="compact">Task assignments</Heading>
+            <div className="space-y-2"><Label htmlFor="user-task-assignments">Available for tasks</Label>
+              <SelectField id="user-task-assignments" value={canBeAssignedTasks ? 'enabled' : 'disabled'} disabled={busy} onChange={(event) => onCanBeAssignedTasksChange(event.target.value === 'enabled')}>
+                <option value="enabled">Enabled</option><option value="disabled">Disabled</option>
+              </SelectField>
+              <Text size="caption" tone="muted">Active accounts with this setting enabled appear in task assignment lists. Existing tasks and care schedules stay assigned.</Text>
+            </div>
+          </section>
+          {error ? <div className="space-y-3"><Alert>{error}</Alert><Button variant="outline" size="sm" onClick={() => discard.requestDiscard(onRefresh)}>Refresh team list</Button></div> : null}
         </DrawerBody>
         <DrawerFooter>
-          {!ownAccount ? <Button loading={busy} disabled={!changed} onClick={onSave}>{pending ? 'Approve access' : 'Save changes'}</Button> : null}
-          <Button variant="outline" disabled={busy} onClick={onClose}>{ownAccount ? 'Close' : 'Cancel'}</Button>
+          <Button variant="outline" disabled={busy} onClick={close}>{ownAccount ? 'Close' : 'Cancel'}</Button>
+          <Button loading={busy} disabled={!changed} onClick={onSave}>{pending ? 'Approve access' : 'Save changes'}</Button>
         </DrawerFooter>
       </> : null}
+      <DiscardChangesDialog {...discard.dialogProps} />
+      {hasChanges && !busy ? <DiscardOnNavigation onDiscard={onClose} /> : null}
     </DrawerContent>
   </Drawer>
 }

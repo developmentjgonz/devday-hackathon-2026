@@ -12,7 +12,7 @@ export function OverviewPage() {
   return <>
     <title>Overview · Mews</title>
     <div className="space-y-6">
-      <WorkspaceSummary summary={summary} />
+      <WorkspaceSummary summary={summary} canViewTeamTasks={user.role === 'administrator'} />
       <TeamWins tasks={summary.recentlyCompleted} />
     </div>
   </>

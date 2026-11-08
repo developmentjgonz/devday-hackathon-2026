@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 for (const width of [320, 390, 1024]) {
-  test(`task dialog scrolls its body with fixed header and actions at ${width}px`, async ({ page }, info) => {
+  test(`task drawer scrolls its body with fixed header and actions at ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 600 })
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/iframe.html?id=pages-my-tasks--focused-tasks&viewMode=story')
@@ -9,11 +9,11 @@ for (const width of [320, 390, 1024]) {
     const trigger = page.getByRole('region', { name: 'Task controls', exact: true }).getByRole('button', { name: 'New task', exact: true })
     await trigger.click()
     const dialog = page.getByRole('dialog', { name: 'New task', exact: true })
-    const body = dialog.locator('[data-slot="dialog-body"]')
+    const body = dialog.locator('[data-slot="drawer-body"]')
     await expect(dialog).toHaveCSS('overflow-y', 'hidden')
     await expect(dialog.getByRole('button', { name: 'Create task', exact: true })).toBeInViewport()
-    const header = dialog.locator('[data-slot="dialog-header"]')
-    const footer = dialog.locator('[data-slot="dialog-footer"]')
+    const header = dialog.locator('[data-slot="drawer-header"]')
+    const footer = dialog.locator('[data-slot="drawer-footer"]')
     const before = { header: await header.boundingBox(), footer: await footer.boundingBox() }
     expect(await body.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true)
     await body.evaluate((element) => { element.scrollTop = element.scrollHeight })

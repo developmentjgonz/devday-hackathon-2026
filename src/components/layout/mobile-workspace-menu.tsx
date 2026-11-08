@@ -64,7 +64,7 @@ export function MobileWorkspaceMenu({ user }: { user: SessionUser }) {
         <DrawerBody className="space-y-0 px-0 py-4">
           <WorkspaceNavigation showTeam={user.role === 'administrator'} onNavigate={closeForNavigation} />
         </DrawerBody>
-        <DrawerFooter className="gap-2 px-4">
+        <DrawerFooter layout="stack" className="gap-2 px-4">
           <div className="flex min-w-0 items-center gap-3 px-3 py-2">
             <UserAvatar name={user.name} src={user.avatarUrl} size="sm" />
             <div className="min-w-0">

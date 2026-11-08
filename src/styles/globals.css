@@ -33,6 +33,8 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-surface: var(--destructive-surface);
+  --color-destructive-surface-hover: var(--destructive-surface-hover);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -77,6 +79,7 @@
   }
   html {
     @apply font-sans;
+    -webkit-text-size-adjust: 100%;
   }
 }
 @layer base {
@@ -102,6 +105,11 @@
   a,
   [role='button'] {
     touch-action: manipulation;
+  }
+  button,
+  [role='button'] {
+    -webkit-user-select: none;
+    user-select: none;
   }
   button,
   a,

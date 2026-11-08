@@ -9,6 +9,9 @@ const migration = readFileSync(new URL('../../migrations/0001_accounts.sql', imp
 const directoryMigration = readFileSync(new URL('../../migrations/0002_colonies_and_cats.sql', import.meta.url), 'utf8');
 const profilesMigration = readFileSync(new URL('../../migrations/0003_cat_profiles.sql', import.meta.url), 'utf8');
 const userPhotosMigration = readFileSync(new URL('../../migrations/0012_user_photos.sql', import.meta.url), 'utf8');
+const demoMigration = readFileSync(new URL('../../migrations/0018_demo_access.sql', import.meta.url), 'utf8');
+const sessionMethodMigration = readFileSync(new URL('../../migrations/0019_session_auth_method.sql', import.meta.url), 'utf8');
+const taskAssignmentMigration = readFileSync(new URL('../../migrations/0023_task_assignment_availability.sql', import.meta.url), 'utf8');
 const seeds = readFileSync(new URL('../../seeds/local.sql', import.meta.url), 'utf8');
 
 function fixture(t, overrides = {}) {
@@ -18,6 +21,9 @@ function fixture(t, overrides = {}) {
   sqlite.exec(directoryMigration);
   sqlite.exec(profilesMigration);
   sqlite.exec(userPhotosMigration);
+  sqlite.exec(demoMigration);
+  sqlite.exec(sessionMethodMigration);
+  sqlite.exec(taskAssignmentMigration);
   sqlite.exec(seeds);
   t.after(() => sqlite.close());
   // Run the actual SQL through SQLite with the D1 statement interface.
@@ -96,7 +102,7 @@ test('local options list fictional accounts and send no cacheable response', asy
 
 test('local sign-in and signup are unavailable without the explicit flag', async (t) => {
   const { request } = fixture(t, { LOCAL_TEST_SIGN_IN: undefined });
-  assert.deepEqual(await (await request('/api/auth/options')).json(), { localSignInEnabled: false, googleSignInEnabled: false, users: [] });
+  assert.deepEqual(await (await request('/api/auth/options')).json(), { localSignInEnabled: false, demoSignInEnabled: false, demoAdminSignInEnabled: false, googleSignInEnabled: false, users: [] });
   for (const path of ['/api/auth/local/sign-in', '/api/auth/local/sign-up']) {
     assert.equal((await request(path, { method: 'POST', body: { userId: 'local-admin' } })).status, 404);
   }
@@ -106,7 +112,7 @@ test('a public hostname cannot enable local sign-in, even with the flag', async 
   const { request } = fixture(t);
   for (const base of ['https://mews.example', 'http://mews.example', 'https://localhost']) {
     const options = await request('/api/auth/options', { base });
-    assert.deepEqual(await options.json(), { localSignInEnabled: false, googleSignInEnabled: false, users: [] });
+    assert.deepEqual(await options.json(), { localSignInEnabled: false, demoSignInEnabled: false, demoAdminSignInEnabled: false, googleSignInEnabled: false, users: [] });
     for (const path of ['/api/auth/local/sign-in', '/api/auth/local/sign-up']) {
       assert.equal((await request(path, { base, method: 'POST', body: { userId: 'local-admin' } })).status, 404);
     }
@@ -373,7 +379,7 @@ test('members can update their own profile and photo across sessions', async (t)
   assert.equal((await request(updated.avatarUrl)).status, 401);
   const users = (await (await request('/api/users', { cookie: admin })).json()).users;
   assert.equal(users.find((user) => user.id === 'local-member').avatarUrl, updated.avatarUrl);
-  const access = await request('/api/users/local-member/access', { method: 'POST', cookie: admin, body: { role: 'member', status: 'active', expectedRole: 'member', expectedStatus: 'active' } });
+  const access = await request('/api/users/local-member/access', { method: 'POST', cookie: admin, body: { role: 'member', status: 'active', canBeAssignedTasks: true, expectedCanBeAssignedTasks: true, expectedRole: 'member', expectedStatus: 'active' } });
   assert.equal((await access.json()).user.avatarUrl, updated.avatarUrl);
   assert.equal(sqlite.prepare("SELECT name FROM users WHERE id = 'local-admin'").get().name, 'Alex Morgan');
   await request('/api/auth/sign-out', { method: 'POST', cookie: member });

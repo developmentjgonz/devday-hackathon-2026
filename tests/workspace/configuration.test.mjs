@@ -3,11 +3,12 @@ import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { test } from 'node:test';
 import worker from '../../worker/index.ts';
+import { defaultReportChatPrompt } from '../../shared/report-chat-instructions.ts';
 
 function fixture(t) {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec('PRAGMA foreign_keys = ON');
-  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0012_user_photos.sql', '../../migrations/0016_configuration.sql', '../../seeds/local.sql']) {
+  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0012_user_photos.sql', '../../migrations/0016_configuration.sql', '../../migrations/0018_demo_access.sql', '../../migrations/0019_session_auth_method.sql', '../../migrations/0026_communication_channels.sql', '../../migrations/0027_public_report_chat.sql', '../../migrations/0030_report_chat_prompt.sql', '../../seeds/local.sql']) {
     sqlite.exec(readFileSync(new URL(file, import.meta.url), 'utf8'));
   }
   t.after(() => sqlite.close());
@@ -59,18 +60,34 @@ test('configuration is restricted to active administrators and same-origin write
   }
 });
 
-test('phone and email save without claiming either channel is connected', async (t) => {
+test('contact options are private until enabled and can be disabled without losing details', async (t) => {
   const { request, signIn } = fixture(t);
   const admin = await signIn('local-admin');
   const update = (body) => request('/api/configuration/channels', { method: 'POST', cookie: admin, body });
-  assert.equal((await update({ inboundPhone: '  +1 (305) 555-0123  ', inboundEmail: '  REPORTS@EXAMPLE.TEST ' })).status, 200);
+  const contact = async () => (await request('/api/public-reports/contact')).json();
+  const details = { inboundPhone: '  +1 (305) 555-0123  ', inboundEmail: '  REPORTS@EXAMPLE.TEST ', reportChatEnabled: false };
+  assert.deepEqual(await contact(), { phone: null, email: null, chatAvailable: false });
+  assert.equal((await update({ ...details, phoneEnabled: false, emailEnabled: false })).status, 200);
   const config = await (await request('/api/configuration', { cookie: admin })).json();
   assert.equal(config.inboundPhone, '+1 (305) 555-0123');
   assert.equal(config.inboundEmail, 'reports@example.test');
+  assert.equal(config.phoneEnabled, false);
+  assert.equal(config.emailEnabled, false);
+  assert.deepEqual(await contact(), { phone: null, email: null, chatAvailable: false });
+  assert.equal((await update({ ...details, phoneEnabled: true, emailEnabled: false })).status, 200);
+  assert.deepEqual(await contact(), { phone: '+1 (305) 555-0123', email: null, chatAvailable: false });
+  assert.equal((await update({ ...details, phoneEnabled: false, emailEnabled: true })).status, 200);
+  assert.deepEqual(await contact(), { phone: null, email: 'reports@example.test', chatAvailable: false });
+  assert.equal((await update({ ...details, phoneEnabled: true, emailEnabled: true })).status, 200);
+  assert.deepEqual(await contact(), { phone: '+1 (305) 555-0123', email: 'reports@example.test', chatAvailable: false });
+  assert.equal((await update({ ...details, phoneEnabled: false, emailEnabled: false })).status, 200);
+  assert.deepEqual(await contact(), { phone: null, email: null, chatAvailable: false });
   for (const body of [
-    { inboundPhone: 'letters', inboundEmail: '' },
-    { inboundPhone: '', inboundEmail: 'invalid' },
-    { inboundPhone: '', inboundEmail: '', connected: true },
+    { inboundPhone: 'letters', inboundEmail: '', phoneEnabled: false, emailEnabled: false, reportChatEnabled: false },
+    { inboundPhone: '', inboundEmail: 'invalid', phoneEnabled: false, emailEnabled: false, reportChatEnabled: false },
+    { inboundPhone: '', inboundEmail: '', phoneEnabled: true, emailEnabled: false, reportChatEnabled: false },
+    { inboundPhone: '', inboundEmail: '', phoneEnabled: false, emailEnabled: true, reportChatEnabled: false },
+    { inboundPhone: '', inboundEmail: '', phoneEnabled: false, emailEnabled: false, reportChatEnabled: false, connected: true },
   ]) assert.equal((await update(body)).status, 400);
   assert.equal((await (await request('/api/configuration', { cookie: admin })).json()).inboundEmail, 'reports@example.test');
 });
@@ -98,6 +115,24 @@ test('API keys are encrypted, never returned, replaceable, and removable', async
   assert.equal(readBody.includes(secret), false);
   assert.equal((await (await request('/api/configuration/ai-key/remove', { method: 'POST', cookie: admin })).json()).openaiKeyStatus, 'not-set');
   assert.equal(sqlite.prepare('SELECT openai_key_ciphertext AS ciphertext FROM configuration').get().ciphertext, null);
+});
+
+test('administrators can save and restore report chat instructions without changing the API key', async (t) => {
+  const { request, signIn, sqlite } = fixture(t);
+  const admin = await signIn('local-admin');
+  const update = (body, cookie = admin) => request('/api/configuration/ai', { method: 'POST', cookie, body });
+  assert.equal((await (await request('/api/configuration', { cookie: admin })).json()).reportChatPrompt, defaultReportChatPrompt);
+  const reportChatPrompt = 'Be kind. Thank the person for looking out for the cats. Ask one useful question at a time.\n'.repeat(30).trim();
+  const response = await update({ openaiModel: '', reportChatPrompt });
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).reportChatPrompt, reportChatPrompt);
+  assert.equal(sqlite.prepare('SELECT report_chat_prompt AS prompt FROM configuration').get().prompt, reportChatPrompt);
+  assert.equal((await update({ openaiModel: '', reportChatPrompt: 'Changed' }, await signIn('local-member'))).status, 403);
+  assert.equal((await update({ openaiModel: '', reportChatPrompt: '' })).status, 400);
+  assert.equal((await update({ openaiModel: '', reportChatPrompt: 'x'.repeat(6001) })).status, 400);
+  assert.equal((await update({ openaiModel: '', reportChatPrompt: defaultReportChatPrompt })).status, 200);
+  assert.equal((await (await request('/api/configuration', { cookie: admin })).json()).reportChatPrompt, defaultReportChatPrompt);
+  assert.equal('reportChatPrompt' in await (await request('/api/public-reports/contact')).json(), false);
 });
 
 test('missing or changed encryption keys do not expose or silently replace saved credentials', async (t) => {

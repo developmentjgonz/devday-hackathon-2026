@@ -48,7 +48,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'Production component with fictional Storybook fixtures. Names, counts, and positions are sample data. The optional selection renderer provides links or details for a selected location. Unknown status and an urgent report awaiting review have distinct labels. Live feeds and server authorization are not connected. Public location protection must be applied by the server before this component receives data. A pointer selection pans the visible map with the shared motion tokens; keyboard selection, reduced motion, and an offscreen map use an immediate change. The zoom buttons use the shared icon-group size inside a clipped Card, which provides the outer corners while the adjoining edges stay straight.',
+          'Production component with fictional Storybook fixtures. Names, counts, and positions are sample data. Public areas show a compact activity legend on the map; selecting an area opens its summary on the map. Browse areas provides the same information and keyboard selection. The optional selection renderer provides links or details for a selected location. Unknown status and an urgent report awaiting review have distinct labels. Live feeds and server authorization are not connected. Public location protection must be applied by the server before this component receives data. A pointer selection pans the visible map with the shared motion tokens; keyboard selection, reduced motion, and an offscreen map use an immediate change. The zoom buttons use the shared icon-group size inside a clipped Card, which provides the outer corners while the adjoining edges stay straight.',
       },
     },
   },
@@ -60,6 +60,7 @@ const meta = {
   argTypes: {
     data: { control: false },
     state: { control: 'select', options: ['ready', 'loading', 'error'] },
+    height: { control: 'select', options: ['default', 'fill'], description: 'For saved locations, fill available height on large screens.' },
   },
 } satisfies Meta<typeof ColonyMap>
 export default meta
@@ -79,6 +80,10 @@ export const TeamColonies: Story = {
   name: 'Team colonies',
   args: { data: teamMapData },
 }
+export const TeamColoniesWithPicker: Story = {
+  args: { data: teamMapData, browse: 'popover', unmappedColonies: [{ id: 'unmapped', name: 'Garden', catCount: 2 }] },
+  parameters: { docs: { description: { story: 'The compact picker replaces the list below the map. onSelectColony receives selections from map markers and the picker; unmapped entries can be chosen there too.' } } },
+}
 export const SavedLocation: Story = {
   name: 'Saved colony location',
   args: {
@@ -88,6 +93,12 @@ export const SavedLocation: Story = {
     initialView: { center: [-80.249, 25.812], zoom: 14 },
   },
   parameters: { docs: { description: { story: 'A compact map for one saved location. The surrounding page supplies the location text and edit action.' } } },
+}
+export const SavedLocationFill: Story = {
+  name: 'Saved location · Fill height',
+  args: { ...SavedLocation.args, height: 'fill' },
+  render: (args) => <div className="flex h-[32rem] flex-col"><ColonyMap {...args} /></div>,
+  parameters: { docs: { description: { story: 'The saved location fills a flexible parent on large screens and stays compact on smaller screens.' } } },
 }
 export const Loading: Story = { args: { state: 'loading' } }
 export const Empty: Story = {

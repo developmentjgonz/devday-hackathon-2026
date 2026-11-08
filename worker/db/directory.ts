@@ -4,11 +4,11 @@ import type { SessionUser } from '../../shared/types/auth.ts'
 import { activityStatement } from './record-activity.ts'
 
 type ColonyRow = { id: string; name: string; photoUrl: string | null; longitude: number | null; latitude: number | null; address: string | null; googlePlaceId: string | null }
-type CatRow = { id: string; name: string; colonyId: string; photoUrl: string | null; birthDate: string | null; birthDateEstimated: number; description: string; photoRevision: string | null }
+type CatRow = { id: string; name: string; colonyId: string | null; photoUrl: string | null; birthDate: string | null; birthDateEstimated: number; description: string; photoRevision: string | null }
 
 function catFromRow(row: CatRow): Cat {
   const { photoRevision, photoUrl, birthDate, birthDateEstimated, description, ...cat } = row
-  return { ...cat,
+  return { ...cat, colonyId: cat.colonyId ?? '',
     ...(photoRevision ? { photoUrl: `/api/directory/cats/${encodeURIComponent(cat.id)}/photo?v=${encodeURIComponent(photoRevision)}` } : photoUrl ? { photoUrl } : {}),
     ...(birthDate ? { birthDate, birthDateEstimated: Boolean(birthDateEstimated) } : {}),
     ...(description ? { description } : {}),
@@ -70,8 +70,8 @@ export async function updateColonyLocation(db: D1Database, id: string, actor: Se
 }
 
 export async function saveCat(db: D1Database, input: ValidCatInput, actor: SessionUser, existingId?: string): Promise<Cat | null> {
-  const colony = await db.prepare('SELECT id, name FROM colonies WHERE id = ?').bind(input.colonyId).first<{ id: string; name: string }>()
-  if (!colony) return null
+  const colony = input.colonyId ? await db.prepare('SELECT id, name FROM colonies WHERE id = ?').bind(input.colonyId).first<{ id: string; name: string }>() : null
+  if ((input.colonyId && !colony) || (!input.colonyId && !existingId)) return null
   const id = existingId ?? crypto.randomUUID()
   if (existingId && !await db.prepare('SELECT id FROM cats WHERE id = ?').bind(id).first()) return null
   const operationId = crypto.randomUUID()
@@ -79,7 +79,7 @@ export async function saveCat(db: D1Database, input: ValidCatInput, actor: Sessi
   const statements: D1PreparedStatement[] = []
   if (existingId) {
     const photoMode = input.photo === undefined ? '' : input.photo === null ? 'removed' : 'updated'
-    const fields = `c.name <> i.name OR c.colony_id <> i.colonyId OR COALESCE(c.birth_date, '') <> i.birthDate
+    const fields = `c.name <> i.name OR COALESCE(c.colony_id, '') <> i.colonyId OR COALESCE(c.birth_date, '') <> i.birthDate
       OR c.birth_date_estimated <> i.estimated OR c.description <> i.description OR i.photoMode = 'updated'
       OR (i.photoMode = 'removed' AND (c.photo_url IS NOT NULL OR EXISTS (SELECT 1 FROM cat_photos p WHERE p.cat_id = c.id)))`
     const inputCte = `WITH i AS (SELECT ? AS catId, ? AS name, ? AS colonyId, ? AS birthDate, ? AS estimated, ? AS description, ? AS photoMode, ? AS operationId, ? AS actorId, ? AS actorName, ? AS occurredAt)`
@@ -88,7 +88,7 @@ export async function saveCat(db: D1Database, input: ValidCatInput, actor: Sessi
       INSERT INTO record_activity (id, operation_id, record_type, record_id, kind, summary, changes_json, actor_id, actor_name, occurred_at)
       SELECT lower(hex(randomblob(16))), i.operationId, 'cat', c.id, 'profile', 'Cat profile updated', json_array(
         CASE WHEN c.name <> i.name THEN json_object('field', 'Name', 'before', c.name, 'after', i.name) END,
-        CASE WHEN c.colony_id <> i.colonyId THEN json_object('field', 'Colony', 'before', COALESCE((SELECT name FROM colonies WHERE id = c.colony_id), c.colony_id), 'after', COALESCE((SELECT name FROM colonies WHERE id = i.colonyId), i.colonyId)) END,
+        CASE WHEN COALESCE(c.colony_id, '') <> i.colonyId THEN json_object('field', 'Colony', 'before', COALESCE((SELECT name FROM colonies WHERE id = c.colony_id), c.colony_id, ''), 'after', COALESCE((SELECT name FROM colonies WHERE id = i.colonyId), i.colonyId)) END,
         CASE WHEN COALESCE(c.birth_date, '') <> i.birthDate THEN json_object('field', 'Birth date', 'before', COALESCE(c.birth_date, ''), 'after', i.birthDate) END,
         CASE WHEN (CASE WHEN c.birth_date IS NULL THEN '' WHEN c.birth_date_estimated THEN 'Estimated' ELSE 'Exact' END) <> (CASE WHEN i.birthDate = '' THEN '' WHEN i.estimated THEN 'Estimated' ELSE 'Exact' END)
           THEN json_object('field', 'Birth date type', 'before', CASE WHEN c.birth_date IS NULL THEN '' WHEN c.birth_date_estimated THEN 'Estimated' ELSE 'Exact' END, 'after', CASE WHEN i.birthDate = '' THEN '' WHEN i.estimated THEN 'Estimated' ELSE 'Exact' END) END,
@@ -99,21 +99,21 @@ export async function saveCat(db: D1Database, input: ValidCatInput, actor: Sessi
     statements.push(db.prepare(`${inputCte}
       INSERT OR IGNORE INTO record_activity (id, operation_id, record_type, record_id, kind, summary, actor_id, actor_name, occurred_at)
       SELECT lower(hex(randomblob(16))), i.operationId, 'colony', c.colony_id, 'profile',
-        CASE WHEN c.colony_id <> i.colonyId THEN 'Cat moved out: ' || c.name ELSE 'Cat profile updated: ' || i.name END,
-        i.actorId, i.actorName, i.occurredAt FROM cats c, i WHERE c.id = i.catId AND (${fields})`).bind(...bind()))
+        CASE WHEN COALESCE(c.colony_id, '') <> i.colonyId THEN 'Cat moved out: ' || c.name ELSE 'Cat profile updated: ' || i.name END,
+        i.actorId, i.actorName, i.occurredAt FROM cats c, i WHERE c.id = i.catId AND c.colony_id IS NOT NULL AND (${fields})`).bind(...bind()))
     statements.push(db.prepare(`${inputCte}
       INSERT OR IGNORE INTO record_activity (id, operation_id, record_type, record_id, kind, summary, actor_id, actor_name, occurred_at)
       SELECT lower(hex(randomblob(16))), i.operationId, 'colony', i.colonyId, 'profile', 'Cat moved in: ' || i.name,
-        i.actorId, i.actorName, i.occurredAt FROM cats c, i WHERE c.id = i.catId AND c.colony_id <> i.colonyId`).bind(...bind()))
+        i.actorId, i.actorName, i.occurredAt FROM cats c, i WHERE c.id = i.catId AND i.colonyId <> '' AND COALESCE(c.colony_id, '') <> i.colonyId`).bind(...bind()))
   }
   statements.push(existingId
-    ? db.prepare('UPDATE cats SET name = ?, colony_id = ?, birth_date = ?, birth_date_estimated = ?, description = ?, photo_url = CASE WHEN ? THEN NULL ELSE photo_url END WHERE id = ?').bind(input.name, input.colonyId, input.birthDate || null, input.birthDate && input.birthDateEstimated ? 1 : 0, input.description, input.photo === null ? 1 : 0, id)
+    ? db.prepare('UPDATE cats SET name = ?, colony_id = ?, birth_date = ?, birth_date_estimated = ?, description = ?, photo_url = CASE WHEN ? THEN NULL ELSE photo_url END WHERE id = ?').bind(input.name, input.colonyId || null, input.birthDate || null, input.birthDate && input.birthDateEstimated ? 1 : 0, input.description, input.photo === null ? 1 : 0, id)
     : db.prepare('INSERT INTO cats (id, name, colony_id, birth_date, birth_date_estimated, description, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(id, input.name, input.colonyId, input.birthDate || null, input.birthDate && input.birthDateEstimated ? 1 : 0, input.description, actor.id))
   if (input.photo) statements.push(db.prepare('INSERT INTO cat_photos (cat_id, mime_type, data, revision) VALUES (?, ?, ?, ?) ON CONFLICT(cat_id) DO UPDATE SET mime_type = excluded.mime_type, data = excluded.data, revision = excluded.revision').bind(id, input.photo.mimeType, input.photo.data, crypto.randomUUID()))
   else if (input.photo === null) statements.push(db.prepare('DELETE FROM cat_photos WHERE cat_id = ?').bind(id))
   if (!existingId) {
     const event = { operationId, actor, kind: 'profile' as const, summary: 'Cat created', changes: [
-      { field: 'Name', before: '', after: input.name }, { field: 'Colony', before: '', after: colony.name },
+      { field: 'Name', before: '', after: input.name }, { field: 'Colony', before: '', after: colony!.name },
       ...(input.birthDate ? [{ field: 'Birth date', before: '', after: input.birthDate }, { field: 'Birth date type', before: '', after: input.birthDateEstimated ? 'Estimated' : 'Exact' }] : []),
       ...(input.description ? [{ field: 'Details', before: '', after: input.description }] : []),
       ...(input.photo ? [{ field: 'Photo', before: '', after: 'New photo' }] : []),
@@ -123,6 +123,36 @@ export async function saveCat(db: D1Database, input: ValidCatInput, actor: Sessi
   await db.batch(statements)
   const row = await db.prepare(`${catSelect} WHERE c.id = ?`).bind(id).first<CatRow>()
   return row ? catFromRow(row) : null
+}
+
+export async function changeCatColony(db: D1Database, id: string, colonyId: string, expectedColonyId: string, actor: SessionUser): Promise<{ status: 'ok'; cat: Cat } | { status: 'missing' | 'conflict' }> {
+  if (colonyId && !await db.prepare('SELECT id FROM colonies WHERE id = ?').bind(colonyId).first()) return { status: 'missing' }
+  if (!await db.prepare('SELECT id FROM cats WHERE id = ?').bind(id).first()) return { status: 'missing' }
+  const operationId = crypto.randomUUID()
+  const occurredAt = new Date().toISOString()
+  const inputCte = `WITH i AS (SELECT ? AS catId, ? AS colonyId, ? AS expectedColonyId, ? AS operationId, ? AS actorId, ? AS actorName, ? AS occurredAt)`
+  const bind = () => [id, colonyId, expectedColonyId, operationId, actor.id, actor.name, occurredAt] as const
+  const changed = `c.id = i.catId AND COALESCE(c.colony_id, '') = i.expectedColonyId AND COALESCE(c.colony_id, '') <> i.colonyId`
+  await db.batch([
+    db.prepare(`${inputCte}
+      INSERT INTO record_activity (id, operation_id, record_type, record_id, kind, summary, changes_json, actor_id, actor_name, occurred_at)
+      SELECT lower(hex(randomblob(16))), i.operationId, 'cat', c.id, 'profile', 'Cat profile updated',
+        json_array(json_object('field', 'Colony', 'before', COALESCE((SELECT name FROM colonies WHERE id = c.colony_id), ''), 'after', COALESCE((SELECT name FROM colonies WHERE id = i.colonyId), ''))),
+        i.actorId, i.actorName, i.occurredAt FROM cats c, i WHERE ${changed}`).bind(...bind()),
+    db.prepare(`${inputCte}
+      INSERT INTO record_activity (id, operation_id, record_type, record_id, kind, summary, actor_id, actor_name, occurred_at)
+      SELECT lower(hex(randomblob(16))), i.operationId, 'colony', c.colony_id, 'profile', 'Cat moved out: ' || c.name,
+        i.actorId, i.actorName, i.occurredAt FROM cats c, i WHERE ${changed} AND c.colony_id IS NOT NULL`).bind(...bind()),
+    db.prepare(`${inputCte}
+      INSERT INTO record_activity (id, operation_id, record_type, record_id, kind, summary, actor_id, actor_name, occurred_at)
+      SELECT lower(hex(randomblob(16))), i.operationId, 'colony', i.colonyId, 'profile', 'Cat moved in: ' || c.name,
+        i.actorId, i.actorName, i.occurredAt FROM cats c, i WHERE ${changed} AND i.colonyId <> ''`).bind(...bind()),
+    db.prepare("UPDATE cats SET colony_id = ? WHERE id = ? AND COALESCE(colony_id, '') = ?").bind(colonyId || null, id, expectedColonyId),
+  ])
+  const row = await db.prepare(`${catSelect} WHERE c.id = ?`).bind(id).first<CatRow>()
+  if (!row) return { status: 'missing' }
+  if ((row.colonyId ?? '') !== colonyId) return { status: 'conflict' }
+  return { status: 'ok', cat: catFromRow(row) }
 }
 
 export async function getCatPhoto(db: D1Database, id: string) {

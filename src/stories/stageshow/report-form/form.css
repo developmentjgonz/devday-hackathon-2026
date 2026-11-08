@@ -1,0 +1,8 @@
+.report-form-preview { width: min(800px, calc(100vw - 32px)); }
+.report-form-stage {
+  .ss-stage { overflow: hidden; background: var(--background); --ss-chrome: var(--card); --ss-line: var(--border); --ss-font: 'Geist Variable', sans-serif; }
+  .report-form-window { position: absolute; top: 28px; left: 40px; width: 720px; height: 820px; }
+  .report-form-phone { position: absolute; top: 16px; left: 16px; }
+  .report-form-scene { display: grid; align-content: start; gap: 16px; padding: 24px; background: var(--background); }
+  .ss-stage[data-layout='compact'] .report-form-scene { padding: 20px 12px; }
+}

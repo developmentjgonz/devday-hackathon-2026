@@ -8,7 +8,7 @@ const meta = {
   args: { title: 'Reports' },
   parameters: {
     layout: 'fullscreen',
-    docs: { description: { component: 'The sticky workspace header holds the single h1 at the left. Parent breadcrumbs are links; the current page has aria-current="page". Pass ancestors through breadcrumbs and page actions through actions. On phones, the workspace shell offsets the header below the sticky menu bar. Labels truncate when space is limited, while actions keep their width. Use route handle.breadcrumb for each workspace page; do not repeat the title or an introductory description in the page body. Drawer and dialog titles remain local to their overlays.' } },
+    docs: { description: { component: 'The sticky workspace header holds the single h1 at the left. Parent breadcrumbs are links; the current page has aria-current="page". Pass ancestors through breadcrumbs and page actions through actions. On phones, mobileStart holds the compact brand link and mobileEnd holds the workspace menu in the same bar as the title. The single sticky header keeps the menu visible while the page scrolls. Labels truncate when space is limited, while actions keep their width. Use route handle.breadcrumb for each workspace page; do not repeat the title or an introductory description in the page body. Drawer and dialog titles remain local to their overlays.' } },
   },
   decorators: [(Story) => <MemoryRouter initialEntries={['/app/reports/report']}><Routes>
     <Route path="/app/reports" element={<WorkspaceHeader title="Reports" />} />

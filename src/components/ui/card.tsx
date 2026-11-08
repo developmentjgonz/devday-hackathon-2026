@@ -10,16 +10,18 @@ function Card({
   padding = 'default',
   tone = 'default',
   interactive = false,
+  focusWithin = false,
   render,
   ...props
-}: useRender.ComponentProps<'div'> & { size?: 'default' | 'sm'; padding?: 'default' | 'none'; tone?: 'default' | 'note' | 'subtle'; interactive?: boolean }) {
+}: useRender.ComponentProps<'div'> & { size?: 'default' | 'sm'; padding?: 'default' | 'none'; tone?: 'default' | 'note' | 'subtle' | 'message'; interactive?: boolean; focusWithin?: boolean | 'subtle' }) {
   return useRender({
     defaultTagName: 'div', render,
     props: { ...mergeProps<'div'>({
       className: cn(
         'group/card flex flex-col overflow-hidden border text-sm leading-6 text-card-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring [--card-spacing:--spacing(6)] data-[size=sm]:[--card-spacing:--spacing(4)]',
-        tone === 'note' ? 'rounded-control border-note-border bg-note shadow-sm' : tone === 'subtle' ? 'rounded-control border-transparent bg-muted/50' : 'rounded-surface border-border bg-card',
+        tone === 'note' ? 'rounded-control border-note-border bg-note shadow-sm' : tone === 'subtle' ? 'rounded-control border-transparent bg-muted/50' : tone === 'message' ? 'rounded-control border-transparent bg-secondary text-secondary-foreground' : 'rounded-surface border-border bg-card',
         interactive && (tone === 'note' ? 'cursor-pointer transition-colors duration-(--duration-fast) hover:bg-note/80' : tone === 'subtle' ? 'cursor-pointer transition-colors duration-(--duration-fast) hover:bg-muted' : 'cursor-pointer transition-colors duration-(--duration-fast) hover:bg-muted/50'),
+        focusWithin === 'subtle' ? 'focus-within:border-foreground/35 focus-within:ring-1 focus-within:ring-foreground/10' : focusWithin && 'focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/40',
         padding === 'none' ? 'gap-0 py-0' : 'gap-(--card-spacing) py-(--card-spacing) has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0', className,
       ),
     }, props), 'data-slot': 'card', 'data-size': size, 'data-tone': tone },
@@ -87,7 +89,7 @@ function CardContent({ className, ...props }: React.ComponentProps<'div'>) {
 }
 
 function CardList({ className, ...props }: React.ComponentProps<'ul'>) {
-  return <ul data-slot="card-list" className={cn('divide-y divide-border', className)} {...props} />
+  return <ul data-slot="card-list" className={cn('divide-y divide-border first:rounded-t-[inherit] last:rounded-b-[inherit] [&>li:first-child]:rounded-t-[inherit] [&>li:last-child]:rounded-b-[inherit]', className)} {...props} />
 }
 
 function CardFooter({ className, ...props }: React.ComponentProps<'div'>) {

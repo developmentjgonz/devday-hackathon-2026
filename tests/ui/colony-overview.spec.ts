@@ -14,7 +14,7 @@ test('overview keeps progress separate from the directory and its result count',
   await expect(page.getByRole('list', { name: 'Colony summary' })).toHaveCount(0)
   await nav.getByRole('link', { name: 'Colonies', exact: true }).click()
   await page.getByRole('searchbox', { name: 'Search colonies' }).fill('Canal')
-  await expect(page.getByText('1 colony found', { exact: true })).toHaveCount(1)
+  await expect(page.getByText('1 colony', { exact: true })).toHaveCount(1)
   await page.getByRole('button', { name: 'Cards', exact: true }).click()
   await expect(page.getByText('1 colony found', { exact: true })).toHaveCount(1)
   await page.getByRole('searchbox', { name: 'Search colonies' }).fill('does-not-exist')

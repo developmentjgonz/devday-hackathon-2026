@@ -31,5 +31,7 @@ export const createCatSchema = z.object({
   description: z.string().trim().max(2000, 'Use 2000 characters or fewer').default(''),
   photo: photoSchema.nullable().optional(),
 })
+export const updateCatSchema = createCatSchema.extend({ colonyId: z.string().trim().max(120) })
+export const catColonySchema = z.object({ colonyId: z.string().trim().max(120), expectedColonyId: z.string().trim().max(120) })
 export type CatInput = z.input<typeof createCatSchema>
 export type ValidCatInput = z.output<typeof createCatSchema>

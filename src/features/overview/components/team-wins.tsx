@@ -19,9 +19,9 @@ export function TeamWins({ tasks }: { tasks: Task[] }) {
     <Card size="sm"><CardContent className="grid gap-6 md:grid-cols-2">
       <div className="space-y-2">
         <Heading id="team-wins" level={2} size="card">Together for the cats</Heading>
-        {total ? <Text size="small">Your team completed {total} {total === 1 ? 'task' : 'tasks'} in the last 30 days. Thank you for caring for the cats.</Text> : <Text size="small">Every task helps your team care for the cats.</Text>}
+        {total ? <Text size="small" className="max-w-prose text-pretty">Your team completed {total} {total === 1 ? 'task' : 'tasks'} in the last 30 days. Thank you for caring for the cats.</Text> : <Text size="small">Every task helps your team care for the cats.</Text>}
       </div>
-      {total ? <div className="space-y-4">
+      {total ? <div className="w-full max-w-md space-y-4">
         <Text size="label" tone="muted">Tasks completed in the last 30 days by assignee</Text>
         <BarChart items={items} label="Tasks completed in the last 30 days by assignee" unit={{ singular: 'task', plural: 'tasks' }} />
       </div> : <EmptyState icon={<PawPrint />} title="No recent completions recorded" description="Tasks completed in the last 30 days will appear here." />}

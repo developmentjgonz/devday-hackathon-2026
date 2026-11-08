@@ -1,6 +1,7 @@
 import { createRemoteJWKSet, jwtVerify, SignJWT } from 'jose'
 import { HTTPException } from 'hono/http-exception'
 import type { Bindings } from '../types.ts'
+import { workspaceReturnTo } from '../../shared/workspace-return-to.ts'
 
 const authorizationEndpoint = 'https://accounts.google.com/o/oauth2/v2/auth'
 const tokenEndpoint = 'https://oauth2.googleapis.com/token'
@@ -43,7 +44,8 @@ export async function startGoogleSignIn(request: Request, config: GoogleConfig) 
   const nonce = randomValue()
   const verifier = randomValue()
   const challenge = base64url(new Uint8Array(await crypto.subtle.digest('SHA-256', encoder.encode(verifier))))
-  const signedState = await new SignJWT({ state, nonce, verifier }).setProtectedHeader({ alg: 'HS256' })
+  const returnTo = workspaceReturnTo(new URL(request.url).searchParams.get('returnTo'))
+  const signedState = await new SignJWT({ state, nonce, verifier, returnTo }).setProtectedHeader({ alg: 'HS256' })
     .setIssuer('mews-google-oauth').setAudience(config.clientId).setIssuedAt().setExpirationTime('10m').sign(await stateKey(config.clientSecret))
   const url = new URL(authorizationEndpoint)
   url.search = new URLSearchParams({ client_id: config.clientId, redirect_uri: config.redirectUri, response_type: 'code', scope: 'openid email profile', state, nonce, code_challenge: challenge, code_challenge_method: 'S256' }).toString()
@@ -84,5 +86,5 @@ export async function verifyGoogleCallback(request: Request, config: GoogleConfi
   const domain = email.slice(email.lastIndexOf('@') + 1)
   const authoritativeEmail = domain === 'gmail.com' || (typeof profile.hd === 'string' && profile.hd.toLowerCase() === domain)
   const name = typeof profile.name === 'string' && profile.name.trim() ? profile.name.trim().slice(0, 120) : email.slice(0, 120)
-  return { subject: profile.sub, email, name, authoritativeEmail }
+  return { subject: profile.sub, email, name, authoritativeEmail, returnTo: workspaceReturnTo(claims.returnTo) }
 }

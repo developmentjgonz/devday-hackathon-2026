@@ -11,9 +11,10 @@ for (const width of [320, 390, 1440]) {
     const review = page.getByRole('button', { name: 'Review requests' })
     const card = page.locator('[data-slot="card"]').filter({ has: heading })
     const controls = page.getByRole('region', { name: 'Team controls' })
-    const table = page.getByRole('table')
+    const table = page.getByRole('region', { name: 'Team accounts', exact: true })
+    const account = (name: string) => width < 768 ? table.getByRole('button', { name: new RegExp(`account: ${name}$`) }) : table.getByRole('row', { name: new RegExp(name) })
     await expect(review).toBeVisible()
-    await expect(page.getByRole('row', { name: /Sam Chen/ })).toBeVisible()
+    await expect(account('Sam Chen')).toBeVisible()
     const before = await Promise.all([card.boundingBox(), controls.boundingBox(), table.boundingBox()])
 
     await review.focus()
@@ -21,8 +22,8 @@ for (const width of [320, 390, 1440]) {
     const viewAll = page.getByRole('button', { name: 'View all accounts' })
     await expect(viewAll).toBeFocused()
     await expect(page.getByLabel('Filter accounts by access')).toHaveValue('pending')
-    await expect(page.getByRole('row', { name: /Jordan Lee/ })).toBeVisible()
-    await expect(page.getByRole('row', { name: /Sam Chen/ })).toHaveCount(0)
+    await expect(account('Jordan Lee')).toBeVisible()
+    await expect(account('Sam Chen')).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Clear filters' })).toHaveCount(0)
     const after = await Promise.all([card.boundingBox(), controls.boundingBox(), table.boundingBox()])
     for (let index = 0; index < before.length; index++) {
@@ -36,7 +37,7 @@ for (const width of [320, 390, 1440]) {
     await page.keyboard.press('Enter')
     await expect(review).toBeFocused()
     await expect(page.getByLabel('Filter accounts by access')).toHaveValue('all')
-    await expect(page.getByRole('row', { name: /Sam Chen/ })).toBeVisible()
+    await expect(account('Sam Chen')).toBeVisible()
   })
 }
 

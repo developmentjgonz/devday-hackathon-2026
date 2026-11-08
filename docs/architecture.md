@@ -2,7 +2,7 @@
 
 The React frontend has separate public and workspace shells. A Cloudflare Worker serves the live app and its API. The live workspace uses Google sign-in and server sessions; local development uses test sign-in. Storybook is the separate local component workspace.
 
-Account, colony, cat, report, task, and published public-content tables and endpoints use D1 locally and in the live app. Report attachments use private R2 storage. Outbound messaging and AI integrations remain open.
+Account, colony, cat, report, task, and published public-content tables and endpoints use D1 locally and in the live app. Report attachments use private R2 storage. Report review can request OpenAI suggestions; outbound messaging remains open.
 
 ## System
 
@@ -13,7 +13,8 @@ The frontend uses Vite, React, TypeScript, React Router in Data Mode, Tailwind C
 | Route | Layout | Current content |
 | --- | --- | --- |
 | `/` | `SiteLayout` | Landing page with a tracker of published, broad area summaries. |
-| `/community` | `SiteLayout` | Published volunteer openings and news from D1. Local seeds are fictional; an editing workflow is not implemented. |
+| `/community` | `SiteLayout` | Published posts grouped into board sections from D1. Local seeds are fictional. |
+| `/app/community` | `AppLayout` | Administrator board manager: add and edit sections and posts, retire posts, and restore retired posts. |
 | `/privacy` | `SiteLayout` | Privacy Policy page shell; policy text is not yet supplied |
 | `/terms` | `SiteLayout` | Terms page shell; terms text is not yet supplied |
 | `/sign-in` | `AccountLayout` | Google sign-in on the live app; test account picker locally |
@@ -21,8 +22,8 @@ The frontend uses Vite, React, TypeScript, React Router in Data Mode, Tailwind C
 | `/account-status` | `AccountLayout` | Pending approval or suspended access |
 | `/app` | `AppLayout` | Personal and team overview from saved records. |
 | `/app/colonies`, `/app/cats` | `AppLayout` | Protected directories and detail pages backed by D1. |
-| `/app/tasks` | `AppLayout` | Saved tasks, including tasks linked to reports. |
-| `/app/reports` | `AppLayout` | Saved reports, review state, questions, duplicates, and linked tasks. See [inbox scope](inbox.md). |
+| `/app/tasks` and `/app/tasks/:taskId` | `AppLayout` | Saved tasks, including tasks linked to reports. |
+| `/app/reports` and `/app/reports/:reportId` | `AppLayout` | Saved reports, review state, questions, duplicates, and linked tasks. See [inbox scope](inbox.md). |
 | `/app/*` when unmatched | `AppLayout` | Not-found page with a link to `/app` |
 | Other unmatched paths | `SiteLayout` | Not-found page with a link to `/` |
 

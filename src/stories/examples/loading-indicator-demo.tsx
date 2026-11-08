@@ -43,6 +43,7 @@ export function LoadingIndicatorDemo() {
             <option value="sm">Small · 16 px</option>
             <option value="md">Medium · 24 px</option>
             <option value="lg">Large · 40 px</option>
+            <option value="xl">Extra large · 56 px</option>
           </select>
         </div>
       </div>

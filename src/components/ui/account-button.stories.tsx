@@ -1,3 +1,4 @@
+import { userPortraitUrl } from '../../../seeds/user-portraits'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { AccountButton } from './account-button'
 
@@ -11,3 +12,5 @@ export default meta
 type Story = StoryObj<typeof meta>
 export const Default: Story = {}
 export const LongName: Story = { args: { name: 'Alexandria Morgan-Rivera', description: 'Rescue administrator' } }
+
+export const Photo: Story = { args: { avatarUrl: userPortraitUrl('Maya Rivera') } }

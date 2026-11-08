@@ -17,7 +17,6 @@ export function colonySummary(colony: InboxColony, cats: InboxCat[], reports: In
     catCount: cats.filter((cat) => cat.colonyId === colony.id).length,
     urgentCount: related.filter((report) => report.urgent && report.status !== 'processed').length,
     taskCount: openTasksForRecord(tasks, 'colony', colony.id).length,
-    feedingReport: recentReports(related.filter((report) => report.category === 'Feeding visit'))[0],
   }
 }
 

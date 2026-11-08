@@ -7,6 +7,7 @@ export interface ConfigurationStore {
   saveChannels(input: ChannelsInput): Promise<Configuration>
   saveAi(input: AiInput): Promise<Configuration>
   removeAiKey(): Promise<Configuration>
+  setDemoAccess(enabled: boolean): Promise<Configuration>
 }
 
 export const databaseConfiguration: ConfigurationStore = {
@@ -14,4 +15,5 @@ export const databaseConfiguration: ConfigurationStore = {
   saveChannels: (input) => authRequest('/api/configuration/channels', { method: 'POST', body: JSON.stringify(input) }),
   saveAi: (input) => authRequest('/api/configuration/ai', { method: 'POST', body: JSON.stringify(input) }),
   removeAiKey: () => authRequest('/api/configuration/ai-key/remove', { method: 'POST' }),
+  setDemoAccess: (enabled) => authRequest('/api/configuration/demo-access', { method: 'POST', body: JSON.stringify({ enabled }) }),
 }

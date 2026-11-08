@@ -1,4 +1,4 @@
-import { Cat, House, Inbox, LayoutDashboard, ListTodo, Settings2, UsersRound } from 'lucide-react'
+import { Cat, House, Inbox, LayoutDashboard, ListTodo, Newspaper, Settings2, UsersRound } from 'lucide-react'
 import { NavLink } from 'react-router'
 import type { MouseEvent } from 'react'
 import { isPlainNavigation } from '@/lib/navigation'
@@ -6,10 +6,10 @@ import { TextLink } from './text-link'
 
 const items = [
   { to: '/app', label: 'Overview', icon: LayoutDashboard, end: true },
+  { to: '/app/tasks', label: 'My Tasks', icon: ListTodo, end: false },
+  { to: '/app/reports', label: 'Reports', icon: Inbox, end: false },
   { to: '/app/colonies', label: 'Colonies', icon: House, end: false },
   { to: '/app/cats', label: 'Cats', icon: Cat, end: false },
-  { to: '/app/reports', label: 'Reports', icon: Inbox, end: false },
-  { to: '/app/tasks', label: 'My Tasks', icon: ListTodo, end: false },
 ]
 
 export function WorkspaceNavigation({ showTeam = false, onNavigate }: { showTeam?: boolean; onNavigate?: (to: string) => void }) {
@@ -32,6 +32,12 @@ export function WorkspaceNavigation({ showTeam = false, onNavigate }: { showTeam
           </TextLink>
         ))}
         {showTeam ? <>
+          <TextLink variant="navigation" onClick={(event) => followLink(event, '/app/community')} render={<NavLink to="/app/community" />}>
+            <Newspaper className="size-4 shrink-0" aria-hidden="true" />Community board
+          </TextLink>
+          <TextLink variant="navigation" onClick={(event) => followLink(event, '/app/team-tasks')} render={<NavLink to="/app/team-tasks" />}>
+            <ListTodo className="size-4 shrink-0" aria-hidden="true" />Team Tasks
+          </TextLink>
           <TextLink variant="navigation" onClick={(event) => followLink(event, '/app/team')} render={<NavLink to="/app/team" />}>
             <UsersRound className="size-4 shrink-0" aria-hidden="true" />Team
           </TextLink>

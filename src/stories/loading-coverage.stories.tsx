@@ -1,3 +1,4 @@
+import { userPortraitUrl } from '../../seeds/user-portraits'
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { createMemoryRouter, RouterProvider } from 'react-router'
@@ -9,7 +10,7 @@ import { waitForStoryRequest } from './fixtures/controlled-request'
 import { storyDirectoryStore, storyWorkspace } from './fixtures/directory-store'
 import { storyWorkspaceStore } from './fixtures/workspace-store'
 
-const user: SessionUser = { id: 'storybook-member', name: 'Alex Morgan', email: 'alex@mews.test', phone: null, role: 'administrator', status: 'active' }
+const user: SessionUser = { id: 'storybook-member', name: 'Alex Morgan', email: 'alex@mews.test', phone: null, avatarUrl: userPortraitUrl('Alex Morgan'), role: 'administrator', status: 'active' }
 
 function DelayedReportsStory() {
   const [router] = useState(() => {
@@ -20,7 +21,7 @@ function DelayedReportsStory() {
       async createReport(...args: Parameters<typeof store.createReport>) { await waitForStoryRequest('storybook:release-report-write'); return store.createReport(...args) },
     }
     return createMemoryRouter([{ id: 'workspace', path: '/app', loader: () => workspace, element: <AppLayout directoryStore={storyDirectoryStore} workspaceStore={delayed} />, children: [
-      { path: 'reports', element: <InboxScreen />, handle: { breadcrumb: 'Reports' } },
+      { path: 'reports/:reportId?', element: <InboxScreen />, handle: { breadcrumb: 'Reports' } },
     ] }], { initialEntries: ['/app/reports'] })
   })
   return <RouterProvider router={router} />
