@@ -1,9 +1,12 @@
 import { ArrowRight, ShieldCheck, UserRound } from 'lucide-react'
+import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert } from '@/components/ui/alert'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Heading, Text } from '@/components/ui/typography'
 import type { SignInOptions } from '../../../../shared/types/auth'
 
@@ -11,11 +14,19 @@ export type SignInScreenProps = SignInOptions & {
   selected: string | null
   error: string
   onSignIn: (userId: string) => void
+  onDemoAdminSignIn: (code: string) => void
 }
 
 const statusLabels = { active: 'Approved', pending: 'Pending approval', suspended: 'Suspended' }
 
-export function SignInScreen({ localSignInEnabled, demoSignInEnabled, googleSignInEnabled, users, selected, error, onSignIn }: SignInScreenProps) {
+export function SignInScreen({ localSignInEnabled, demoSignInEnabled, demoAdminSignInEnabled, googleSignInEnabled, users, selected, error, onSignIn, onDemoAdminSignIn }: SignInScreenProps) {
+  const [adminCode, setAdminCode] = useState('')
+  function submitAdmin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!adminCode || selected !== null) return
+    onDemoAdminSignIn(adminCode)
+    setAdminCode('')
+  }
   return (
     <div className="mx-auto w-full max-w-2xl px-6 py-12 sm:py-16">
       <title>Sign in · Mews</title>
@@ -55,6 +66,16 @@ export function SignInScreen({ localSignInEnabled, demoSignInEnabled, googleSign
               )
             })}
           </ul>
+          {demoAdminSignInEnabled ? <Card className="mt-3"><CardContent>
+            <form className="space-y-4" onSubmit={submitAdmin}>
+              <Heading level={2} size="card">Demo administrator</Heading>
+              <div className="grid gap-2">
+                <Label htmlFor="demo-admin-code">Administrator code</Label>
+                <Input id="demo-admin-code" type="password" autoComplete="off" maxLength={128} value={adminCode} onChange={(event) => setAdminCode(event.target.value)} disabled={selected !== null} required />
+              </div>
+              <Button type="submit" variant="outline" loading={selected === 'demo-admin'} disabled={selected !== null || !adminCode}>Sign in as administrator <ArrowRight aria-hidden="true" /></Button>
+            </form>
+          </CardContent></Card> : null}
           {localSignInEnabled ? <div className="mt-8 border-t pt-6">
             <Heading size="card">New to Mews?</Heading>
             <Text size="small" tone="muted" className="mt-2">Request access to join your rescue team.</Text>

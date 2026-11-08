@@ -17,6 +17,7 @@ function fixture(t) {
   sqlite.exec(readFileSync(new URL('../../migrations/0001_accounts.sql', import.meta.url), 'utf8'))
   sqlite.exec(readFileSync(new URL('../../migrations/0012_user_photos.sql', import.meta.url), 'utf8'))
   sqlite.exec(readFileSync(new URL('../../migrations/0018_demo_access.sql', import.meta.url), 'utf8'))
+  sqlite.exec(readFileSync(new URL('../../migrations/0019_session_auth_method.sql', import.meta.url), 'utf8'))
   t.after(() => sqlite.close())
   const DB = {
     prepare(sql) {
@@ -114,6 +115,20 @@ test('Google sign-in creates the specified administrator and leaves new members 
   const suspended = await finishFlow(request, repeat)
   assert.equal(suspended.headers.get('location'), '/account-status')
   assert.equal((await (await request('/api/auth/session', sessionCookie(suspended))).json()).user.status, 'suspended')
+})
+
+test('a demo administrator does not prevent the first real Google administrator', async (t) => {
+  const { request, sqlite } = fixture(t)
+  sqlite.exec(readFileSync(new URL('../../seeds/demo-administrator.sql', import.meta.url), 'utf8'))
+  let profile = { subject: 'google-admin', email: 'admin@gmail.com', name: 'Admin', nonce: '' }
+  installGoogle(t, () => profile)
+  const flow = await openFlow(request)
+  profile.nonce = flow.url.searchParams.get('nonce')
+  const response = await finishFlow(request, flow)
+  assert.equal(response.headers.get('location'), '/app')
+  const user = (await (await request('/api/auth/session', sessionCookie(response))).json()).user
+  assert.equal(user.role, 'administrator')
+  assert.equal(user.status, 'active')
 })
 
 test('Google callback rejects forged state, nonce, audience, and unverified email', async (t) => {

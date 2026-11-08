@@ -5,7 +5,7 @@ import { accountPath, authRequest } from '../auth'
 import { SignInScreen } from '../components/sign-in-screen'
 
 export function SignInPage() {
-  const { localSignInEnabled, demoSignInEnabled, googleSignInEnabled, users } = useLoaderData() as SignInOptions
+  const { localSignInEnabled, demoSignInEnabled, demoAdminSignInEnabled, googleSignInEnabled, users } = useLoaderData() as SignInOptions
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [selected, setSelected] = useState<string | null>(null)
@@ -26,6 +26,21 @@ export function SignInPage() {
     }
   }
 
+  async function signInDemoAdmin(code: string) {
+    setSelected('demo-admin')
+    setError('')
+    try {
+      const { user } = await authRequest<{ user: SessionUser }>('/api/auth/demo-admin/sign-in', {
+        method: 'POST', body: JSON.stringify({ code }),
+      })
+      await navigate(accountPath(user), { replace: true })
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not sign in. Try again.')
+    } finally {
+      setSelected(null)
+    }
+  }
+
   const googleError = searchParams.has('google') ? 'Google sign-in could not be completed. Please try again.' : ''
-  return <SignInScreen localSignInEnabled={localSignInEnabled} demoSignInEnabled={demoSignInEnabled} googleSignInEnabled={googleSignInEnabled} users={users} selected={selected} error={error || googleError} onSignIn={signIn} />
+  return <SignInScreen localSignInEnabled={localSignInEnabled} demoSignInEnabled={demoSignInEnabled} demoAdminSignInEnabled={demoAdminSignInEnabled} googleSignInEnabled={googleSignInEnabled} users={users} selected={selected} error={error || googleError} onSignIn={signIn} onDemoAdminSignIn={signInDemoAdmin} />
 }

@@ -22,5 +22,12 @@
       "binding": "UPLOADS",
       "bucket_name": "devday-js-2026-uploads"
     }
+  ],
+  "ratelimits": [
+    {
+      "name": "DEMO_ADMIN_RATE_LIMITER",
+      "namespace_id": "9147270629",
+      "simple": { "limit": 10, "period": 60 }
+    }
   ]
 }

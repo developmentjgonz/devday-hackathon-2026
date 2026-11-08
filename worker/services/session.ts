@@ -31,7 +31,13 @@ export async function getSessionUser(request: Request, db: D1Database): Promise<
   if (!session) return null
   const url = new URL(request.url)
   const local = url.protocol === 'http:' && ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)
-  if (session.demoIdentity && !local && (url.protocol !== 'https:' || session.googleIdentity || session.user.role !== 'member' || !await demoAccessEnabled(db))) return null
+  if ((session.authMethod !== 'standard' || session.demoIdentity || session.demoAdminIdentity) && !local) {
+    const isAdmin = session.authMethod === 'demo-admin'
+    const isMember = session.authMethod === 'demo'
+    const identityMatches = isAdmin ? session.demoAdminIdentity && !session.demoIdentity : isMember && session.demoIdentity && !session.demoAdminIdentity
+    const expectedRole = isAdmin ? 'administrator' : 'member'
+    if (url.protocol !== 'https:' || session.googleIdentity || !identityMatches || session.user.role !== expectedRole || !await demoAccessEnabled(db)) return null
+  }
   return session.user
 }
 
@@ -46,18 +52,20 @@ export async function createSession(request: Request, db: D1Database, userId: st
   return sessionCookie(request, token, sessionSeconds)
 }
 
-export async function createDemoSession(request: Request, db: D1Database, userId: string): Promise<string> {
+export async function createDemoSession(request: Request, db: D1Database, userId: string, kind: 'demo' | 'demo-admin' = 'demo'): Promise<string> {
   const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), (byte) => byte.toString(16).padStart(2, '0')).join('')
   const tokenHash = await hashToken(token)
   const now = Math.floor(Date.now() / 1000)
   // Check the switch and account in the same database statement as the insert.
-  const inserted = await db.prepare(`INSERT INTO sessions (token_hash, user_id, expires_at)
-    SELECT ?, u.id, ? FROM users u
-    WHERE u.id = ? AND u.role = 'member'
+  const inserted = await db.prepare(`INSERT INTO sessions (token_hash, user_id, expires_at, auth_method)
+    SELECT ?, u.id, ?, ? FROM users u
+    WHERE u.id = ? AND u.role = ?
+      AND (? = 'demo' OR u.status = 'active')
       AND EXISTS (SELECT 1 FROM demo_access WHERE id = 1 AND enabled = 1)
-      AND EXISTS (SELECT 1 FROM sign_in_identities i WHERE i.user_id = u.id AND i.provider = 'demo')
+      AND EXISTS (SELECT 1 FROM sign_in_identities i WHERE i.user_id = u.id AND i.provider = ?)
       AND NOT EXISTS (SELECT 1 FROM sign_in_identities i WHERE i.user_id = u.id AND i.provider = 'google')
-    RETURNING token_hash`).bind(tokenHash, now + sessionSeconds, userId).first<{ token_hash: string }>()
+      AND NOT EXISTS (SELECT 1 FROM sign_in_identities i WHERE i.user_id = u.id AND i.provider = ?)
+    RETURNING token_hash`).bind(tokenHash, now + sessionSeconds, kind, userId, kind === 'demo-admin' ? 'administrator' : 'member', kind, kind, kind === 'demo-admin' ? 'demo' : 'demo-admin').first<{ token_hash: string }>()
   if (!inserted) throw new HTTPException(404, { message: 'Demo account was not found.' })
   const previousToken = requestToken(request)
   if (previousToken) await deleteSession(db, await hashToken(previousToken))

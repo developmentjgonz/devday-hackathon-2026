@@ -47,6 +47,18 @@ export async function hasDemoIdentity(db: D1Database, userId: string): Promise<b
   return Boolean(await db.prepare("SELECT 1 FROM sign_in_identities WHERE user_id = ? AND provider = 'demo'").bind(userId).first())
 }
 
+export async function findDemoAdministrator(db: D1Database): Promise<SessionUser | null> {
+  const row = await db.prepare(`
+    SELECT u.id, u.name, u.email, u.phone, u.role, u.status, p.revision AS photoRevision
+    FROM users u JOIN sign_in_identities i ON i.user_id = u.id
+    LEFT JOIN user_photos p ON p.user_id = u.id
+    WHERE i.provider = 'demo-admin' AND u.role = 'administrator' AND u.status = 'active'
+      AND NOT EXISTS (SELECT 1 FROM sign_in_identities other WHERE other.user_id = u.id AND other.provider IN ('google', 'demo'))
+    LIMIT 1
+  `).first<UserRow>()
+  return row ? userFromRow(row) : null
+}
+
 export function findUserByEmail(db: D1Database, email: string): Promise<{ id: string } | null> {
   return db.prepare('SELECT id FROM users WHERE email = ?').bind(email).first<{ id: string }>()
 }

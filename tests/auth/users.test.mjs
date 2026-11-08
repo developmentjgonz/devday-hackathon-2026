@@ -7,7 +7,7 @@ import worker from '../../worker/index.ts';
 function fixture(t) {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec('PRAGMA foreign_keys = ON');
-  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0012_user_photos.sql', '../../seeds/local.sql']) {
+  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0012_user_photos.sql', '../../migrations/0019_session_auth_method.sql', '../../seeds/local.sql']) {
     sqlite.exec(readFileSync(new URL(file, import.meta.url), 'utf8'));
   }
   t.after(() => sqlite.close());

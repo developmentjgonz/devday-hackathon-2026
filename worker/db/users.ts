@@ -27,13 +27,17 @@ export async function changeUserAccess(db: D1Database, id: string, actorId: stri
       approved_at = CASE WHEN status = 'pending' AND ? = 'active' THEN unixepoch() ELSE approved_at END
     WHERE id = ? AND id <> ? AND role = ? AND status = ?
       AND (? <> 'administrator' OR NOT EXISTS (SELECT 1 FROM sign_in_identities demo WHERE demo.user_id = users.id AND demo.provider = 'demo'))
+      AND (NOT EXISTS (SELECT 1 FROM sign_in_identities actor_demo WHERE actor_demo.user_id = ? AND actor_demo.provider = 'demo-admin')
+        OR EXISTS (SELECT 1 FROM sign_in_identities target_demo WHERE target_demo.user_id = users.id AND target_demo.provider = 'demo'))
       AND EXISTS (SELECT 1 FROM users AS actor WHERE actor.id = ? AND actor.role = 'administrator' AND actor.status = 'active')
       AND ((? = 'administrator' AND ? = 'active') OR role <> 'administrator' OR status <> 'active'
-        OR (SELECT count(*) FROM users WHERE role = 'administrator' AND status = 'active') > 1)
+        OR EXISTS (SELECT 1 FROM sign_in_identities demo_admin WHERE demo_admin.user_id = users.id AND demo_admin.provider = 'demo-admin')
+        OR (SELECT count(*) FROM users real_admin WHERE real_admin.role = 'administrator' AND real_admin.status = 'active'
+          AND NOT EXISTS (SELECT 1 FROM sign_in_identities demo_admin WHERE demo_admin.user_id = real_admin.id AND demo_admin.provider = 'demo-admin')) > 1)
     RETURNING ${fields}
   `).bind(
     change.role, change.status, change.status, actorId, change.status,
-    id, actorId, change.expectedRole, change.expectedStatus, change.role, actorId, change.role, change.status,
+    id, actorId, change.expectedRole, change.expectedStatus, change.role, actorId, actorId, change.role, change.status,
   ).first<ManagedUserRow>()
   return changed ? userFromRow(changed) : null
 }
