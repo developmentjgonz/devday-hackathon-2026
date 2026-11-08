@@ -50,10 +50,11 @@ export async function reviewPrivatePhoto(env, photoId, decision, actorId) {
 }
 
 /** Caller must authenticate and authorize the requesting role. */
-export async function readPrivatePhoto(env, photoId) {
+export async function readPrivatePhoto(env, photoId, session) {
   if (!env.DB || !env.PHOTOS) return Response.json({ error: "Private photo storage is not configured" }, { status: 503 });
-  const photo = await env.DB.prepare("SELECT object_key, content_type FROM private_photos WHERE id = ?").bind(photoId).first();
+  const photo = await env.DB.prepare("SELECT object_key, content_type, uploaded_by FROM private_photos WHERE id = ?").bind(photoId).first();
   if (!photo) return Response.json({ error: "Not found" }, { status: 404 });
+  if (!session || (session.user.role === "volunteer" && String(session.userId) !== String(photo.uploaded_by))) return Response.json({ error: "Not found" }, { status: 404 });
   const object = await env.PHOTOS.get(photo.object_key);
   if (!object) return Response.json({ error: "Not found" }, { status: 404 });
   return new Response(object.body, { headers: { "Content-Type": photo.content_type, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Disposition": "inline" } });

@@ -15,7 +15,13 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       {
         name: 'mews-dev-config-endpoint',
-        configureServer(server) {
+        async configureServer(server) {
+          if (process.env.MEWS_LOCAL_DEMO === '1') {
+            const { createLocalApi } = await import('./dev/local-api.mjs')
+            const api = await createLocalApi(process.cwd(), env)
+            server.middlewares.use((request, response, next) => { void api.middleware(request, response, next) })
+            server.httpServer?.once('close', api.close)
+          }
           server.middlewares.use('/api/config', (request, response, next) => {
             if (request.method !== 'GET') return next()
             response.statusCode = 200

@@ -9,95 +9,140 @@ For a precise account of what is implemented, simulated, and still needed, read 
 ```sh
 npm ci
 npm run build
-npm run dev
+npm run dev:full
 ```
 
 Open [http://127.0.0.1:5197/](http://127.0.0.1:5197/).
 
-The account icon at the top opens the demo sign-in, profile, notifications, and preferences. Use any of `admin@mangrovemews.demo`, `volunteer@mangrovemews.demo`, `sponsor@mangrovemews.demo`, or `public@mangrovemews.demo` with password `demo-only`. These credentials only select a browser-local demo persona; they are not authentication or access control.
+Sign in from **Care workspace** with one of the local accounts below. The server session controls the local private routes and the current Workspace is the judge-demo surface.
 
-To show messages arriving over time, scroll to **Replay a synthetic field shift** on Overview, select **Start live replay**, and watch the fictional photo, message, and location entries appear. The queue and feeding-visit indicator advance as the replay runs. Confirm or reject the Marmalade duplicate, then download the sample rollup. Reloading retains replay progress in this browser. This replay is a scripted local simulation; it does not import a chat, invoke the agent, or update the separate static colony tables.
+To show messages arriving over time, open **Chat imports & outbox**, then use **Live synthetic shift**. After an authenticated admin or coordinator starts it, each made-up fixture message is persisted through the local synthetic-import route. It is deliberately scripted and contains no real chat, device, or person data.
+
+`dev:full` starts the loopback-only local adapter at the same URL. It applies the repository migrations to a persistent local SQLite file and gives the UI real local Worker routes, sessions, private-photo storage, canonical census materialization, raw-fixture imports, review decisions, and feeding assignments. It is not a Cloudflare deployment and it must not be exposed beyond `127.0.0.1`.
+
+Use one of these **local-only synthetic accounts** in the Care workspace:
+
+| Role | Email | Password | Demo use |
+| --- | --- | --- | --- |
+| Admin | `admin@mangrovemews.demo` | `SyntheticMiami2026!` | Import, review, photo approval, scheduling |
+| Coordinator | `coordinator@mangrovemews.demo` | `SyntheticMiami2026!` | Import, review, photo approval, scheduling |
+| Volunteer | `volunteer@mangrovemews.demo` | `SyntheticMiami2026!` | Read approved workspace data, own private photos, complete assigned feeding |
+| Sponsor | `sponsor@mangrovemews.demo` | `SyntheticMiami2026!` | Sponsor-safe canonical census and aggregate reporting only |
+
+These accounts exist only in the local adapter’s synthetic database. They are not production credentials.
 
 Optional local configuration:
 
-- `GOOGLE_MAPS_BROWSER_KEY` enables the real Google Maps basemap. Restrict it by HTTP referrer and enable only the Maps JavaScript API. A local synthetic map preview remains functional without it.
-- `OPENAI_API_KEY` enables the server-side Agents SDK paths for triage and lost-cat planning. Without it, the same screens use deterministic, clearly bounded demo fallbacks.
+- `GOOGLE_MAPS_BROWSER_KEY` enables the real Google Maps basemap. Restrict it by HTTP referrer and enable only the Maps JavaScript API; Google billing and quota requirements still apply. Never place a server/API secret in the client. A local synthetic map preview remains functional without the key.
+- `OPENAI_API_KEY` enables the server-side Agents SDK paths only when local OpenAI is explicitly enabled by the runtime. `dev:full` defaults to deterministic synthetic triage, even if a local key file exists. Without agent mode, the same bounded, clearly labeled fallback workflow remains available.
 
 Do not use real messages, photos, people, or locations in the demo.
 
 ## Six-minute judge flow
 
-### 1. Start with the operating picture — 45 seconds
+### 1. Sign in to the local care workspace — 45 seconds
 
-On **Overview**, point out the current census, fixed/TNR numbers, urgent queue, and assigned work. The intended outcome is that a coordinator sees injury, possible pregnancy, kittens, overdue/needed feedings, and TNR pressure in one place rather than in an unread group chat.
+On **Care workspace**, sign in as `coordinator@mangrovemews.demo` with the local-only password above. The status message should identify the server account and role. Explain that the full local demo writes only made-up records to the loopback SQLite adapter.
 
-Say: “This is the same-day operating picture—not a passive archive.”
+Say: “This is a local persistence demo, not a production deployment and not a real rescue database.”
 
-### 2. Establish safe inputs — 45 seconds
+### 2. Send one phone field report — 45 seconds
 
-Open **Demo source history** at the bottom of the page. It shows the fictional WhatsApp export and intentional SMS-relay scenario: photos, approximate shared-location wording, and a duplicate-photo story.
+Open **New field report** while still signed in. The prefilled fictional report includes its message, selected demo cat photo, broad shared area, cat count, feeding confirmation, and urgent-welfare toggle. Submit it, then use **Care workspace** and **Refresh** to show the resulting source trace, census update, and open review without coordinator retyping.
 
-Say: “We support a volunteer-provided WhatsApp Export and intentional relay—not automated access to a live WhatsApp chat. These are hackathon fixtures, not live imports.”
+Say: “This is the mobile-sized intentional report flow. In the hackathon build it accepts only a selected fictional fixture photo and broad demo area; it does not request a real camera, GPS position, or real animal data.”
 
-Do not say the app parses these files into persistent records today; it displays them and makes the desired workflow reviewable.
+### 3. Establish safe raw inputs — 45 seconds
 
-### 3. Replay the intended evidence path — 45 seconds
+In **Shared intake & canonical census**, select **Load WhatsApp fixture**. Show the raw, fiction-labeled export. Then select **Load SMS fixture** to show the intentional NDJSON relay option. Both inputs are deliberately made-up and have only broad areas plus local demo-asset references.
 
-Use **Replay demo batch** in the “Judge-ready workflow proof” panel. Call out the three stages:
+Say: “We support a volunteer-provided WhatsApp Export and intentional relay—not automated access to a live WhatsApp chat. These are synthetic-only hackathon fixtures, not live imports.”
 
-1. Intentional messages, photos, and approximate pins are supplied.
-2. The agent suggests a colony/cat/urgency relationship and retains the evidence.
-3. A person reviews it before any census, duplicate, medical, or status change.
+In the full local workspace, do say that the raw fixture parsers persist source-linked synthetic records into the local canonical census. Do **not** say that the app ingests real WhatsApp/SMS traffic: it only accepts explicit, synthetic fixtures and rejects contacts, exact locations, external attachments, and unapproved broad areas.
 
-Then point to the feeder visit, TNR-pending, medical-review, and sponsor-safe rollup. This makes the acceptance criteria visible without claiming that the replay writes to a production database.
+### 4. Persist one fixture and show the team census — 60 seconds
 
-### 4. Show one mobile report and one review-first duplicate — 75 seconds
+Choose a fresh batch ID, then select **Import synthetic raw export**. On success, use **Refresh** and show the **Team census** cards, individual records, source-linked report trace IDs, urgent review count, TNR state, and last feeder/visit timestamp. To make this faster in a clean local database, use **Replay both fixtures**.
 
-Click **New field report**. Switch between Web report, SMS relay, and WhatsApp export modes. Type this fictional content:
+Call out the persisted chain:
 
-```text
-DEMO: orange tabby with white chin appears possibly pregnant; fed 7; maybe three kittens nearby.
-```
+1. A raw fictional export is parsed only after it passes synthetic/provenance, contact, broad-area, and attachment checks.
+2. Each message receives a source trace, observation, triage result, and review candidates.
+3. The canonical census is materialized from those observations; human decisions remain required for a duplicate merge.
 
-Set the count, select **Feeding confirmed**, select **This may be urgent**, attach a *fictional* image if desired, attach the private-pin UI, and save. The Worker calls `/api/triage` when available; otherwise the browser deliberately saves the payload only to its offline demo queue.
+Then point to feeder visit, TNR-pending, medical-review, and source-linked profile history. This is persisted in the local adapter only.
 
-Next open **Reports** and select Marmalade. Explain the visual, markings, place/time, and colony-context scores. Choose neither “merge automatically” nor a definitive identity: the interface must keep the records separate until a rescue person approves a merge.
+### 5. Show the human duplicate gate — 60 seconds
 
-### 5. Show the map, radius semantics, and Miami Beach — 75 seconds
+Locate the Marmalade **possible duplicate** review in the source-linked intake area. Choose **Choose canonical cats**, select the two relevant canonical records, provide brief human reasoning, then either confirm the synthetic merge or keep the records separate.
 
-Open **Field map**. Toggle colonies, sightings, urgent care, hazards, missing searches, feeding visits, and weather. Select an urgent item and change the audience mode from **Internal** to **Sponsor** to **Public**.
+Explain that the confirmation creates a local dedupe audit row and updates the canonical relationship only after an admin/coordinator decision. No parser or agent can merge cats on its own.
+
+For a scripted delivery version, **Chat imports & outbox** also has **Live synthetic shift**. Start with **Original 12-report demo**, then select **Expanded 28-report morning** to deliver its 14 WhatsApp-style and 14 SMS-relay follow-ups across the eight fictional South Florida areas. Each record uses a stable fixture/batch identity, so replay retains the original backend record rather than duplicating it.
+
+### 6. Show the map, radius semantics, and Miami Beach — 75 seconds
+
+Open **Field map**. Toggle stored colonies, the Skipper demo-tracker/sighting layer, and weather. Select a record and change the audience mode from **Internal** to **Sponsor** to **Public**.
 
 Explain the distinction:
 
 - Internal and sponsor views show synthetic operational radii in this demo; actual production exposure must be authorized server-side.
 - Public mode rounds a coordinate and widens the displayed radius to at least 500 m.
 - The Google basemap is real when configured; every cat/colony/hazard marker remains fictional and approximate.
-- Miami-Dade, Broward, South Dade, and Miami Beach anchors demonstrate area coverage, not real sighting density.
+- Miami-Dade, Broward, South Dade, and Miami Beach anchors demonstrate fixture coverage, not real sighting density.
 - Weather cells are live, broad-area safety context from Open-Meteo. They affect volunteer safety decisions, never a claim about where a cat is.
 
 With sightings enabled, point out **Skipper**, whose internal-only marker shifts every six seconds. Call it a fictional tracker simulation, not a device integration.
 
-### 6. Show the individual record and missing-cat plan — 90 seconds
+### 7. Show the individual record and missing-cat plan — 90 seconds
 
-Open **Cats & colonies** and select Poppy or Marmalade. Show the profile fields: identity markers, ear-tip/TNR, vaccination context, care state, colony relationship, current status, and chronological history. Emphasize that record status, adoption, missing, deceased, and duplicate changes require human review.
+Open **Cat profiles & visits**. Show Poppy or Marmalade’s canonical profile facts (coat, markings, estimated DOB, microchip, TNR/fixed, medical/vaccination context, colony, and tracker state where applicable), chronological history, and the feeder-visit log. Emphasize that a report proposal is not a sensitive status decision and a duplicate change needs human review.
 
-Open **Lost cat navigator**. Use Tux’s default fictional report. Include last-seen time, description/markings, optional reference-photo count, and live-tag state; then choose **Find likely search areas**.
+Open **Photo match review** for the side-by-side fictional evidence packet. The evidence scores are prompts for a human decision—not a vision identity claim—and an admin/coordinator must either document reasoning to merge or keep the records separate.
 
-The result is a ranked set of probability zones—not a claimed cat location. It separates last seen, cover, and home range, asks a clarification when useful, and reminds volunteers about public access, traffic, canals, construction, heat, and flooding. Change the area to **Miami Beach** to demonstrate an alternate safe-cover plan.
+Open **Lost cat navigator**. Use Tux’s default fictional report, or choose Miami Beach, Hialeah, Homestead, or Hollywood / Broward from the broad-area selector. Supply last-seen time and description/markings, then choose **Find likely search areas**.
+
+The result is a ranked set of probability zones—not a claimed cat location. It asks a clarification when useful and reminds volunteers about public access, traffic, canals, construction, heat, and flooding. The larger Field map contains the separate fictional tracker demonstration.
 
 Say: “The agent can recommend what to check and why; a coordinator assigns the task, and nobody is sent onto private or unsafe property.”
+
+### 8. Demonstrate an offline retry safely — 45 seconds
+
+In **Chat imports & outbox**, load either included fictional fixture in **Offline source outbox**, queue it, and leave it as `queued`. For a manual retry test, use the browser’s offline control while clicking **Send now**; the record should stay in local storage with an error. Restore network and use **Send now** again (or trigger the browser `online` event) to persist it through the authenticated raw-import route.
+
+The chat-source outbox is browser-local and its retry behavior depends on the browser/network state. Separately, the **New field report** outbox retains up to 50 failed fictional phone reports in local storage, retries while the app remains open, and releases them only to the original signed-in team account. Do not claim either is a service-worker/background sync or a native mobile offline implementation.
+
+### 9. Demonstrate photo privacy review — 45 seconds
+
+Open **Private photo review** while signed in as an admin or coordinator. Use **Prepare demo photo**; it is the shipped fictional cat image. The browser re-encodes it as a JPEG with a capped dimension before upload, then sends only the prepared bytes to the protected local endpoint. Upload it, refresh the private list, and approve or reject it.
+
+State the boundary: “This is private local evidence storage for the demo. Client re-encoding reduces embedded metadata in the uploaded copy, but this is not a production malware scan, retention policy, or real-photography workflow.” Volunteers can see only their own stored photo metadata/bytes in the local route; sponsors cannot open the photo desk.
+
+### 10. Show field coordination, outcomes, and role visibility — 60 seconds
+
+Open **Feeding schedule**. As an admin/coordinator, schedule a visit against a stored colony, assign a local team member, then complete or reassign it. As a volunteer, show only the assigned work and confirm completion. As sponsor, show the sponsor-safe census/aggregate path instead of intake text or private photo data.
+
+Open **Field-search tasks**. Start with the draft from Lost cat navigator or create a task; a coordinator must check legal public access, no floodwater/drains, no traffic entry, and human-verified risk before dispatch. Complete with timestamped evidence or block the task as unsafe.
+
+Open **Care outcomes & reports**. Create a fictional medical or TNR case, then document a specific outcome and evidence. Show the separate medical-resolution/TNR counts and the authenticated CSV link. These metrics change only after a coordinator/admin documents the outcome.
+
+### 11. End with agent boundaries — 35 seconds
+
+Open **Agent evaluation** and run the eight fictional urgency cases. The UI reports whether the returned urgency matches its fixed expected label and whether the deterministic fallback or agent mode ran. A pass is not a medical diagnosis or an identity match.
+
+Optionally show **Community signals** with its redacted sample. The page intentionally does not fetch the URL, scrape a platform, or create a real case. It produces a review-first, broad-area suggestion only.
 
 ## Acceptance-criteria evidence table
 
 | Judge expectation | Where to show it | Accurate statement |
 | --- | --- | --- |
-| Phone report with message/photo/location routes to a colony/cat | New field report, fixture history, reports, workflow proof | Demonstrated as a triage/review workflow with fictional evidence. Uploads/pins are not yet persisted or parsed. |
-| Colony state shows census, fixed, TNR, vet need, and last feeder | Overview and Cats & colonies table | Static synthetic census data shown as an operating dashboard. |
-| Same cat is counted once | Marmalade report and evidence scores | A multi-evidence duplicate **suggestion**; only a human can merge. |
-| Urgent cases stand out | Overview and Reports | Injury, pregnancy, and uncertain kittens are shown as immediate review priorities. |
-| Exported-chat/SMS batch becomes a census | Fixture history and workflow proof | The intended, review-first pipeline is demonstrated; a persistent parser/importer remains a next step. |
-| Agent maintains census and produces sponsor/city report | Triage route, workflow proof, map/census UI | Bounded agent suggestions and a sponsor-safe rollup are demonstrated; production persistence/export is not yet implemented. |
-| Map, cat profile/history, feeder-visit log | Field map, Cat profiles, colony table, workflow proof | All are present with synthetic/approximate data. |
+| Phone message/photo/broad location routes to a colony/cat | New field report → Care workspace | The signed-in local route persists the selected fictional text/photo/broad area/count/feeding/urgency source trace and proposes a colony/cat or review. It does not accept real messages, exact pins, camera/GPS capture, or external attachments. |
+| Colony state shows census, fixed/TNR, vet need, and last feeder | Canonical census after import | Materialized from the local synthetic records and feeder visits. It is not real rescue data. |
+| Same cat is counted once | Marmalade possible-duplicate review | A coordinator/admin selects two canonical records and records a human decision/audit. Parsers and agents never merge automatically. |
+| Urgent cases stand out | Intake review queue, Live synthetic shift, canonical census | Injury, pregnancy, kittens, feeder gaps, and missing/search cues generate review candidates in the fictional fixture. |
+| Exported-chat/SMS batch becomes a census | Raw import/replay both fixtures + census refresh | The full local adapter parses and persists raw fictional WhatsApp `.txt` and SMS `.ndjson` fixtures. It is not a live WhatsApp/SMS connector. |
+| Agent assists census/reports | Triage evaluation + lost-cat navigator + outcomes CSV | Default local triage/search is deterministic. Agent mode is optional and bounded; care metrics require a documented human outcome. |
+| Map, cat profile/history, feeder-visit log | Field map, canonical profile, Feeding schedule | Stored counts and histories are locally persisted; map anchor positions and tracker movement remain fictional/approximate. |
 
 ## Judge talking points
 
@@ -108,10 +153,11 @@ Say: “The agent can recommend what to check and why; a coordinator assigns the
 
 ## Recovery plan
 
-- **No Google Maps key/network:** use the built-in synthetic fallback map; all layer/radius interactions still work.
-- **No OpenAI key/network:** use the deterministic triage and search-plan fallback. Explain that the same safe output contract remains visible.
+- **No Google Maps key/network:** use the built-in synthetic fallback map; all layer/radius interactions still work. Do not imply a Google basemap is present when it is not.
+- **No OpenAI key/network:** `dev:full` is intentionally deterministic by default. Run the triage evaluation in fallback mode and say so; do not imply a model call occurred.
 - **No weather result:** the map leaves weather cells empty; do not claim a forecast.
-- **If asked about production:** use the review document’s “Reality boundary” and describe D1/R2/auth/importer work as next steps rather than presenting it as done.
+- **No local session/adapter:** confirm the process was started with `npm run dev:full`, not `npm run dev`, then sign in through Care workspace. The static Vite-only mode does not provide authenticated private routes.
+- **If asked about production:** use the implementation review’s limitations section. The local SQLite/file adapter is not a Cloudflare deployment, real rescue-data pilot, or production authorization design.
 
 ## Fixtures
 

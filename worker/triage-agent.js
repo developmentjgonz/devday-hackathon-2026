@@ -68,7 +68,7 @@ const communitySignalAgent = new Agent({
 
 function clamp(value, fallback) { const number = Number(value); return Number.isFinite(number) ? Math.max(0, Math.min(1, number)) : fallback; }
 function fallbackTriage(report) {
-  const text = String(report.message ?? "").toLowerCase();
+  const text = String(report.message ?? "").toLowerCase().replace(/\bno (?:new )?(?:injur(?:y|ies)|bleeding|illness|sickness)\b/g, "");
   const found = ["injur", "limp", "bleed", "pregnan", "kitten", "sick", "not eating", "flood", "hurricane", "heat", "traffic", "no feeder", "lost its feeder", "no one to feed", "herid", "cojea", "embarazada", "gatitos"].filter((signal) => text.includes(signal));
   const urgent = Boolean(report.urgent) || found.some((signal) => ["injur", "limp", "bleed", "pregnan", "kitten", "no feeder", "lost its feeder", "no one to feed", "herid", "cojea", "embarazada", "gatitos"].includes(signal));
   return { summary: "Saved for coordinator review. The safe demo triage is running.", urgency: urgent ? "urgent" : found.length ? "watch" : "routine", reasons: found.length ? found.map((signal) => `Possible ${signal} signal`) : ["No immediate risk phrase detected"], suggestedColonyId: null, colonyConfidence: .42, matchEvidence: { visual: 0, markings: 0, proximity: .35, colonyContext: .4 }, clarification: /maybe|possibly|think/.test(text) ? "Can you confirm the count or share another clear photo?" : null, tasks: urgent ? ["Create urgent coordinator review", "Keep source report unchanged"] : ["Add to coordinator review queue"] };
@@ -98,7 +98,25 @@ function fallbackPrediction(input) {
   return { matchedCatName: tux ? "Tux" : null, identityConfidence: tux ? .88 : .42, summary: beach ? "Start with the fictional Miami Beach last-seen zone, then expand calmly through approved cover and the usual feeding approach. Heat, traffic, and public-access safety matter especially here." : tux ? "The description aligns with Tux’s fictional record. Start close to the last-seen area, then expand calmly to familiar cover and the usual feeding approach." : "No confirmed record match. Start with the last-seen area and request another clear photo or marking detail before widening the search.", candidateAreaIds: beach ? ["search-beach-last", "search-beach-cover", "search-beach-home"] : ["search-last-seen", "search-cover", "search-colony"], volunteerGuidance: ["Check the live weather cell before assigning the search; weather changes safe access, not the cat’s confirmed location.", "Search from safe public access with one partner aware of your location.", "Use a quiet visual check; do not chase or enter restricted property.", "Avoid flood-prone edges, canals, drains, construction, and hot pavement; log a photo or observation even if the cat is not found."], clarification: input.liveTag ? null : "Does the cat have a distinctive ear tip, collar, microchip, or a clearer side-view photo?" };
 }
 function normalizePrediction(value, fallback) { if (!value || typeof value !== "object") return fallback; const allowed = new Set(searchAreas.map((area) => area.id)); const ids = Array.isArray(value.candidateAreaIds) ? value.candidateAreaIds.filter((id) => allowed.has(id)).slice(0, 3) : []; return { matchedCatName: value.matchedCatName ? String(value.matchedCatName).slice(0, 80) : null, identityConfidence: clamp(value.identityConfidence, fallback.identityConfidence), summary: String(value.summary ?? fallback.summary).slice(0, 700), candidateAreaIds: ids.length ? ids : fallback.candidateAreaIds, volunteerGuidance: Array.isArray(value.volunteerGuidance) ? value.volunteerGuidance.map(String).slice(0, 4) : fallback.volunteerGuidance, clarification: value.clarification ? String(value.clarification).slice(0, 300) : null }; }
-export async function predictLostCatLocation(input, env) { const fallback = fallbackPrediction(input); if (!env.OPENAI_API_KEY) return { ...fallback, mode: "demo" }; try { setDefaultOpenAIKey(env.OPENAI_API_KEY); const safeInput = { name: String(input.name ?? "").slice(0, 100), description: String(input.description ?? "").slice(0, 2000), lastSeenArea: String(input.lastSeenArea ?? "").slice(0, 120), lastSeenAt: String(input.lastSeenAt ?? "").slice(0, 80), liveTag: Boolean(input.liveTag), attachmentCount: Math.min(Number(input.attachmentCount) || 0, 10) }; const result = await run(navigatorAgent, `Plan a private search suggestion from this report data: ${JSON.stringify(safeInput)}`); return { ...normalizePrediction(result.finalOutput, fallback), mode: "agent" }; } catch { return { ...fallback, mode: "fallback" }; } }
+export async function predictLostCatLocation(input, env) {
+  const fallback = fallbackPrediction(input);
+  if (!env.OPENAI_API_KEY) return { ...fallback, mode: "demo" };
+  try {
+    setDefaultOpenAIKey(env.OPENAI_API_KEY);
+    // This closure receives a server-selected, contact-free census projection.
+    // Neither user text nor model arguments can select arbitrary SQL or records.
+    const storedRecords = tool({
+      name: "read_stored_cat_candidates",
+      description: "Read candidates from the authenticated shared census. Scores are text heuristics, not confirmed identities. No exact locations or contacts.",
+      parameters: z.object({ query: z.string().max(500) }),
+      async execute() { return JSON.stringify(input.storedMatches ?? []); },
+    });
+    const storedNavigator = new Agent({ name: navigatorAgent.name, model: "gpt-5-mini", outputType: predictionSchema, instructions: navigatorAgent.instructions, tools: [storedRecords, mapContext, weatherSafetyContext] });
+    const safeInput = { name: String(input.name ?? "").slice(0, 100), description: String(input.description ?? "").slice(0, 2000), lastSeenArea: String(input.lastSeenArea ?? "").slice(0, 120), lastSeenAt: String(input.lastSeenAt ?? "").slice(0, 80) };
+    const result = await run(storedNavigator, `Plan a private search suggestion from this report data: ${JSON.stringify(safeInput)}`, { maxTurns: 8 });
+    return { ...normalizePrediction(result.finalOutput, fallback), mode: "agent" };
+  } catch { return { ...fallback, mode: "fallback" }; }
+}
 
 function fallbackCommunitySignal(input) {
   const text = String(input.content ?? "").toLowerCase();

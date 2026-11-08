@@ -51,8 +51,8 @@ function stableChecksum(value) {
 }
 function urgencyFrom(record) {
   const flags = new Set((record.flags ?? []).map((flag) => String(flag).toLowerCase()));
-  const text = String(record.text ?? "").toLowerCase();
-  if (["injury", "pregnancy", "kittens", "illness", "feeder_gap"].some((flag) => flags.has(flag)) || /injur|limp|bleed|pregnan|kitten|not eating|sick|no feeder|cojea|herid/.test(text)) return "urgent";
+  const text = String(record.text ?? "").toLowerCase().replace(/\bno (?:new )?(?:injur(?:y|ies)|bleeding|illness|sickness)\b/g, "");
+  if (["injury", "pregnancy", "kittens", "illness", "feeder_gap", "agent_urgent"].some((flag) => flags.has(flag)) || /injur|limp|bleed|pregnan|kitten|not eating|sick|no feeder|cojea|herid/.test(text)) return "urgent";
   if (["traffic", "missing", "tnr_candidate", "uncertain_count"].some((flag) => flags.has(flag)) || /traffic|missing|maybe|possible/.test(text)) return "watch";
   return "routine";
 }
@@ -137,13 +137,16 @@ export function prepareSyntheticImport(input, { now = new Date().toISOString() }
 export async function persistSyntheticImport(db, prepared) {
   if (!db?.prepare) error("a D1 binding is required for persistence");
   const statements = [];
-  statements.push(db.prepare("INSERT INTO intake_import_batches (id, source_kind, provenance, fixture_only, status, record_count, checksum, created_at) VALUES (?, ?, ?, 1, 'processed', ?, ?, ?)")
-    .bind(prepared.batch.batchId, prepared.batch.sourceKind, prepared.batch.provenance, prepared.messages.length, prepared.batch.checksum, prepared.batch.importedAt));
+  statements.push(db.prepare("INSERT INTO intake_import_batches (id, source_kind, provenance, fixture_only, status, record_count, checksum, created_at, source_digest) VALUES (?, ?, ?, 1, 'processed', ?, ?, ?, ?)")
+    .bind(prepared.batch.batchId, prepared.batch.sourceKind, prepared.batch.provenance, prepared.messages.length, prepared.batch.checksum, prepared.batch.importedAt, prepared.batch.sourceDigest ?? null));
   for (const message of prepared.messages) {
     statements.push(db.prepare("INSERT INTO intake_source_messages (id, batch_id, source_message_id, trace_id, source_kind, volunteer_alias, body_redacted, broad_area, attachment_manifest_json, received_at, raw_fixture_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
       .bind(message.messageId, prepared.batch.batchId, message.id, message.traceId, message.sourceKind, message.volunteerAlias, message.text, message.broadArea, JSON.stringify(message.attachments), message.receivedAt, JSON.stringify({ synthetic: true, flags: message.flags, fixturePathOnly: true })));
     statements.push(db.prepare("INSERT INTO intake_observations (id, source_message_id, proposed_cat_key, proposed_colony_key, colony_confidence, duplicate_group, urgency, uncertainty_note, requires_human_confirmation, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)")
       .bind(message.observationId, message.messageId, message.proposedCatKey, message.proposedColonyKey, message.colonyConfidence, message.duplicateGroup, message.urgency, message.uncertaintyNote, prepared.batch.importedAt));
+    const assessment = prepared.assessments?.[message.id];
+    if (assessment) statements.push(db.prepare("INSERT INTO intake_assessments (observation_id, mode, summary, evidence_json, created_at) VALUES (?, ?, ?, ?, ?)")
+      .bind(message.observationId, assessment.mode ?? "unknown", assessment.summary ?? "", JSON.stringify(assessment.matchEvidence ?? {}), prepared.batch.importedAt));
     if (message.count && message.proposedColonyKey) statements.push(db.prepare("INSERT INTO colony_census_events (id, observation_id, colony_key, reported_count_low, reported_count_high, count_confidence, fixed_delta, tnr_pending_delta, medical_case_delta, event_at) VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?)")
       .bind(`CENSUS:${message.traceId}`, message.observationId, message.proposedColonyKey, message.count.low, message.count.high, message.count.confidence, message.urgency === "urgent" ? 1 : 0, message.receivedAt));
     if (message.feedingConfirmed && message.proposedColonyKey) statements.push(db.prepare("INSERT INTO feeder_visit_log (id, source_message_id, colony_key, feeder_alias, feeding_confirmed, headcount, visited_at) VALUES (?, ?, ?, ?, 1, ?, ?)")
@@ -156,8 +159,10 @@ export async function persistSyntheticImport(db, prepared) {
 }
 
 /** Validate, transform and optionally persist a synthetic fixture. */
-export async function importSyntheticFixture({ db, fixture, now } = {}) {
+export async function importSyntheticFixture({ db, fixture, now, assessments, sourceDigest } = {}) {
   const prepared = prepareSyntheticImport(fixture, { now });
+  prepared.assessments = assessments;
+  prepared.batch.sourceDigest = sourceDigest;
   const persistence = db ? await persistSyntheticImport(db, prepared) : { persisted: false, reason: "No D1 binding supplied; prepared only." };
   return { ...persistence, ...prepared.summary, traceIds: prepared.messages.map((message) => message.traceId), prepared };
 }

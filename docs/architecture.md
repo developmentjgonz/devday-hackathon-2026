@@ -1,39 +1,69 @@
 # Architecture
 
-Status: the React frontend is a Hello shell, Storybook is the separate local component workspace, and a dedicated Cloudflare Worker serves the deployed shell with a D1 health endpoint.
+## Current runtime boundary
 
-Product-specific folders still reserve responsibilities. Product features, API endpoints, database tables, authentication, and AI integrations have not been designed.
+The checked demo is a local, synthetic-only application. `npm run dev:full` starts Vite on loopback and installs `dev/local-api.mjs` as the local API adapter. That adapter runs the Worker handlers against Node SQLite and local filesystem-backed private-photo objects, applies the repository migrations, and seeds only the synthetic accounts described in the demo runbook.
+
+Node 24 or newer is required for the local persisted path because it uses modern `node:sqlite` APIs; this pass ran on Node 26.5.0. The Cloudflare Worker, D1 migrations, and R2-shaped object API are deployment targets, not evidence of a remote deployment. Remote D1/R2 bindings, production identity, secrets, retention, and monitoring have not been configured or reviewed here.
 
 ## System
 
-The frontend uses Vite, React, TypeScript, Tailwind CSS v4, and shadcn/ui. The installed shadcn components use Base UI primitives. A Cloudflare Worker serves `dist/` and `/api/health`, with a dedicated D1 binding. R2 remains a future storage direction; no bucket is provisioned.
+```text
+React Workspace (browser)
+  ├─ phone/raw intake, fixture replay, durable browser outbox
+  ├─ field map, schedules, private-photo review, agent views
+  └─ protected /api/private/* requests with CSRF and session cookie
+                         │
+                         ▼
+local Vite adapter (dev/local-api.mjs, loopback only)
+  └─ Worker request handlers
+       ├─ Node SQLite local database
+       └─ local filesystem private-photo objects
 
-Browser requests go through the Worker for protected application operations. Worker instances must not be relied on for persistent state. API secrets stay on the server.
+future deployment target: Cloudflare Worker → D1 + R2
+```
 
-## Code boundaries
+`src/main.tsx` mounts `src/Workspace.tsx`, which is the current application shell. The older `src/App.tsx` is not the authoritative judge-demo entry point.
 
-- `src/features/<area>/` owns UI specific to colonies, cats, or reports. Feature components, hooks, and local types stay together as they are introduced.
-- `src/components/` owns UI reused across feature areas. `src/lib/` owns frontend infrastructure such as the API client.
-- `src/components/ui/` contains the installed shadcn component source and colocated `*.stories.tsx` examples. `.storybook/` owns Storybook configuration. The custom gallery has been removed.
-- `src/styles/tokens.css` owns the stock theme values. `src/styles/globals.css` imports the theme and connects its semantic values to Tailwind utilities. The final visual identity has not been chosen.
-- `worker/routes/` is reserved for HTTP requests and responses. `worker/services/` is reserved for application operations, including AI calls if introduced. `worker/db/` is reserved for database queries.
-- `shared/schemas/` owns runtime validation contracts used across the API boundary. `shared/types/` owns additional shared types; infer types from validation schemas when possible.
-- `migrations/` owns ordered database changes. Application validation schemas and database schemas serve different purposes.
-- `public/` holds assets safe for public delivery. User uploads and private colony data do not belong there.
+## Application flow
 
-## Documentation boundaries
+1. A signed-in team member submits deliberate phone/web intake, an exported synthetic WhatsApp transcript, or an intentional SMS relay. Live WhatsApp is never automated.
+2. `worker/raw-intake.js` accepts only declared synthetic fixtures in the demo and rejects contact data and unsupported areas. It records raw-source traceability.
+3. Worker intake/census services materialize reports, candidate colony/cat relationships, feeder activity, and a canonical census in SQLite. A human resolves a potential duplicate before a merge.
+4. The Workspace reads the stored census for the coordinator view, schedules, map anchors, and review surfaces. The browser outbox keeps an explicit intake item locally and retries only after connectivity returns.
+5. Private-photo upload re-encodes a selected fictional image in the browser before upload. The local API stores bytes separately from metadata; list and preview access are session/role scoped, and review is reserved for authorized roles.
 
-- `PROJECT_BRIEF.md` describes the problem, users, scope, and open product questions.
-- `docs/roadmap.md` tracks planned work and implementation status.
-- `docs/decisions/` records significant technical choices when they are made.
-- `.agents/skills/verify-mews/references/features/` describes implemented user behavior and ways to verify it. The component gallery is the first entry; the verification skill itself remains inactive.
+## Primary code boundaries
 
-## Runtime files
+| Area | Current responsibility |
+| --- | --- |
+| `src/Workspace.tsx` | Application shell and navigation for the current demo surfaces. |
+| `src/components/SharedIntake.tsx` | Sign-in, phone/fixture import, traceability, Team census, and human dedupe. |
+| `src/components/DurableOutbox.tsx` | Browser-local offline retry queue for deliberate raw intake. |
+| `src/components/ConnectedFieldMap.tsx` | Stored-census map presentation, visibility/radius modes, weather, and the explicitly simulated tracker. |
+| `src/components/PrivatePhotos.tsx` | Fictional-image preparation, upload, listing, and coordinator/admin review UI. |
+| `src/components/FieldSchedule.tsx` | Feeding visits and schedule presentation. |
+| `src/components/AgentEvaluation.tsx` | Bounded triage/search evaluation; deterministic unless opt-in AI configuration is supplied. |
+| `src/components/CommunitySignals.tsx` | Deliberate, redacted community-signal review UI; it does not scrape sources or auto-create records. |
+| `src/components/CatDirectory.tsx`, `PhotoMatchReview.tsx` | Private canonical cat profiles/feeder-log presentation and separate, human-gated fictional photo-match decisions. |
+| `worker/index.js` | API routing, sessions, CSRF checks, access checks, and local/remote binding boundary. |
+| `worker/raw-intake.js` | Synthetic export/SMS validation and parsing. |
+| `worker/intake.js`, `worker/census.js` | Ingestion, canonical census materialization, and dedupe support. |
+| `worker/photos.js` | Private-object metadata and scoped bytes access. |
+| `worker/reports.js`, `worker/search-*.js` | Care outcomes and field-search domain services as they are integrated into the Workspace. |
+| `migrations/` | Ordered relational schema changes, including canonical census, assessments, care cases, and search tasks. |
 
-`index.html`, `src/main.tsx`, `src/App.tsx`, `package.json`, `package-lock.json`, `vite.config.ts`, and TypeScript configuration now support the frontend. `components.json` records shadcn's component paths, aliases, and default preset.
+## Data, privacy, and AI boundaries
 
-`worker/index.js` serves the static app and a read-only D1 connectivity check. `wrangler.jsonc` names the project's Worker, asset binding, and database. It contains resource identifiers, not credentials. No product data model has been created. See [infrastructure.md](infrastructure.md).
+- Fixtures, sample chats, photos, accounts, locations, tracker points, and cat records are fictional. The map uses approximate anchors, not real colony coordinates or observed sighting density.
+- Exact rescue coordinates and team contact data are not suitable for public assets or browser configuration. Public/sponsor/internal map modes are presentation safeguards for the demo, not a substitute for an independently reviewed authorization model.
+- A Google Maps browser key is optional and must be restricted by HTTP referrer with Maps JavaScript API billing/quota configured. The loader follows the [Google Maps JavaScript API loading guidance](https://developers.google.com/maps/documentation/javascript/load-maps-js-api); missing or rejected keys fall back to the app's non-Google preview.
+- Weather can inform planning; the tracker is simulated; neither provides animal-location evidence.
+- OpenAI use is opt-in for local testing. Without an enabled server key the app uses deterministic results. The bounded workflows use the [OpenAI Agents SDK](https://openai.github.io/openai-agents-js/); an agent may suggest, score, or summarize but must not merge cats, change sensitive outcomes, expose precise routes, or assert an animal's location.
+- A future real-data deployment needs verified membership, production session security, audit/retention policies, consent workflow, image safety review, incident response, and external privacy/security review.
 
-## Separate builds
+## Builds and documentation
 
-`npm run build` produces the app in `dist/`. `npm run build-storybook` produces the component workspace in `storybook-static/`. Story files are type-checked, but they are not imported by the app entry point. Storybook and its documentation addon are development dependencies.
+`npm run build` type-checks and creates the frontend bundle. `npm run test` executes the repository unit test command. Storybook is a separate local component workspace and is not the app runtime.
+
+The practical walkthrough is [demo-runbook.md](demo-runbook.md). The exact fictional coverage and photo constraints are in [demodata-coverage.md](demodata-coverage.md).

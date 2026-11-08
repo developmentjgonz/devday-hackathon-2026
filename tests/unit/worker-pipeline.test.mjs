@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import worker from "../../worker/index.js";
@@ -7,7 +7,7 @@ import { provisionUser } from "../../worker/auth.js";
 
 function database() {
   const db = new DatabaseSync(":memory:");
-  for (const migration of ["0001_synthetic_intake_census.sql", "0002_auth.sql", "0003_private_photos.sql", "0004_field_operations.sql"]) db.exec(readFileSync(new URL(`../../migrations/${migration}`, import.meta.url), "utf8"));
+  for (const migration of readdirSync(new URL("../../migrations/", import.meta.url)).filter((name) => name.endsWith(".sql")).sort()) db.exec(readFileSync(new URL(`../../migrations/${migration}`, import.meta.url), "utf8"));
   return {
     prepare(sql) {
       function bind(...args) { const statement = db.prepare(sql); return {
@@ -82,4 +82,59 @@ test("synthetic intake requires session and CSRF, persists traceability, preserv
   const download = await worker.fetch(new Request(`${env.APP_ORIGIN}/api/private/photos/${photo.id}`, { headers: { Cookie: cookies.join("; ") } }), env);
   assert.equal(download.status, 200);
   assert.equal(download.headers.get("cache-control"), "private, no-store");
+  const rawText = readFileSync(new URL("../../public/demo-data/mangrove-mews-whatsapp-export.txt", import.meta.url), "utf8");
+  const rawRequest = () => new Request(env.APP_ORIGIN + "/api/private/raw-import", { method: "POST", headers: authenticated, body: JSON.stringify({ synthetic: true, sourceKind: "whatsapp_export", text: rawText, batchId: "raw-flow-test" }) });
+  const raw = await worker.fetch(rawRequest(), env);
+  assert.equal(raw.status, 201, JSON.stringify(await raw.clone().json()));
+  const repeated = await worker.fetch(rawRequest(), env);
+  assert.equal(repeated.status, 409);
+  const canonical = await worker.fetch(new Request(env.APP_ORIGIN + "/api/private/census", { headers: { Cookie: cookies.join("; ") } }), env);
+  assert.equal(canonical.status, 200);
+  const census = await canonical.json();
+  assert.ok(census.colonies.length > 0);
+  assert.ok(census.cats.some((cat) => cat.cat_key === "CAT-02"));
+  const assessment = await env.DB.prepare("SELECT mode FROM intake_assessments LIMIT 1").first();
+  assert.equal(assessment.mode, "demo");
+  const post = (path, body, authHeaders = authenticated) => worker.fetch(new Request(env.APP_ORIGIN + path, { method: "POST", headers: authHeaders, body: JSON.stringify(body) }), env);
+  const care = await post("/api/private/care-cases", { canonicalCatKey: "CAT-04", caseKind: "medical", priority: "urgent", title: "Synthetic paw review", detail: "Fictional clinic follow-up needed." });
+  assert.equal(care.status, 201);
+  const careId = (await care.json()).id;
+  assert.equal((await post("/api/private/care-cases/resolve", { id: careId, outcome: "medical_resolved", evidenceNote: "Fictional clinic discharge documented by coordinator." })).status, 200);
+  const outcomeReport = await worker.fetch(new Request(env.APP_ORIGIN + "/api/private/reports/outcomes", { headers: authenticated }), env);
+  assert.equal((await outcomeReport.json()).metrics.documented_medical_cases_resolved_in_window, 1);
+  const search = await post("/api/lost-cat-search", { name: "Tux", description: "Black and white chest", lastSeenArea: "Miami Beach", lastSeenAt: "2026-11-04T18:00:00Z" });
+  assert.equal(search.status, 200);
+  const plan = await search.json();
+  assert.equal(plan.matches[0].catKey, "CAT-11");
+  assert.equal(plan.zones.length, 3);
+  assert.ok(plan.zones.every((zone) => zone.area === "Miami Beach"));
+  const taskBody = { title: "Fictional safe cover check", broadArea: "Miami Beach", canonicalCatKey: "CAT-11", assignedUserId: 1, dueAt: "2026-11-09T12:00:00Z", safeAccessChecklist: { publicAccessPermission: true, noFloodwaterOrDrains: true, noTrafficEntry: true }, riskVerifiedHuman: true, forecast: { severity: "watch" } };
+  assert.equal((await post("/api/private/search-tasks", { ...taskBody, forecast: { severity: "severe" } })).status, 400);
+  assert.equal((await post("/api/private/search-tasks", taskBody)).status, 201);
+  const community = await post("/api/private/community-reviews", { fictionalOnly: true, assessment: { classification: "missing-cat", area: "Miami Beach", mode: "demo" } });
+  assert.equal(community.status, 201);
+  const communityId = (await community.json()).id;
+  assert.equal((await post("/api/private/community-reviews/update", { id: communityId, decision: "verified" })).status, 200);
+  await provisionUser(env, { email: "volunteer@example.test", password: "a-strong-demo-password", role: "volunteer" });
+  await provisionUser(env, { email: "sponsor@example.test", password: "a-strong-demo-password", role: "sponsor" });
+  async function signIn(email) {
+    const login = await post("/api/auth/login", { email, password: "a-strong-demo-password" }, headers);
+    assert.equal(login.status, 200);
+    const pieces = login.headers.getSetCookie().map((value) => value.split(";")[0]);
+    return { ...headers, Cookie: pieces.join("; "), "X-CSRF-Token": pieces.find((value) => value.startsWith("mews_csrf="))?.split("=")[1] };
+  }
+  const volunteer = await signIn("volunteer@example.test");
+  assert.equal((await worker.fetch(new Request(`${env.APP_ORIGIN}/api/private/photos/${photo.id}`, { headers: volunteer }), env)).status, 404, "Volunteer cannot read another uploader's private evidence");
+  const phoneBody = { synthetic: true, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", message: "Demo: split-face calico limping, fed 6", broadArea: "Little Havana", photo: "/demo-assets/poppy-calico-limp.png", count: 6, feedingConfirmed: true, urgent: true };
+  assert.equal((await post("/api/private/field-report", phoneBody, volunteer)).status, 201);
+  assert.equal((await post("/api/private/field-report", phoneBody, volunteer)).status, 200, "Retry keeps the original report");
+  assert.equal((await post("/api/private/search-tasks", taskBody, volunteer)).status, 403);
+  const sponsor = await signIn("sponsor@example.test");
+  assert.equal((await post("/api/private/field-report", phoneBody, sponsor)).status, 403);
+  assert.equal((await worker.fetch(new Request(env.APP_ORIGIN + "/api/private/intake", { headers: sponsor }), env)).status, 403);
+  assert.equal((await worker.fetch(new Request(env.APP_ORIGIN + "/api/private/search-tasks", { headers: sponsor }), env)).status, 403);
+  const publicCensus = await worker.fetch(new Request(env.APP_ORIGIN + "/api/public/census"), env);
+  const publicData = await publicCensus.json();
+  assert.equal(publicData.cats.length, 0);
+  assert.ok(publicData.colonies.every((colony) => !("last_feeder" in colony) && !("latitude" in colony)));
 });

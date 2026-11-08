@@ -1,5 +1,7 @@
 # Judge Readiness Review
 
+> **Superseded source review.** This document preserves an earlier November 8 snapshot and contains historical capability gaps that have since changed. Do not use its scores, implementation claims, or runbook language for the final demo. The authoritative current record is [implementation-review.md](implementation-review.md), including its dated formal local verification; use [demo-runbook.md](demo-runbook.md) for the current judge flow and [demodata-coverage.md](demodata-coverage.md) for fixture limits. No document claims a remote D1/R2 deployment, real OpenAI-agent execution, real vision, or production readiness.
+
 Review date: November 8, 2026. This is an evidence-based review of the checked-in demo, not a promise of production capability. All animals, messages, photos, locations, counts, and tracker activity described here are fictional hackathon fixtures.
 
 ## Requested judging rubric

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Check, FlaskConical } from "lucide-react";
+import { privateHeaders } from "../lib/private-api";
 
 type EvaluationCase = { id: string; text: string; expected: "urgent" | "watch" | "routine" };
 type EvaluationResult = EvaluationCase & { actual: string; mode: string; passed: boolean };
@@ -25,8 +26,8 @@ export function AgentEvaluation() {
     try {
       const next: EvaluationResult[] = [];
       for (const item of cases) {
-        const response = await fetch("/api/triage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: item.text, source: "evaluation", urgent: false }) });
-        if (!response.ok || !response.headers.get("content-type")?.includes("application/json")) throw new Error("Worker API unavailable. Run the Cloudflare Worker locally to evaluate.");
+        const response = await fetch("/api/triage", { method: "POST", headers: privateHeaders(), body: JSON.stringify({ message: item.text, source: "evaluation", urgent: false }) });
+        if (!response.ok || !response.headers.get("content-type")?.includes("application/json")) throw new Error("Sign in as a team member in Care workspace, then retry.");
         const result = await response.json() as { urgency?: string; mode?: string };
         if (!result.urgency) throw new Error("Triage did not return an urgency.");
         next.push({ ...item, actual: result.urgency, mode: result.mode ?? "unknown", passed: result.urgency === item.expected });

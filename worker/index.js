@@ -1,7 +1,13 @@
-import { analyzeCommunitySignal, predictLostCatLocation, triageReport } from "./triage-agent.js";
+import { analyzeCommunitySignal, triageReport } from "./triage-agent.js";
+import { planStoredCatSearch } from "./search-planner.js";
+import { listCareCases, createCareCase, resolveCareCase, getOutcomeReport, outcomeReportCsv } from "./reports.js";
+import { listSearchTasks, createSearchTask, updateSearchTask } from "./search-tasks.js";
+import { listCommunityReviews, createCommunityReview, updateCommunityReview } from "./community-review.js";
 import { allowLoginAttempt, getSession, loginWithPassword, requireRole, requireSameOrigin, revokeCurrentSession, sessionHeaders } from "./auth.js";
 import { readPrivatePhoto, reviewPrivatePhoto, uploadPrivatePhoto } from "./photos.js";
-import { importSyntheticFixture } from "./intake.js";
+import { importSyntheticFixture, validateSyntheticFixtureBatch } from "./intake.js";
+import { parseSyntheticSmsRelay, parseSyntheticWhatsAppExport } from "./raw-intake.js";
+import { seedCanonicalCatsFromObservations, materializeCanonicalCensus, applyHumanDedupeDecision, getCanonicalWorkspace } from "./census.js";
 
 const service = "devday-js-2026";
 
@@ -18,6 +24,17 @@ async function readLimitedJson(request, limit) {
   while (true) { const { done, value } = await reader.read(); if (done) break; size += value.byteLength; if (size > limit) { await reader.cancel(); throw new Error("Request too large"); } chunks.push(value); }
   const bytes = new Uint8Array(size); let offset = 0; for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
   return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+async function assessFixture(fixture, env) {
+  const validated = validateSyntheticFixtureBatch(fixture);
+  const assessments = {};
+  for (const record of validated.records) {
+    const result = await triageReport({ message: record.text, source: record.sourceKind, catCount: record.count?.high, feedingConfirmed: record.feedingConfirmed }, env);
+    assessments[record.id] = result;
+    if (result.urgency === "urgent" && !record.flags.includes("agent_urgent")) record.flags.push("agent_urgent");
+  }
+  return { fixture: validated, assessments };
 }
 
 export default {
@@ -51,10 +68,66 @@ export default {
       return Response.json({ ok: true }, { headers: await revokeCurrentSession(request, env) });
     }
 
+    if (["/api/private/care-cases", "/api/private/care-cases/resolve", "/api/private/reports/outcomes", "/api/private/reports/outcomes.csv"].includes(pathname)) {
+      const reportRoute = pathname.startsWith("/api/private/reports/");
+      const mutation = request.method === "POST";
+      if ((reportRoute && request.method !== "GET") || (!reportRoute && !["GET", "POST"].includes(request.method)) || (pathname.endsWith("/resolve") && !mutation)) return json({ error: "Method not allowed" }, 405);
+      const auth = await requireRole(request, env, mutation ? ["admin", "coordinator"] : reportRoute ? ["admin", "coordinator", "sponsor"] : ["admin", "coordinator", "volunteer"], { csrf: mutation });
+      if (!auth.ok) return auth.response;
+      try {
+        const common = { db: env.DB, session: auth.session };
+        if (mutation) {
+          const input = await readLimitedJson(request, 6000);
+          const result = pathname.endsWith("/resolve") ? await resolveCareCase({ ...common, input }) : await createCareCase({ ...common, input });
+          await materializeCanonicalCensus(env.DB);
+          return json(result, pathname.endsWith("/resolve") ? 200 : 201);
+        }
+        const query = new URL(request.url).searchParams;
+        const filters = { from: query.get("from"), to: query.get("to") };
+        if (!reportRoute) return json(await listCareCases({ ...common, ...filters }));
+        const report = await getOutcomeReport({ ...common, ...filters });
+        return pathname.endsWith(".csv") ? new Response(outcomeReportCsv(report), { headers: { "Content-Type": "text/csv; charset=utf-8", "Cache-Control": "private, no-store", "Content-Disposition": 'attachment; filename="synthetic-care-outcomes.csv"', "X-Content-Type-Options": "nosniff" } }) : json(report);
+      } catch (error) { return json({ error: String(error?.message ?? "Care report unavailable").slice(0, 240) }, Number(error?.status) || 400); }
+    }
+
+    if (["/api/private/search-tasks", "/api/private/search-tasks/update"].includes(pathname)) {
+      if (!["GET", "POST"].includes(request.method) || (pathname.endsWith("/update") && request.method !== "POST")) return json({ error: "Method not allowed" }, 405);
+      const mutation = request.method === "POST";
+      const auth = await requireRole(request, env, ["admin", "coordinator", "volunteer"], { csrf: mutation });
+      if (!auth.ok) return auth.response;
+      try {
+        const common = { db: env.DB, session: auth.session };
+        if (!mutation) return json(await listSearchTasks(common));
+        const body = await readLimitedJson(request, 8000);
+        return json(pathname.endsWith("/update") ? await updateSearchTask({ ...common, body }) : await createSearchTask({ ...common, body }), pathname.endsWith("/update") ? 200 : 201);
+      } catch (error) { return json({ error: String(error?.message ?? "Search task unavailable").slice(0, 240) }, Number(error?.status) || 400); }
+    }
+
+    if (["/api/private/community-reviews", "/api/private/community-reviews/update"].includes(pathname)) {
+      const update = pathname.endsWith("/update");
+      if (!["GET", "POST"].includes(request.method) || (update && request.method !== "POST")) return json({ error: "Method not allowed" }, 405);
+      const mutation = request.method === "POST";
+      const auth = await requireRole(request, env, update ? ["admin", "coordinator"] : ["admin", "coordinator", "volunteer"], { csrf: mutation });
+      if (!auth.ok) return auth.response;
+      try {
+        const common = { db: env.DB, session: auth.session };
+        if (!mutation) return json(await listCommunityReviews(common));
+        const input = await readLimitedJson(request, 12000);
+        return json(update ? await updateCommunityReview({ ...common, input }) : await createCommunityReview({ ...common, input }), update ? 200 : 201);
+      } catch (error) { return json({ error: String(error?.message ?? "Community review unavailable").slice(0, 240) }, Number(error?.status) || 400); }
+    }
+
     if (pathname === "/api/private/photos" && request.method === "POST") {
       const auth = await requireRole(request, env, ["admin", "coordinator", "volunteer"], { csrf: true });
       if (!auth.ok) return auth.response;
       return uploadPrivatePhoto(request, env, String(auth.session.userId));
+    }
+
+    if (pathname === "/api/private/photos" && request.method === "GET") {
+      const auth = await requireRole(request, env, ["admin", "coordinator", "volunteer"]);
+      if (!auth.ok) return auth.response;
+      const result = await env.DB.prepare("SELECT id, content_type, size_bytes, review_status, created_at, reviewed_at FROM private_photos WHERE (? != 'volunteer' OR uploaded_by = ?) ORDER BY created_at DESC LIMIT 100").bind(auth.session.user.role, String(auth.session.userId)).all();
+      return json({ photos: result.results ?? [] });
     }
 
     if (pathname === "/api/private/synthetic-import") {
@@ -63,8 +136,11 @@ export default {
       if (!auth.ok) return auth.response;
       if (!(request.headers.get("content-type") ?? "").includes("application/json") || Number(request.headers.get("content-length") || 0) > 250000) return json({ error: "Invalid fixture" }, 400);
       try {
-        const result = await importSyntheticFixture({ db: env.DB, fixture: await readLimitedJson(request, 250000) });
-        return json({ persisted: result.persisted, batchId: result.batchId, reportsImported: result.reportsImported, traceIds: result.traceIds }, 201);
+        const assessed = await assessFixture(await readLimitedJson(request, 250000), env);
+        const result = await importSyntheticFixture({ db: env.DB, ...assessed });
+        await seedCanonicalCatsFromObservations(env.DB);
+        await materializeCanonicalCensus(env.DB);
+        return json({ persisted: result.persisted, batchId: result.batchId, reportsImported: result.reportsImported, traceIds: result.traceIds, modes: [...new Set(Object.values(assessed.assessments).map((value) => value.mode))] }, 201);
       } catch (error) {
         const message = String(error?.message ?? "");
         if (message.startsWith("Synthetic intake rejected:")) return json({ error: message }, 400);
@@ -73,11 +149,94 @@ export default {
       }
     }
 
+    if (pathname === "/api/private/raw-import") {
+      if (request.method !== "POST") return json({ error: "Method not allowed" }, 405, { Allow: "POST" });
+      const auth = await requireRole(request, env, ["admin", "coordinator"], { csrf: true });
+      if (!auth.ok) return auth.response;
+      try {
+        const input = await readLimitedJson(request, 100000);
+        if (input?.synthetic !== true || typeof input.text !== "string" || input.text.length > 60000 || !["whatsapp_export", "sms_relay"].includes(input.sourceKind)) return json({ error: "A fictional export and supported source kind are required" }, 400);
+        const sourceDigest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input.sourceKind + "\n" + input.text.trim())))).map((value) => value.toString(16).padStart(2, "0")).join("");
+        const existing = await env.DB.prepare("SELECT id FROM intake_import_batches WHERE source_digest = ?").bind(sourceDigest).first();
+        if (existing) return json({ error: "This source was already imported. Stored reviews and census were preserved.", batchId: existing.id }, 409);
+        const common = { batchId: input.batchId, provenance: "Deliberately synthetic exported chat fixture; submitted by an authenticated team member." };
+        const fixture = input.sourceKind === "whatsapp_export" ? parseSyntheticWhatsAppExport({ ...common, text: input.text }) : parseSyntheticSmsRelay({ ...common, ndjson: input.text });
+        const assessed = await assessFixture(fixture, env);
+        const result = await importSyntheticFixture({ db: env.DB, ...assessed, sourceDigest });
+        await seedCanonicalCatsFromObservations(env.DB);
+        await materializeCanonicalCensus(env.DB);
+        return json({ persisted: true, batchId: result.batchId, reportsImported: result.reportsImported, modes: [...new Set(Object.values(assessed.assessments).map((value) => value.mode))], traceIds: result.traceIds }, 201);
+      } catch (error) {
+        const message = String(error?.message ?? "");
+        if (/rejected:|invalid time/i.test(message)) return json({ error: message }, 400);
+        if (/unique constraint/i.test(message)) return json({ error: "This source was already imported." }, 409);
+        return json({ error: "Raw import unavailable" }, 503);
+      }
+    }
+
+    if (pathname === "/api/private/field-report") {
+      if (request.method !== "POST") return json({ error: "Method not allowed" }, 405);
+      const auth = await requireRole(request, env, ["admin", "coordinator", "volunteer"], { csrf: true });
+      if (!auth.ok) return auth.response;
+      try {
+        const body = await readLimitedJson(request, 6000);
+        const areas = { "Little Havana": "COL-04", "Little River": "COL-02", "North Miami": "COL-07", "Fort Lauderdale": "COL-11", "Miami Beach": "COL-MB-DEMO", "Hialeah": "COL-HL-DEMO", "Homestead": "COL-HM-DEMO", "Hollywood / Broward": null };
+        if (body.synthetic !== true || !/^[0-9a-f-]{36}$/i.test(body.id) || typeof body.message !== "string" || !body.message.trim() || body.message.length > 2000 || !Object.hasOwn(areas, body.broadArea) || !["/demo-assets/poppy-calico-limp.png", "/demo-assets/marmalade-orange-tabby.png", "/demo-assets/tux-missing-search.png"].includes(body.photo) || (body.count !== null && (!Number.isInteger(body.count) || body.count < 0 || body.count > 200))) return json({ error: "Use a fictional message, supported demo area and photo, and a valid count." }, 400);
+        const batchId = "phone-" + body.id;
+        const existing = await env.DB.prepare("SELECT id FROM intake_import_batches WHERE id=?").bind(batchId).first();
+        if (existing) return json({ persisted: true, traceIds: [batchId + ":field"] });
+        const observedAt = body.observedAt === undefined ? new Date().toISOString() : body.observedAt;
+        if (!Number.isFinite(Date.parse(observedAt)) || Date.parse(observedAt) > Date.now() + 60_000) return json({ error: "Observation time must be a valid past time." }, 400);
+        const fixture = parseSyntheticSmsRelay({ batchId, provenance: "Fictional phone submission with deliberately shared demo area and fixture photo.", defaultBroadArea: body.broadArea, ndjson: JSON.stringify({ id: "field", from: "Synthetic team member " + auth.session.userId, received_at: new Date(observedAt).toISOString(), body: "DEMO: " + body.message, attachments: [body.photo] }) });
+        const record = fixture.records[0]; record.sourceKind = "phone_report"; record.proposedColonyKey = areas[body.broadArea]; record.broadArea = body.broadArea; record.colonyConfidence = record.proposedColonyKey ? .95 : .4;
+        if (body.count !== null) record.count = { low: body.count, high: body.count, confidence: .85 };
+        record.feedingConfirmed = body.feedingConfirmed === true;
+        if (body.urgent === true) record.flags.push("agent_urgent");
+        const assessed = await assessFixture(fixture, env);
+        const result = await importSyntheticFixture({ db: env.DB, ...assessed });
+        await seedCanonicalCatsFromObservations(env.DB); await materializeCanonicalCensus(env.DB);
+        return json({ persisted: true, traceIds: result.traceIds }, 201);
+      } catch (error) { return json({ error: /rejected:/i.test(String(error?.message)) ? String(error.message).slice(0, 200) : "Unable to save this field report." }, 400); }
+    }
+
+    if (pathname === "/api/private/census") {
+      if (request.method !== "GET") return json({ error: "Method not allowed" }, 405, { Allow: "GET" });
+      const auth = await requireRole(request, env, ["admin", "coordinator", "volunteer", "sponsor"]);
+      if (!auth.ok) return auth.response;
+      return json(await getCanonicalWorkspace(env.DB, { publicView: auth.session.user.role === "sponsor" }));
+    }
+
+    if (pathname === "/api/public/census") {
+      if (request.method !== "GET") return json({ error: "Method not allowed" }, 405);
+      const workspace = await getCanonicalWorkspace(env.DB, { publicView: true });
+      return json({ synthetic: true, colonies: workspace.colonies.map(({ colony_key, broad_area, cat_count, fixed_count, tnr_pending, needs_vet }) => ({ colony_key, broad_area, cat_count, fixed_count, tnr_pending, needs_vet })), cats: [], disclaimer: "Broad fictional activity only. No individual identity, feeder, contacts, source histories, live tags, or precise locations." });
+    }
+
+    if (pathname === "/api/private/team") {
+      if (request.method !== "GET") return json({ error: "Method not allowed" }, 405, { Allow: "GET" });
+      const auth = await requireRole(request, env, ["admin", "coordinator"]);
+      if (!auth.ok) return auth.response;
+      const result = await env.DB.prepare("SELECT id, email, role FROM users WHERE disabled_at IS NULL AND role IN ('admin','coordinator','volunteer') ORDER BY email").all();
+      return json({ members: result.results ?? [] });
+    }
+
+    if (pathname === "/api/private/dedupe") {
+      if (request.method !== "POST") return json({ error: "Method not allowed" }, 405, { Allow: "POST" });
+      const auth = await requireRole(request, env, ["admin", "coordinator"], { csrf: true });
+      if (!auth.ok) return auth.response;
+      try {
+        const input = await readLimitedJson(request, 3000);
+        const result = await applyHumanDedupeDecision(env.DB, { ...input, reviewerId: auth.session.userId });
+        await materializeCanonicalCensus(env.DB);
+        return json({ ok: true, ...result });
+      } catch (error) { return json({ error: String(error?.message ?? "Duplicate review failed").slice(0, 300) }, 409); }
+    }
+
     if (pathname === "/api/private/intake") {
       if (request.method !== "GET") return json({ error: "Method not allowed" }, 405, { Allow: "GET" });
       const auth = await requireRole(request, env, ["admin", "coordinator", "volunteer"]);
       if (!auth.ok) return auth.response;
-      const reports = await env.DB.prepare("SELECT m.trace_id, m.source_kind, m.volunteer_alias, m.body_redacted, m.broad_area, m.received_at, m.attachment_manifest_json, o.id AS observation_id, o.proposed_cat_key, o.proposed_colony_key, o.colony_confidence, o.duplicate_group, o.urgency, o.uncertainty_note FROM intake_source_messages m JOIN intake_observations o ON o.source_message_id = m.id ORDER BY m.received_at DESC LIMIT 100").all();
+      const reports = await env.DB.prepare("SELECT m.trace_id, m.source_kind, m.volunteer_alias, m.body_redacted, m.broad_area, m.received_at, m.attachment_manifest_json, o.id AS observation_id, o.proposed_cat_key, o.proposed_colony_key, o.colony_confidence, o.duplicate_group, o.urgency, o.uncertainty_note, a.mode AS assessment_mode, a.evidence_json AS match_evidence_json FROM intake_source_messages m JOIN intake_observations o ON o.source_message_id = m.id LEFT JOIN intake_assessments a ON a.observation_id=o.id ORDER BY m.received_at DESC LIMIT 100").all();
       const reviews = await env.DB.prepare("SELECT id, review_kind, status, explanation, observation_id FROM intake_review_queue ORDER BY created_at DESC LIMIT 100").all();
       const feedings = await env.DB.prepare("SELECT colony_key, feeder_alias, headcount, visited_at FROM feeder_visit_log ORDER BY visited_at DESC LIMIT 100").all();
       return json({ synthetic: true, reports: reports.results ?? [], reviews: reviews.results ?? [], feedings: feedings.results ?? [] });
@@ -96,6 +255,7 @@ export default {
           env.DB.prepare("UPDATE intake_review_queue SET status = ?, resolved_at = ? WHERE id = ? AND status = 'open' AND (review_kind = 'possible_duplicate' OR ? != 'kept_separate')").bind(body.decision, timestamp, body.id, body.decision),
         ]);
         if (!decisions[0].meta?.changes) return json({ error: "Review not found, already decided, or decision not applicable" }, 409);
+        await materializeCanonicalCensus(env.DB);
         return json({ ok: true, decision: body.decision, note: "Decision recorded; no cat records were merged." });
       } catch { return json({ error: "Unable to record decision" }, 400); }
     }
@@ -166,7 +326,7 @@ export default {
       if (request.method === "GET" && !photoRoute[2]) {
         const auth = await requireRole(request, env, ["admin", "coordinator", "volunteer"]);
         if (!auth.ok) return auth.response;
-        return readPrivatePhoto(env, photoRoute[1]);
+        return readPrivatePhoto(env, photoRoute[1], auth.session);
       }
       if (request.method === "POST" && photoRoute[2]) {
         const auth = await requireRole(request, env, ["admin", "coordinator"], { csrf: true });
@@ -180,15 +340,17 @@ export default {
     if (pathname === "/api/config") {
       if (request.method !== "GET") return json({ error: "Method not allowed" }, 405, { Allow: "GET" });
       // This browser key must be restricted by HTTP referrer and to Maps JavaScript API.
-      return json({ googleMapsBrowserKey: env.GOOGLE_MAPS_BROWSER_KEY ?? null });
+      return json({ googleMapsBrowserKey: env.GOOGLE_MAPS_BROWSER_KEY ?? null, localDemo: env.LOCAL_DEMO === true });
     }
 
     if (pathname === "/api/triage") {
       if (request.method !== "POST") return json({ error: "Method not allowed" }, 405, { Allow: "POST" });
+      const auth = await requireRole(request, env, ["admin", "coordinator", "volunteer"], { csrf: true });
+      if (!auth.ok) return auth.response;
       const contentType = request.headers.get("content-type") ?? "";
       if (!contentType.includes("application/json")) return json({ error: "Expected application/json" }, 415);
       try {
-        const report = await request.json();
+        const report = await readLimitedJson(request, 8000);
         if (!report || typeof report !== "object" || typeof report.message !== "string" || report.message.length > 4_000) return json({ error: "Invalid report" }, 400);
         return json(await triageReport(report, env));
       } catch { return json({ error: "Unable to triage this report" }, 400); }
@@ -196,16 +358,20 @@ export default {
 
     if (pathname === "/api/lost-cat-search") {
       if (request.method !== "POST") return json({ error: "Method not allowed" }, 405, { Allow: "POST" });
+      const auth = await requireRole(request, env, ["admin", "coordinator", "volunteer"], { csrf: true });
+      if (!auth.ok) return auth.response;
       if (!(request.headers.get("content-type") ?? "").includes("application/json")) return json({ error: "Expected application/json" }, 415);
-      try { const input = await request.json(); if (!input || typeof input !== "object" || typeof input.description !== "string" || input.description.length > 2_000) return json({ error: "Invalid lost-cat report" }, 400); return json(await predictLostCatLocation(input, env)); }
-      catch { return json({ error: "Unable to plan this search" }, 400); }
+      try { const input = await readLimitedJson(request, 8000); if (!input || typeof input !== "object" || typeof input.description !== "string" || input.description.length > 2_000) return json({ error: "Invalid lost-cat report" }, 400); return json(await planStoredCatSearch(input, env)); }
+      catch { return json({ error: "Choose a supported demo area and a valid past last-seen time." }, 400); }
     }
 
     if (pathname === "/api/community-signal") {
       if (request.method !== "POST") return json({ error: "Method not allowed" }, 405, { Allow: "POST" });
+      const auth = await requireRole(request, env, ["admin", "coordinator", "volunteer"], { csrf: true });
+      if (!auth.ok) return auth.response;
       if (!(request.headers.get("content-type") ?? "").includes("application/json")) return json({ error: "Expected application/json" }, 415);
       try {
-        const input = await request.json();
+        const input = await readLimitedJson(request, 16000);
         if (!input || typeof input !== "object" || input.authorized !== true || typeof input.content !== "string" || !input.content.trim() || input.content.length > 6_000) return json({ error: "Authorized, redacted community content is required" }, 400);
         return json(await analyzeCommunitySignal(input, env));
       } catch { return json({ error: "Unable to stage this community signal" }, 400); }

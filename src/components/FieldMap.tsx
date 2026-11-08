@@ -25,6 +25,8 @@ type WeatherSnapshot = {
 
 declare global {
   interface Window {
+    mewsMapsReady?: () => void;
+    gm_authFailure?: () => void;
     google?: { maps?: { Map: new (element: Element, options: object) => GoogleMapInstance; Marker: new (options: object) => { setMap: (map: GoogleMapInstance | null) => void; addListener: (name: string, handler: () => void) => void } } };
   }
 }
@@ -42,6 +44,8 @@ const colors: Record<MapLayer, string> = {
 const weatherPoints = [
   { area: "Miami-Dade weather cell", lat: 25.78, lng: -80.22 },
   { area: "Broward weather cell", lat: 26.12, lng: -80.16 },
+  { area: "Miami Beach weather cell", lat: 25.79, lng: -80.13 },
+  { area: "South Dade weather cell", lat: 25.47, lng: -80.48 },
 ];
 
 function weatherDetail(snapshot: WeatherSnapshot) {
@@ -52,7 +56,7 @@ function weatherDetail(snapshot: WeatherSnapshot) {
 }
 
 function weatherStatus(snapshot: WeatherSnapshot) {
-  if ((snapshot.precipitationNextSixHours ?? 0) >= 8) return "Flood / cover review";
+  if ((snapshot.precipitationNextSixHours ?? 0) >= 8) return "Heavy rain / cover review";
   if ((snapshot.precipitationNextSixHours ?? 0) >= 2) return "Rain-cover review";
   if ((snapshot.temperature ?? 0) >= 32) return "Heat-shade review";
   return "Weather planning";
@@ -63,7 +67,6 @@ export function visibleRadiusMeters(record: MapRecord, scope: "internal" | "spon
   // only internal members receive feeder/contact information elsewhere in the
   // product. Public viewers are always rounded to at least 500 m.
   if (scope === "public") return Math.max(500, record.internalRadiusMeters * 2.4);
-  if (scope === "sponsor") return Math.max(45, record.internalRadiusMeters);
   return record.internalRadiusMeters;
 }
 
@@ -72,22 +75,30 @@ function fallbackRadiusPixels(record: MapRecord, scope: "internal" | "sponsor" |
   return Math.min(145, Math.max(scope === "public" ? 38 : 13, meters / (scope === "public" ? 13 : 9)));
 }
 
+let mapsLoading: Promise<void> | null = null;
+let mapsAuthFailed = false;
 function loadGoogleMaps(key: string) {
-  if (window.google?.maps) return Promise.resolve();
-  const existing = document.querySelector<HTMLScriptElement>("script[data-google-maps]");
-  if (existing) return new Promise<void>((resolve, reject) => {
-    existing.addEventListener("load", () => resolve(), { once: true });
-    existing.addEventListener("error", () => reject(new Error("Map script could not load")), { once: true });
-  });
-  return new Promise<void>((resolve, reject) => {
+  const maps = window.google?.maps as any;
+  if (mapsAuthFailed) return Promise.reject(new Error("Map authorization failed"));
+  if (typeof maps?.Map === "function" && typeof maps?.Marker === "function") return Promise.resolve();
+  if (mapsLoading) return mapsLoading;
+  if (typeof maps?.importLibrary === "function") {
+    mapsLoading = Promise.all([maps.importLibrary("maps"), maps.importLibrary("marker")]).then(() => undefined);
+    return mapsLoading;
+  }
+  mapsLoading = new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error("Map loading timed out")), 15000);
+    const fail = () => { clearTimeout(timeout); reject(new Error("Map script could not load")); };
+    window.mewsMapsReady = () => { clearTimeout(timeout); resolve(); };
+    window.gm_authFailure = () => { mapsAuthFailed = true; dispatchEvent(new Event("mews-map-auth-failed")); fail(); };
     const script = document.createElement("script");
     script.dataset.googleMaps = "true";
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&loading=async`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&loading=async&callback=mewsMapsReady`;
     script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Map script could not load"));
+    script.onerror = fail;
     document.head.append(script);
   });
+  return mapsLoading;
 }
 
 export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }: FieldMapProps) {
@@ -99,6 +110,7 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
   const [mapsFailed, setMapsFailed] = useState(false);
   const [trackerTick, setTrackerTick] = useState(0);
   const [weather, setWeather] = useState<WeatherSnapshot[]>([]);
+  const [weatherFailed, setWeatherFailed] = useState(false);
   const weatherRecords = useMemo<MapRecord[]>(() => weather.map((snapshot, index) => ({
     id: `weather-${index}`,
     title: snapshot.area,
@@ -144,17 +156,17 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
       try {
         const results = await Promise.all(weatherPoints.map(async (point) => {
           const params = new URLSearchParams({ latitude: String(point.lat), longitude: String(point.lng), current: "temperature_2m,wind_speed_10m,weather_code", hourly: "precipitation", forecast_days: "1", timezone: "America/New_York" });
-          const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`);
+          const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params}`, { signal: AbortSignal.timeout(8000) });
           if (!response.ok) throw new Error("Weather source unavailable");
           const data = await response.json() as { current?: { temperature_2m?: number; wind_speed_10m?: number; weather_code?: number; time?: string }; hourly?: { time?: string[]; precipitation?: number[] } };
           const now = data.current?.time ?? new Date().toISOString();
           const start = Math.max(0, data.hourly?.time?.findIndex((time) => time >= now) ?? 0);
-          const precipitation = (data.hourly?.precipitation ?? []).slice(start, start + 6).reduce((sum, value) => sum + Number(value || 0), 0);
+          const precipitation = data.hourly?.precipitation?.length && data.hourly.time?.length ? data.hourly.precipitation.slice(start, start + 6).reduce((sum, value) => sum + Number(value || 0), 0) : null;
           return { area: point.area, temperature: data.current?.temperature_2m ?? null, precipitationNextSixHours: precipitation, windSpeed: data.current?.wind_speed_10m ?? null, weatherCode: data.current?.weather_code ?? null, updatedAt: data.current?.time ?? "just now" };
         }));
-        if (!cancelled) setWeather(results);
+        if (!cancelled) { setWeather(results); setWeatherFailed(false); }
       } catch {
-        if (!cancelled) setWeather([]);
+        if (!cancelled) { setWeather([]); setWeatherFailed(true); }
       }
     }
     void loadWeather();
@@ -164,6 +176,8 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
 
   useEffect(() => {
     let cancelled = false;
+    const authFailure = () => { if (!cancelled) { setMapsFailed(true); setGoogleReady(false); } };
+    addEventListener("mews-map-auth-failed", authFailure);
     fetch("/api/config")
       .then((response) => response.ok && response.headers.get("content-type")?.includes("application/json") ? response.json() : {})
       .then((config: { googleMapsBrowserKey?: string | null }) => {
@@ -173,13 +187,13 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
         });
       })
       .catch(() => { if (!cancelled) setMapsFailed(true); });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; removeEventListener("mews-map-auth-failed", authFailure); };
   }, []);
 
   useEffect(() => {
     if (!googleReady || !mapHost.current || !window.google?.maps || mapInstance.current) return;
     const Maps = window.google.maps as any;
-    mapInstance.current = new Maps.Map(mapHost.current, {
+    try { mapInstance.current = new Maps.Map(mapHost.current, {
       center: { lat: 25.83, lng: -80.23 },
       zoom: 10,
       minZoom: 8,
@@ -189,13 +203,21 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
       clickableIcons: false,
       restriction: { latLngBounds: { north: 26.45, south: 25.1, east: -79.85, west: -80.9 }, strictBounds: false },
       styles: [{ featureType: "poi", stylers: [{ visibility: "off" }] }],
-    });
+    }); } catch { setMapsFailed(true); setGoogleReady(false); return; }
     return () => {
       overlays.current.forEach((overlay) => overlay.setMap(null));
       overlays.current = [];
       mapInstance.current = null;
     };
   }, [googleReady]);
+
+  useEffect(() => {
+    const record = renderedRecords.find((item) => item.id === selectedId);
+    if (!googleReady || !mapInstance.current || !record) return;
+    mapInstance.current.setCenter(record.position);
+    mapInstance.current.setZoom(record.locationSignal === "live-tag" ? 14 : 13);
+    // Selection changes focus the existing map; tracker pings preserve the user's zoom.
+  }, [googleReady, selectedId]);
 
   useEffect(() => {
     const map = mapInstance.current;
@@ -229,6 +251,7 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
   }, [googleReady, onSelect, scope, renderedRecords]);
 
   return <div className="field-map" aria-label="Interactive South Florida field map">
+    {googleReady && <button type="button" className="map-overview-button" onClick={() => { mapInstance.current?.setCenter({ lat: 25.83, lng: -80.23 }); mapInstance.current?.setZoom(10); }}>Show South Florida</button>}
     <div ref={mapHost} className={googleReady ? "google-map active" : "google-map"} aria-hidden={!googleReady} />
     {!googleReady && <div className="map-fallback" role="img" aria-label="Synthetic South Florida map preview with approximate demo markers">
       <div className="fallback-water water-east" /><div className="fallback-water water-west" />
@@ -238,6 +261,6 @@ export function FieldMap({ records, activeLayers, onSelect, selectedId, scope }:
         <button className={`map-pin ${record.layer} ${selectedId === record.id ? "selected" : ""}`} aria-label={`${record.title}, ${record.area}, synthetic demo`} onClick={() => onSelect(record)} />
       </div>)}
     </div>}
-    <div className="map-provider-status">{googleReady ? `Google Maps · ${scope} confidence radii · ${renderedRecords.some((record) => record.id === "live-scout") ? "LIVE Skipper tracker" : "synthetic demo records"}${weather.length ? " · weather cells refreshed" : ""}` : mapsFailed ? "Map unavailable · showing local synthetic preview" : "Synthetic preview · add GOOGLE_MAPS_BROWSER_KEY for Google Maps"}</div>
+    <div className="map-provider-status">{googleReady ? `Google Maps · ${scope} search radii · ${renderedRecords.some((record) => record.id === "live-scout") ? "SIMULATED Skipper tracker" : "synthetic demo records"}${weather.length ? " · weather cells refreshed" : weatherFailed ? " · weather unavailable" : ""}` : mapsFailed ? "Map unavailable · showing local synthetic preview" : "Synthetic preview · Google Maps loading or unconfigured"}</div>
   </div>;
 }

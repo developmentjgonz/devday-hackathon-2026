@@ -4,37 +4,24 @@ Mews is Team JS's project for the [DevDay Exchange Community Hackathon](https://
 
 Mangrove Mews helps a small rescue turn intentional field reports, exported chat history, photos, and approximate locations into an operating picture that a coordinator can act on the same day.
 
-**Status:** The feature branch now contains the responsive end-to-end demo: report intake, chat/SMS demo history, private map layers, urgent review, cat/colony records, missing-cat search tasks, and bounded OpenAI Agents SDK triage. It uses fictional cats, messages, photos, and deliberately approximate locations only.
+**Status:** This branch contains a local, persisted, synthetic-only demo. `npm run dev:full` runs the React workspace through a loopback-only adapter with SQLite and local private-photo storage. The Worker is structured for Cloudflare D1/R2, but a remote deployment is not claimed or required for the demo. It uses fictional cats, messages, photos, and deliberately approximate locations only.
 
 ## What is implemented
 
-- Responsive coordinator, volunteer, and mobile-ready report experience (the three requested roles remain simple: Founder/Admin, Coordinator, Volunteer).
-- Web, intentional SMS relay, and WhatsApp **Export chat** intake paths. The app never automates a live WhatsApp chat.
-- A private Miami-Dade/Broward field map with Google Maps support, layer toggles, missing-search tasks, hazard records, and safety modes.
-- A fallback map preview when a browser-restricted Google Maps key is not present.
-- A review queue which treats duplicate matching as evidence-scored suggestions; a person must approve any merge or sensitive status change.
-- An OpenAI Agents SDK triage agent that can recommend urgency, a colony candidate, clarification, and coordinator tasks. It is not allowed to reveal precise locations or take irreversible action.
-- A bounded OpenAI Agents SDK lost-cat navigator that compares a report with fictional cat records and safe map-search context, then returns coordinator-reviewed probability zones and volunteer search guidance. It never claims to locate an animal or expose private routes.
-- A Community Signals desk that parses only authorized, redacted public-listing text, moderator exports, consent-based feeds, or volunteer submissions into coordinator-review candidates. It never automates Facebook access, fetches an arbitrary source URL, or retains phone numbers and exact home locations.
-- A clearly labeled fictional live-tracker simulation that moves one demo cat’s internal map marker every six seconds; it illustrates uncertainty radii without representing a real animal or device.
-- Offline-safe web intake: if the API is unavailable, the report is stored in browser local storage for later retry.
-- Synthetic WhatsApp and SMS fixture files plus fictional cat images for the live demo.
+- A responsive Workspace for Founder/Admin, Coordinator, and Volunteer roles, with server-backed local demo sign-in and route permissions.
+- Intentional web, SMS-relay, and WhatsApp **Export chat** intake. The raw synthetic messages are parsed into traceable reports and a stored canonical census; the app never automates a live WhatsApp chat.
+- Human-controlled duplicate review: candidate evidence is scored, but a person selects the canonical cat and records the merge rationale.
+- A private, stored-census Miami-Dade/Broward field map with Google Maps support, layer/radius controls, approximate anchors, hazards, and a fallback preview if Maps is unavailable.
+- A clearly labeled fictional tracker animation, planning weather, feeding schedules, durable browser outbox/retry, and fictional chat/SMS/photo fixtures for the demo.
+- Private-photo upload and review for fictional demo images: the browser re-encodes selected images to strip metadata before upload, and access is role/uploader scoped in the local demo.
+- A bounded Agents SDK triage/search experience. It is deterministic by default; an API key is opt-in for local testing. It recommends rather than merges records, changes sensitive statuses, or claims to locate an animal.
+- Community-signal review UI that accepts only deliberate, redacted text; it does not scrape social platforms, fetch arbitrary URLs, or automatically create animal records.
 
-## Cloudflare deployment
+## Deployment status
 
-| Service | URL or resource | Purpose |
-| --- | --- | --- |
-| Live app | [devday-js-2026.deal-finder.workers.dev](https://devday-js-2026.deal-finder.workers.dev/) | Cloudflare Worker serves the Hello shell and built frontend assets. |
-| API health | [/api/health](https://devday-js-2026.deal-finder.workers.dev/api/health) | Checks the D1 connection with a read-only query. |
-| Worker dashboard | [devday-js-2026](https://dash.cloudflare.com/d4501cb4c3a0ec6b4b67b051d83d3a30/workers/services/view/devday-js-2026/production) | Manage the Worker deployment. |
-| D1 dashboard | [devday-js-2026-db](https://dash.cloudflare.com/d4501cb4c3a0ec6b4b67b051d83d3a30/workers/d1/databases/5e49e8ba-625a-4954-9ebc-10d7f3100b90) | Manage the database, bound to the Worker as `DB`. |
-| Build and deployment runs | [GitHub Actions](https://github.com/developmentjgonz/devday-hackathon-2026/actions/workflows/cloudflare.yml) | View build checks and release deployment results. |
+The checked demo path is local: `npm run dev:full` uses a loopback-only Vite adapter, Node's SQLite support, and filesystem-backed private-photo objects. It seeds four synthetic accounts and applies the repository migrations locally. It is not a production deployment.
 
-Cloudflare dashboard links require an account with access to these resources. The app and health URLs are public.
-
-Pushes to `main` run checks. Pushes to `release` run checks and deploy to the live URL. Pull requests to either branch run checks only. See the [workflow](.github/workflows/cloudflare.yml), [Cloudflare configuration](wrangler.jsonc), and [infrastructure guide](docs/infrastructure.md) for setup and deployment details.
-
-Storybook runs locally and is not deployed. D1 persistence, sign-in, verified membership, R2 uploads, and production ingestion webhooks are the next implementation phase.
+The Worker code and migrations are designed for D1/R2-style bindings, but remote D1/R2 configuration, production identity, persistent secrets, ingestion webhooks, monitoring, and a deployed URL must be completed and reviewed before any field use. See [infrastructure.md](docs/infrastructure.md) for the intended infrastructure shape; do not treat it as a record of a live deployment.
 
 ## Project guide
 
@@ -65,11 +52,11 @@ Empty implementation folders contain `.gitkeep` so Git can preserve the reviewed
 
 ## Local development
 
-Use Node.js 24 (see `.nvmrc`).
+Use Node.js 24 or newer (the local persisted demo uses `node:sqlite`; see `.nvmrc`). This pass was verified on Node 26.5.0.
 
 ```sh
 npm ci
-npm run dev
+npm run dev:full
 ```
 
 Open [the local app](http://127.0.0.1:5197/).
@@ -103,7 +90,7 @@ For `npm run dev`, copy `.env.example` to `.env.local` and add the same browser-
 cp .env.example .env.local
 ```
 
-`OPENAI_API_KEY` enables the server-side triage agent. Without it, the triage route remains available in a safe, deterministic demo mode.
+`OPENAI_API_KEY` is only consulted when `MEWS_ENABLE_OPENAI=1` enables the server-side triage path. Without both, the triage route remains available in deterministic demo mode.
 
 `GOOGLE_MAPS_BROWSER_KEY` enables the Google Maps basemap. It is a browser key (not a secret), but must be limited by HTTP referrer and enabled only for the Maps JavaScript API. Exact rescue data must never be embedded in public JavaScript.
 

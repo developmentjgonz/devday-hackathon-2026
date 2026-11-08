@@ -4,6 +4,7 @@ import { FieldMap, visibleRadiusMeters } from "@/components/FieldMap";
 import { DemoProof } from "@/components/DemoProof";
 import { catProfiles, colonyStats, demoChats, mapRecords, searchPredictionRecords, type MapLayer, type MapRecord } from "@/lib/demo-data";
 
+export { MapView, LostCatNavigator };
 type View = "overview" | "map" | "reports" | "cats" | "tasks" | "lost";
 type Source = "web" | "sms" | "whatsapp";
 type Triage = { urgency: "urgent" | "watch" | "routine"; colonyConfidence: number; summary: string; mode?: string };
