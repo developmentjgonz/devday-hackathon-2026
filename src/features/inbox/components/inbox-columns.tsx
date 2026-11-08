@@ -1,25 +1,21 @@
 import { useMemo } from 'react'
-import { Badge } from '@/components/ui/badge'
 import { createDataColumnHelper } from '@/components/ui/data-table'
 import { TableOpenButton } from '@/components/ui/table'
 import { Text } from '@/components/ui/typography'
 import type { InboxData, InboxReport } from '../types'
+import { reportStatusLabels } from '../types'
 
 const column = createDataColumnHelper<InboxReport>()
 const dateFormat = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' })
 
-export function ReviewSignal({ report }: { report: InboxReport }) {
-  if (report.status === 'processed') return <Badge variant={report.duplicateOf ? 'outline' : 'success'}>{report.duplicateOf ? 'Duplicate linked' : 'Processed'}</Badge>
-  if (report.status === 'waiting') return <Badge variant="outline">Waiting for details</Badge>
-  if (report.possibleDuplicateOf) return <Badge variant="warning">Check duplicate</Badge>
-  if (!report.colonyId) return <Badge variant="warning">Needs location</Badge>
-  return <Badge variant="outline">Ready to review</Badge>
+export function ReportStatusText({ report }: { report: InboxReport }) {
+  return <Text size="small" tone="muted">{reportStatusLabels[report.status]}</Text>
 }
 
 export const inboxColumnClassName = (id: string) => ({
   title: undefined,
   colony: 'hidden w-36 lg:table-cell',
-  review: 'hidden w-40 md:table-cell',
+  status: 'hidden w-40 md:table-cell',
   reporter: 'hidden w-32 2xl:table-cell',
   received: 'hidden w-36 xl:table-cell',
 })[id]
@@ -33,10 +29,11 @@ export function useInboxColumns(data: InboxData) {
         header: 'Report',
         cell: ({ row }) => <div className="min-w-0 space-y-1">
           <TableOpenButton unread={row.original.unread} aria-label={`Review ${row.original.title}`}>{row.original.title}</TableOpenButton>
-          <div className="flex min-h-6 flex-wrap items-center gap-x-3 gap-y-1">
-            {row.original.urgent ? <Badge variant="destructive">Urgent</Badge> : null}
+          <div className="flex min-h-5 flex-wrap items-center gap-x-3 gap-y-1">
+            {row.original.urgent ? <Text size="caption" tone="danger" weight="medium">Urgent</Text> : null}
             <Text size="caption" tone="muted" className="truncate"><span className="lg:hidden">{colonies.get(row.original.colonyId) ?? 'Colony unknown'} · </span>{row.original.category}</Text>
-            <span className="md:hidden"><ReviewSignal report={row.original} /></span>
+            {row.original.possibleDuplicateOf && !row.original.duplicateOf && row.original.status !== 'processed' ? <Text size="caption" tone="muted">Possible duplicate</Text> : null}
+            <span className="md:hidden"><ReportStatusText report={row.original} /></span>
           </div>
         </div>,
       }),
@@ -47,7 +44,7 @@ export function useInboxColumns(data: InboxData) {
           {cats.has(row.original.catId) ? <Text size="caption" tone="muted" className="truncate">{cats.get(row.original.catId)}</Text> : null}
         </div>,
       }),
-      column.display({ id: 'review', header: 'Review', cell: ({ row }) => <ReviewSignal report={row.original} /> }),
+      column.accessor('status', { header: 'Status', enableSorting: false, cell: ({ row }) => <ReportStatusText report={row.original} /> }),
       column.accessor('reporter', { header: 'From', cell: ({ getValue }) => <Text size="small" className="truncate">{getValue()}</Text> }),
       column.accessor((report) => Date.parse(report.submittedAt), {
         id: 'received', header: 'Received', sortDescFirst: true,

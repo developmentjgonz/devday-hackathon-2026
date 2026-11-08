@@ -1,8 +1,14 @@
 // UI contracts only. The rescue schema and network API are designed separately.
-export type ReviewStatus = 'review' | 'waiting' | 'processed'
+export type ReportStatus = 'pending' | 'waiting' | 'processed'
+export const reportStatusLabels: Record<ReportStatus, string> = {
+  pending: 'Pending',
+  waiting: 'Waiting for details',
+  processed: 'Processed',
+}
 export type InboxColony = { id: string; name: string }
 export type InboxCat = { id: string; colonyId: string; name: string }
-export type ReportTask = { id: string; title: string; owner: string; due: string; status: 'open' }
+export type TaskStatus = 'open' | 'completed'
+export type ReportTask = { id: string; title: string; owner: string; due: string; status: TaskStatus }
 export type ReportEntry = { id: string; author: string; text: string }
 export type ReportAttachment = { id: string; name: string; url: string; mimeType: string; size: number }
 export type InboxReport = {
@@ -17,7 +23,7 @@ export type InboxReport = {
   careNote: string
   urgent: boolean
   unread: boolean
-  status: ReviewStatus
+  status: ReportStatus
   possibleDuplicateOf?: string
   duplicateOf?: string
   attachments: ReportAttachment[]

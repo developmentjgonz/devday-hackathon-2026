@@ -4,7 +4,7 @@ import {
   createTableHook, rowPaginationFeature, rowSelectionFeature, rowSortingFeature,
   sortFns, tableFeatures, type ReactTable, type RowData,
 } from '@tanstack/react-table'
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, CircleAlert, Search } from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, CircleAlert, Search } from 'lucide-react'
 import { Button } from './button'
 import { Card } from './card'
 import { Checkbox } from './checkbox'
@@ -15,6 +15,8 @@ import { SelectField } from './select-field'
 import { Table, TableCell, TableHead, TableRow } from './table'
 import { Text } from './typography'
 import { cn } from '@/lib/utils'
+import { DataTableToolbar, type DataTableToolbarProps } from './data-table-toolbar'
+import '@/styles/data-table.css'
 
 const features = tableFeatures({
   columnVisibilityFeature,
@@ -50,9 +52,10 @@ type DataTableProps<T extends RowData> = {
   selection?: { getLabel: (row: T) => string; actions: (rows: T[]) => ReactNode }
   columnClassName?: (columnId: string) => string | undefined
   ref?: Ref<HTMLDivElement>
+  toolbar?: Omit<DataTableToolbarProps, 'selection'>
 }
 
-export function DataTable<T extends RowData>({ table, label, itemName = 'record', emptyState, request, activeRowId, onOpenRow, selection, columnClassName, ref }: DataTableProps<T>) {
+export function DataTable<T extends RowData>({ table, label, itemName = 'record', emptyState, request, activeRowId, onOpenRow, selection, columnClassName, ref, toolbar }: DataTableProps<T>) {
   const pageSizeId = useId()
   const viewport = useRef<HTMLDivElement>(null)
   const rows = table.getRowModel().rows
@@ -69,7 +72,9 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
   }
 
   return (
-    <Card ref={ref} padding="none" tabIndex={-1} aria-label={label}>
+    <div className="space-y-3">
+      {toolbar || (selection && selected.length) ? <DataTableToolbar {...toolbar} selection={selection && selected.length ? { count: selected.length, actions: selection.actions(selected.map((row) => row.original)), onClear: () => table.resetRowSelection() } : undefined} /> : null}
+      <Card ref={ref} padding="none" tabIndex={-1} aria-label={label}>
       <div className="relative" aria-busy={busy || undefined}>
         {request?.status === 'error' ? <EmptyState
           icon={<CircleAlert />} tone="danger" title={`Could not load ${label.toLowerCase()}`}
@@ -78,8 +83,8 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
           <LoadingIndicator label={`Loading ${label.toLowerCase()}`} />
           <Text size="small" tone="muted">Loading {label.toLowerCase()}…</Text>
         </div> : <>
-          <div ref={viewport} className={cn('overflow-auto overscroll-contain', pages > 1 ? 'h-[65svh]' : 'max-h-[65svh]')} inert={busy || undefined}>
-            <Table aria-label={label}>
+          <div ref={viewport} className={cn('mews-table-scroll overflow-auto overscroll-contain', pages > 1 ? 'h-[65svh]' : 'max-h-[65svh]')} inert={busy || undefined}>
+            <Table aria-label={label} density="compact">
               <caption className="sr-only">{label}{onOpenRow ? '. Activate a row title to open its details.' : ''}</caption>
               <thead className="sticky top-0 z-10 bg-card">
                 {table.getHeaderGroups().map((group) => <tr key={group.id}>
@@ -90,11 +95,11 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
                   </TableHead> : null}
                   {group.headers.map((header) => {
                     const direction = header.column.getIsSorted()
-                    const SortIcon = direction === 'asc' ? ArrowUp : direction === 'desc' ? ArrowDown : ArrowUpDown
+                    const SortIcon = direction === 'asc' ? ArrowUp : ArrowDown
                     return <TableHead key={header.id} className={columnClassName?.(header.column.id)}
                       aria-sort={direction === 'asc' ? 'ascending' : direction === 'desc' ? 'descending' : undefined}>
                       {header.isPlaceholder ? null : header.column.getCanSort() ? <Button variant="table-header" size="sm" className="-ml-2.5 max-w-full" onClick={() => { header.column.toggleSorting(); table.firstPage() }} disabled={busy}>
-                        <table.FlexRender header={header} /><SortIcon aria-hidden="true" />
+                        <table.FlexRender header={header} />{direction ? <SortIcon aria-hidden="true" /> : null}
                       </Button> : <table.FlexRender header={header} />}
                     </TableHead>
                   })}
@@ -129,13 +134,9 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
         <div className="flex flex-wrap items-center gap-2" aria-live="polite">
-          {selection && selected.length ? <>
-            <Text size="caption" weight="medium">{selected.length} selected</Text>
-            {selection.actions(selected.map((row) => row.original))}
-            <Button variant="ghost" size="sm" onClick={() => table.resetRowSelection()}>Clear selection</Button>
-          </> : <Text size="caption" tone="muted">{total ? `${pageIndex * pageSize + 1}–${Math.min((pageIndex + 1) * pageSize, total)} of ${total}` : '0'} {itemName}{total === 1 ? '' : 's'}</Text>}
+          <Text size="caption" tone="muted">{total > pageSize ? `${pageIndex * pageSize + 1}–${Math.min((pageIndex + 1) * pageSize, total)} of ${total}` : total} {itemName}{total === 1 ? '' : 's'}</Text>
         </div>
-        <div className="flex flex-wrap items-center gap-4">
+        {total > 10 || pages > 1 ? <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <Label htmlFor={pageSizeId}>Rows</Label>
             <SelectField id={pageSizeId} aria-label="Rows per page" className="w-20" value={pageSize} disabled={busy} onChange={(event) => { table.setPagination({ pageIndex: 0, pageSize: Number(event.target.value) }); viewport.current?.scrollTo({ top: 0 }) }}>
@@ -147,8 +148,9 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
             <Text size="caption" className="min-w-20 text-center" aria-live="polite">Page {pageIndex + 1} of {pages}</Text>
             <Button variant="ghost" size="icon-sm" aria-label="Next page" loading={request?.status === 'refreshing' && request.action === 'next'} disabled={!table.getCanNextPage() || busy || request?.status === 'error'} onClick={() => changePage('next')}><ChevronRight aria-hidden="true" /></Button>
           </nav>
-        </div>
+        </div> : null}
       </div>
-    </Card>
+      </Card>
+    </div>
   )
 }

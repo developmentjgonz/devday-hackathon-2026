@@ -4,5 +4,5 @@ import { InboxScreen } from '../components/inbox-screen'
 
 export function InboxPage() {
   const user = useRouteLoaderData('workspace') as SessionUser
-  return <><title>Inbox · Mews</title><InboxScreen currentUser={user.name} /></>
+  return <><title>Reports · Mews</title><InboxScreen currentUser={user.name} /></>
 }

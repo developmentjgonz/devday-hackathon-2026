@@ -17,6 +17,9 @@ export const badgeStateVariants: CompleteVariants<ComponentProps<typeof Badge>['
 // Each shared source must have browser coverage or a reason it has no own states.
 // The coverage test compares this list with the source directory.
 export const sharedStateCoverage = {
+  'toaster.tsx': 'Sonner owns notification stacking, dismissal, and announcements; Feedback/Notifications demonstrates success and error. Report action checks cover emitted confirmations.',
+  'attachment-list.tsx': 'Attachment actions compose the shared Button; attachment stories cover photos, audio, documents, and unavailable previews.',
+  'data-table-toolbar.tsx': 'Search, colony filtering, clear filters, and selection actions in data-table.spec.ts; compact fields compose the tested shared Input and SelectField.',
   'data-table.tsx': 'Sorting, page size, pagination, selection, loading, retry, keyboard, and narrow widths in data-table.spec.ts.',
   'workspace-header.tsx': 'Page names, breadcrumbs, sticky actions, route changes, and narrow widths in workspace-header.spec.ts.',
   'account-button.tsx': 'Account trigger: popover open, hover, focus, Escape, and focus return.',

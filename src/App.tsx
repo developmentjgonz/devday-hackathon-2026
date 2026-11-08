@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Outlet, ScrollRestoration, useLocation } from 'react-router'
 import { SkipLink } from '@/components/layout/skip-link'
+import { Toaster } from '@/components/ui/toaster'
 
 /** Shared route behavior. Public and workspace layouts own their own UI. */
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
       <SkipLink />
       <Outlet />
       <ScrollRestoration />
+      <Toaster />
     </>
   )
 }

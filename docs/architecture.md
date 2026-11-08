@@ -20,7 +20,7 @@ The frontend uses Vite, React, TypeScript, React Router in Data Mode, Tailwind C
 | `/sign-up` | `AccountLayout` | Local signup with optional phone; creates a pending member |
 | `/account-status` | `AccountLayout` | Pending approval or suspended access |
 | `/app` | `AppLayout` | Personal overview greeting |
-| `/app/inbox` | `AppLayout` | Interactive local inbox with fictional reports; review, questions, duplicates, and linked care tasks remain in component memory. See [inbox scope](inbox.md). |
+| `/app/reports` | `AppLayout` | Interactive local inbox with fictional reports; review, questions, duplicates, and linked care tasks remain in component memory. See [inbox scope](inbox.md). |
 | `/app/*` when unmatched | `AppLayout` | Not-found page with a link to `/app` |
 | Other unmatched paths | `SiteLayout` | Not-found page with a link to `/` |
 

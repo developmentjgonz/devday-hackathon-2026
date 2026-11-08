@@ -21,7 +21,7 @@ export function ViewTabs({ items, value, onValueChange, label, className, childr
             'relative flex min-h-11 items-center gap-2 border-b-2 border-transparent px-0 py-3 font-sans text-sm font-medium text-muted-foreground outline-none select-none hover:text-foreground focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-ring data-active:border-primary-text data-active:text-foreground',
           )}>
             {item.label}
-            {item.count !== undefined ? <span className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums">{item.count}</span> : null}
+            {item.count !== undefined ? <span className="text-xs text-muted-foreground tabular-nums">{item.count}</span> : null}
           </Tabs.Tab>
         ))}
       </Tabs.List>

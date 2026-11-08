@@ -9,6 +9,7 @@ import { PrivacyPage, TermsPage } from '@/features/legal/pages/legal-page'
 import { CommunityPage } from '@/features/community/pages/community-page'
 import { OverviewPage } from '@/features/overview/pages/overview-page'
 import { InboxPage } from '@/features/inbox/pages/inbox-page'
+import { MyTasksPage } from '@/features/tasks/pages/my-tasks-page'
 import { NotFoundPage } from '@/pages/not-found-page'
 import { RouteErrorPage } from '@/pages/route-error-page'
 import { RouteLoadingPage } from '@/pages/route-loading-page'
@@ -50,7 +51,8 @@ export const router = createBrowserRouter([
         Component: AppLayout,
         children: [
           { index: true, Component: OverviewPage, handle: { breadcrumb: 'Overview' } },
-          { path: 'inbox', Component: InboxPage, handle: { breadcrumb: 'Inbox' } },
+          { path: 'tasks', Component: MyTasksPage, handle: { breadcrumb: 'My Tasks' } },
+          { path: 'reports', Component: InboxPage, handle: { breadcrumb: 'Reports' } },
           { path: '*', element: <NotFoundPage homePath="/app" /> },
         ],
       },

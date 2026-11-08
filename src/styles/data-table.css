@@ -1,0 +1,31 @@
+/* Keep the scroll track clear of the table surface's rounded corners. */
+.mews-table-scroll::-webkit-scrollbar {
+  width: 0.625rem;
+  height: 0.625rem;
+}
+
+.mews-table-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mews-table-scroll::-webkit-scrollbar-track:vertical {
+  margin-block: var(--surface-radius);
+}
+
+.mews-table-scroll::-webkit-scrollbar-track:horizontal {
+  margin-inline: var(--surface-radius);
+}
+
+.mews-table-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: var(--surface-radius);
+  background: color-mix(in oklch, var(--muted-foreground) 45%, transparent);
+  background-clip: padding-box;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  .mews-table-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--muted-foreground) transparent;
+  }
+}

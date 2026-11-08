@@ -5,3 +5,4 @@ const meta = { title: 'Display/Table', component: Table, decorators: [(Story) =>
 export default meta
 type Story = StoryObj<typeof meta>
 export const Reports: Story = {}
+export const Compact: Story = { render: () => <Table density="compact"><thead><tr><TableHead>Report</TableHead><TableHead>Review</TableHead></tr></thead><tbody><TableRow interactive><TableCell><TableOpenButton unread>Possible injury at Riverside</TableOpenButton></TableCell><TableCell>Needs care check</TableCell></TableRow></tbody></Table> }

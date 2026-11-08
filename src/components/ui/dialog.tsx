@@ -4,6 +4,7 @@ import * as React from 'react'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { cn } from 'cn'
 import { headingVariants } from './typography'
+import type { VariantProps } from 'class-variance-authority'
 
 import { Button } from '@/components/ui/button'
 import { XIcon } from 'lucide-react'
@@ -44,9 +45,11 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  size = 'default',
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
+  size?: 'default' | 'wide'
 }) {
   return (
     <DialogPortal>
@@ -54,7 +57,8 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          'fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-5 overflow-y-auto overscroll-contain rounded-surface border border-border bg-popover p-6 text-sm leading-6 text-popover-foreground duration-(--duration-normal) ease-(--ease-out) outline-none sm:max-w-md data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
+          'fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-5 overflow-y-auto overscroll-contain rounded-surface border border-border bg-popover p-6 text-sm leading-6 text-popover-foreground duration-(--duration-normal) ease-(--ease-out) outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
+          size === 'wide' ? 'sm:max-w-[min(48rem,calc(100%-2rem))]' : 'sm:max-w-md',
           className,
         )}
         {...props}
@@ -117,11 +121,11 @@ function DialogFooter({
   )
 }
 
-function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
+function DialogTitle({ className, size = 'section', ...props }: DialogPrimitive.Title.Props & VariantProps<typeof headingVariants>) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn(headingVariants({ size: 'section' }), className)}
+      className={cn(headingVariants({ size }), className)}
       {...props}
     />
   )

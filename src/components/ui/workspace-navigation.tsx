@@ -1,11 +1,12 @@
-import { Inbox, LayoutDashboard } from 'lucide-react'
+import { Inbox, LayoutDashboard, ListTodo } from 'lucide-react'
 import { NavLink } from 'react-router'
 import { Text } from './typography'
 import { TextLink } from './text-link'
 
 const items = [
   { to: '/app', label: 'Overview', icon: LayoutDashboard, end: true },
-  { to: '/app/inbox', label: 'Inbox', icon: Inbox, end: false },
+  { to: '/app/reports', label: 'Reports', icon: Inbox, end: false },
+  { to: '/app/tasks', label: 'My Tasks', icon: ListTodo, end: false },
 ]
 
 export function WorkspaceNavigation() {

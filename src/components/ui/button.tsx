@@ -78,7 +78,7 @@ function Button({
         data-slot="button-content"
         className={cn(
           'inline-flex min-w-0 items-center gap-[inherit] [justify-content:inherit]',
-          (variant === 'selection' || variant === 'account') && 'flex-1',
+          (variant === 'selection' || variant === 'account' || variant === 'media') && 'flex-1',
           loading && 'opacity-0',
         )}
       >

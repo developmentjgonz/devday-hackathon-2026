@@ -8,8 +8,38 @@ async function open(page: Page, story: string, dark: boolean) {
   await page.goto(`/iframe.html?id=${story}&viewMode=story`)
 }
 
+test('status, search, and colony filter one list; clear filters restores all reports', async ({ page }, info) => {
+  await open(page, 'pages-reports--focused-inbox', info.project.name === 'dark')
+  const controls = page.getByRole('region', { name: 'Table controls', exact: true })
+  const status = controls.getByRole('combobox', { name: 'Filter by status', exact: true })
+  const colony = controls.getByRole('combobox', { name: 'Filter by colony', exact: true })
+  const search = controls.getByRole('searchbox', { name: 'Search reports', exact: true })
+  const rows = page.locator('[data-slot="table"] tbody tr')
+  await expect(page.getByRole('tablist')).toHaveCount(0)
+  await expect(status).toHaveValue('pending')
+  await expect(rows).toHaveCount(5)
+  await status.selectOption('all')
+  await expect(rows).toHaveCount(7)
+  await colony.selectOption('canal')
+  await search.fill('Miso')
+  await expect(rows).toHaveCount(2)
+  await status.selectOption('processed')
+  await expect(rows).toHaveCount(1)
+  await expect(rows).toContainText('Miso seen at the Canal entrance')
+  await status.selectOption('waiting')
+  await expect(page.getByRole('heading', { name: 'No matching reports', exact: true })).toBeVisible()
+  await controls.getByRole('button', { name: 'Clear filters', exact: true }).click()
+  await expect(status).toHaveValue('all')
+  await expect(colony).toHaveValue('all')
+  await expect(search).toHaveValue('')
+  await expect(rows).toHaveCount(7)
+  await status.selectOption('waiting')
+  await expect(rows).toHaveCount(1)
+  await expect(rows).toContainText('Evening feeding cover needed')
+})
+
 test('sorting applies to all reports and resets pagination', async ({ page }, info) => {
-  await open(page, 'pages-inbox--busy-inbox', info.project.name === 'dark')
+  await open(page, 'pages-reports--busy-inbox', info.project.name === 'dark')
   await expect(page.locator('[data-slot="table"] tbody tr')).toHaveCount(10)
   await page.getByRole('button', { name: 'Next page', exact: true }).click()
   await expect(page.getByText('Page 2 of 3', { exact: true })).toBeVisible()
@@ -25,7 +55,7 @@ test('sorting applies to all reports and resets pagination', async ({ page }, in
 })
 
 test('opening and marking reports read keeps the current page; filtering resets it', async ({ page }, info) => {
-  await open(page, 'pages-inbox--busy-inbox', info.project.name === 'dark')
+  await open(page, 'pages-reports--busy-inbox', info.project.name === 'dark')
   await page.getByRole('button', { name: 'Next page', exact: true }).click()
   const firstTitle = page.locator('[data-slot="table"] tbody tr').first().locator('[data-slot="table-open-button"]')
   await firstTitle.click()
@@ -40,10 +70,10 @@ test('opening and marking reports read keeps the current page; filtering resets 
   await page.locator('[data-slot="table"] tbody tr').first().getByRole('checkbox').click()
   await expect(page.getByText('11 selected', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Mark read', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('11 reports marked as read.')
+  await expect(page.locator('[data-sonner-toast]').filter({ hasText: '11 reports marked as read.' })).toBeVisible()
   await expect(page.getByText('Page 3 of 3', { exact: true })).toBeVisible()
   await page.getByLabel('Search reports', { exact: true }).fill('parking lot')
-  await expect(page.getByText('Page 1 of 1', { exact: true })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Reports pagination', exact: true })).toHaveCount(0)
   await expect(page.locator('[data-slot="table"] tbody tr')).toHaveCount(6)
   await expect(page.locator('[data-slot="table"] tbody tr[aria-selected="true"]')).toHaveCount(0)
   await page.getByLabel('Search reports', { exact: true }).fill('no report matches this phrase')
@@ -53,7 +83,7 @@ test('opening and marking reports read keeps the current page; filtering resets 
 })
 
 test('page size and last-page bounds remain correct', async ({ page }, info) => {
-  await open(page, 'pages-inbox--busy-inbox', info.project.name === 'dark')
+  await open(page, 'pages-reports--busy-inbox', info.project.name === 'dark')
   await page.getByRole('button', { name: 'Next page', exact: true }).click()
   await page.getByRole('combobox', { name: 'Rows per page', exact: true }).selectOption('25')
   await expect(page.getByText('Page 1 of 2', { exact: true })).toBeVisible()
@@ -64,7 +94,7 @@ test('page size and last-page bounds remain correct', async ({ page }, info) => 
   await expect(page.getByRole('button', { name: 'Next page', exact: true })).toBeDisabled()
   expect(await page.getByRole('table', { name: 'Reports', exact: true }).locator('..').evaluate((element) => element.clientHeight)).toBe(height)
   await page.getByLabel('Filter by colony', { exact: true }).selectOption('')
-  await expect(page.getByText('Page 1 of 1', { exact: true })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: 'Reports pagination', exact: true })).toHaveCount(0)
   await expect(page.locator('[data-slot="table"] tbody tr')).toHaveCount(6)
 })
 
@@ -90,7 +120,7 @@ test('first load and error retry use the shared loading state', async ({ page },
   await open(page, 'display-data-table--loading', info.project.name === 'dark')
   await expect(page.getByRole('status', { name: 'Loading reports', exact: true })).toBeVisible()
   await expect(page.locator('[data-slot="loading-indicator"]')).toHaveCount(1)
-  await expect(page.getByRole('button', { name: 'Next page', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Next page', exact: true })).toHaveCount(0)
   await open(page, 'display-data-table--error-and-retry', info.project.name === 'dark')
   await page.getByRole('button', { name: 'Try again', exact: true }).click()
   await expect(page.getByRole('status', { name: 'Loading reports', exact: true })).toBeVisible()
@@ -101,7 +131,7 @@ test('first load and error retry use the shared loading state', async ({ page },
 for (const width of [320, 390, 768, 1024, 1440]) {
   test(`Inbox table and pagination fit ${width}px`, async ({ page }, info) => {
     await page.setViewportSize({ width, height: 844 })
-    await open(page, 'pages-inbox--busy-inbox', info.project.name === 'dark')
+    await open(page, 'pages-reports--busy-inbox', info.project.name === 'dark')
     await expect(page.locator('[data-slot="table"] tbody tr')).toHaveCount(10)
     await page.getByRole('button', { name: 'Next page', exact: true }).click()
     await expect(page.getByText('Page 2 of 3', { exact: true })).toBeVisible()

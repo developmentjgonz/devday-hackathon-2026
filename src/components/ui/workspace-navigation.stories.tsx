@@ -25,9 +25,17 @@ export const OverviewCurrent: Story = {
   ),
 }
 
-export const InboxCurrent: Story = {
+export const ReportsCurrent: Story = {
   render: () => (
-    <MemoryRouter initialEntries={['/app/inbox']}>
+    <MemoryRouter initialEntries={['/app/reports']}>
+      <div className="w-64 max-w-full bg-sidebar py-4"><WorkspaceNavigation /></div>
+    </MemoryRouter>
+  ),
+}
+
+export const MyTasksCurrent: Story = {
+  render: () => (
+    <MemoryRouter initialEntries={['/app/tasks']}>
       <div className="w-64 max-w-full bg-sidebar py-4"><WorkspaceNavigation /></div>
     </MemoryRouter>
   ),

@@ -2,10 +2,11 @@ import type { InboxData, InboxReport } from '../types'
 
 // Fictional local interaction fixture. No records or messages are fetched or sent.
 const base: Pick<InboxReport, 'attachments' | 'tasks' | 'thread' | 'history' | 'unread' | 'status' | 'urgent' | 'catId'> = {
-  attachments: [], tasks: [], thread: [], history: [], unread: true, status: 'review', urgent: false, catId: '',
+  attachments: [], tasks: [], thread: [], history: [], unread: true, status: 'pending', urgent: false, catId: '',
 }
 
-export const localInboxData: InboxData = {
+/** Detailed scenarios for focused interaction stories. */
+export const inboxScenarioData: InboxData = {
   colonies: [{ id: 'riverside', name: 'Riverside' }, { id: 'canal', name: 'Canal' }, { id: 'grove', name: 'Grove' }],
   cats: [{ id: 'pepper', colonyId: 'riverside', name: 'Pepper' }, { id: 'miso', colonyId: 'canal', name: 'Miso' }, { id: 'olive', colonyId: 'grove', name: 'Olive' }],
   members: ['Alex Morgan', 'Maya Rivera', 'Sam Chen'],
@@ -18,4 +19,56 @@ export const localInboxData: InboxData = {
     { ...base, id: 'report-waiting', title: 'Evening feeding cover needed', reporter: 'Maya Rivera', submittedAt: '2026-11-06T17:20:00-05:00', message: 'I cannot make my next evening visit at Riverside. Could someone cover for me?', category: 'Feeding cover', colonyId: 'riverside', careNote: 'Feeding cover requested. Visit date needs confirmation.', status: 'waiting', unread: false, thread: [{ id: 'question-date', author: 'Alex Morgan', text: 'Which date and time do you need covered?' }], history: ['Alex Morgan requested the visit date and time.'] },
     { ...base, id: 'report-earlier-sighting', title: 'Miso seen at the Canal entrance', reporter: 'Alex Morgan', submittedAt: '2026-11-07T08:25:00-05:00', message: 'Miso was at the Canal entrance during the morning round. Orange coat, white chest, and tipped ear confirmed.', category: 'Sighting', colonyId: 'canal', catId: 'miso', careNote: 'Miso sighting confirmed at the Canal entrance.', status: 'processed', unread: false, history: ['Alex Morgan confirmed the Miso sighting and finished the review.'] },
   ],
+}
+
+const activities = [
+  { title: 'Feeding visit complete', category: 'Feeding visit', message: 'The feeding visit is complete. Food dishes were cleaned and fresh water is available.' },
+  { title: 'Water bowls refilled', category: 'Feeding visit', message: 'Both water bowls were nearly empty. They have been washed and refilled.' },
+  { title: 'Food supplies running low', category: 'Supplies', message: 'The dry food container is running low. Please include food on the next supply visit.' },
+  { title: 'New cat near the garden', category: 'New sighting', message: 'An unfamiliar cat was seen near the garden. Its identity and ear-tip status are unconfirmed.' },
+  { title: 'Shelter needs a weather check', category: 'Shelter', message: 'The shelter entrance was damp after rain. Please check the bedding during the next visit.' },
+  { title: 'Evening visit cover requested', category: 'Feeding cover', message: 'The usual volunteer cannot attend an evening feeding visit. Cover and the visit time need confirmation.' },
+  { title: 'Cat returned to the feeding area', category: 'Sighting', message: 'A familiar cat returned to the feeding area and stayed for food. No identity change is requested.' },
+  { title: 'Litter beside the feeding station', category: 'Site care', message: 'Litter was found beside the feeding station. Please bring a bag and gloves for the next cleanup.' },
+  { title: 'Follow-up care check', category: 'Care concern', message: 'Please arrange a follow-up observation and record appetite, movement, and any change since the previous visit.' },
+  { title: 'Feeding area cleaned', category: 'Site care', message: 'The feeding area has been cleared of old food and litter. Dishes are clean and the path is clear.' },
+]
+
+const additionalReports: InboxReport[] = Array.from({ length: 93 }, (_, index): InboxReport => {
+  const status = index < 55 ? 'pending' : index < 74 ? 'waiting' : 'processed'
+  const colony = inboxScenarioData.colonies[index % inboxScenarioData.colonies.length]!
+  const reporter = inboxScenarioData.members[Math.floor(index / 3) % inboxScenarioData.members.length]!
+  const reviewer = inboxScenarioData.members[(index + 1) % inboxScenarioData.members.length]!
+  const activity = activities[index % activities.length]!
+  const urgent = status === 'pending' && index % 13 === 0
+  const unknownLocation = status !== 'processed' && index % 17 === 0
+  const cat = inboxScenarioData.cats.find((cat) => cat.colonyId === colony.id)
+  const title = urgent ? 'Care check requested' : activity.title
+  const message = urgent
+    ? 'One cat stayed away from food and appeared uncomfortable. Please arrange a care check. The observer could not confirm the cause.'
+    : activity.message
+  return {
+    id: `report-visit-${index + 1}`,
+    title: `${title} ${unknownLocation ? 'near the parking lot' : `at ${colony.name}`}`,
+    reporter,
+    submittedAt: new Date(Date.parse('2026-11-07T07:30:00-05:00') - index * 80 * 60_000).toISOString(),
+    message,
+    category: urgent ? 'Care concern' : activity.category,
+    colonyId: unknownLocation ? '' : colony.id,
+    catId: !unknownLocation && activity.category === 'Sighting' ? cat?.id ?? '' : '',
+    careNote: `${message}${unknownLocation ? ' Exact location needs confirmation.' : ''}`,
+    urgent,
+    unread: status !== 'processed' && index % 3 !== 0,
+    status,
+    attachments: [],
+    tasks: index % 11 === 0 ? [{ id: `visit-task-${index + 1}`, title: 'Arrange the next colony visit', owner: reviewer, due: '2026-11-08', status: 'open' }] : [],
+    thread: status === 'waiting' ? [{ id: `visit-question-${index + 1}`, author: reviewer, text: 'Can you confirm the exact location and the time of your visit?' }] : [],
+    history: status === 'processed' ? [`${reviewer} confirmed the report details and finished the review.`] : status === 'waiting' ? [`${reviewer} requested more details.`] : [],
+  }
+})
+
+/** Static workspace dataset: 60 pending, 20 waiting, and 20 processed. */
+export const localInboxData: InboxData = {
+  ...inboxScenarioData,
+  reports: [...inboxScenarioData.reports, ...additionalReports],
 }

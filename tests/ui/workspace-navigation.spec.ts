@@ -11,7 +11,7 @@ async function openNavigation(page: Page, dark: boolean) {
   return {
     navigation,
     overview: navigation.getByRole('link', { name: 'Overview', exact: true }),
-    inbox: navigation.getByRole('link', { name: 'Inbox', exact: true }),
+    inbox: navigation.getByRole('link', { name: 'Reports', exact: true }),
   }
 }
 
