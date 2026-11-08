@@ -34,6 +34,7 @@ for (const [name, change] of [
   ['reduced motion', { reducedMotion: true }],
   ['an offscreen map', { visible: false }],
   ['invalid motion tokens', { easing: 'invalid' }],
+  ['an incomplete easing curve', { easing: 'cubic-bezier(, 1, 0.32, 1)' }],
 ] as const) {
   test(`${name} uses an immediate change`, () => {
     const map = camera()
