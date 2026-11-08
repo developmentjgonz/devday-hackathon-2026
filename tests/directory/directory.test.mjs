@@ -7,7 +7,7 @@ import worker from '../../worker/index.ts';
 function fixture(t) {
   const sqlite = new DatabaseSync(':memory:');
   sqlite.exec('PRAGMA foreign_keys = ON');
-  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0012_user_photos.sql', '../../migrations/0013_colony_addresses.sql', '../../seeds/local.sql']) {
+  for (const file of ['../../migrations/0001_accounts.sql', '../../migrations/0002_colonies_and_cats.sql', '../../migrations/0003_cat_profiles.sql', '../../migrations/0012_user_photos.sql', '../../migrations/0013_colony_addresses.sql', '../../migrations/0014_google_place_ids.sql', '../../seeds/local.sql']) {
     sqlite.exec(readFileSync(new URL(file, import.meta.url), 'utf8'));
   }
   t.after(() => sqlite.close());
@@ -143,6 +143,28 @@ test('a colony address is saved with its location and can be updated or cleared'
   assert.equal(directory.colonies.find((item) => item.id === colony.id).address, undefined);
   assert.equal((await request(path, { method: 'PATCH', cookie, body: { coordinates: null, address: 'No pin' } })).status, 400);
   assert.equal((await request(path, { method: 'PATCH', cookie, body: { coordinates: [-80, 25], address: 'x'.repeat(501) } })).status, 400);
+});
+
+test('Google places persist only their place ID and can be replaced by a user pin', async (t) => {
+  const { sqlite, request, signIn } = fixture(t);
+  const cookie = await signIn('local-admin');
+  const response = await request('/api/directory/colonies', { method: 'POST', cookie, body: { name: 'Garden', googlePlaceId: 'test-place-id' } });
+  assert.equal(response.status, 201);
+  const { colony } = await response.json();
+  assert.equal(colony.googlePlaceId, 'test-place-id');
+  const row = sqlite.prepare('SELECT google_place_id, longitude, latitude, address FROM colonies WHERE id = ?').get(colony.id);
+  assert.deepEqual([row.google_place_id, row.longitude, row.latitude, row.address], ['test-place-id', null, null, null]);
+  const path = `/api/directory/colonies/${colony.id}/location`;
+  for (const body of [
+    { coordinates: [-80, 25], googlePlaceId: 'test-place-id' },
+    { coordinates: null, googlePlaceId: 'test-place-id', address: 'Google address' },
+    { coordinates: null, googlePlaceId: '' },
+  ]) assert.equal((await request(path, { method: 'PATCH', cookie, body })).status, 400);
+  const moved = await request(path, { method: 'PATCH', cookie, body: { coordinates: [-80.2, 25.8], address: 'Near the garden' } });
+  assert.equal(moved.status, 200);
+  const updated = (await moved.json()).colony;
+  assert.deepEqual(updated.coordinates, [-80.2, 25.8]);
+  assert.equal(updated.googlePlaceId, undefined);
 });
 
 

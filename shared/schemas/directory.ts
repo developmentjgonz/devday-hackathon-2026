@@ -16,10 +16,13 @@ const coordinates = z.tuple([
   z.number().finite().min(-90).max(90),
 ])
 const address = z.string().trim().max(500, 'Use 500 characters or fewer').default('')
-export const createColonySchema = z.object({ name, coordinates: coordinates.optional(), address })
+const googlePlaceId = z.string().trim().min(1).max(512).optional()
+export const createColonySchema = z.object({ name, coordinates: coordinates.optional(), address, googlePlaceId })
   .refine((input) => input.coordinates || !input.address, { path: ['address'], message: 'Set a location to add an address' })
-export const colonyLocationSchema = z.object({ coordinates: coordinates.nullable(), address })
+  .refine((input) => !input.googlePlaceId || (!input.coordinates && !input.address), { path: ['googlePlaceId'], message: 'A Google place cannot include saved address data' })
+export const colonyLocationSchema = z.object({ coordinates: coordinates.nullable(), address, googlePlaceId })
   .refine((input) => input.coordinates || !input.address, { path: ['address'], message: 'Set a location to add an address' })
+  .refine((input) => !input.googlePlaceId || (!input.coordinates && !input.address), { path: ['googlePlaceId'], message: 'A Google place cannot include saved address data' })
 export const createCatSchema = z.object({
   name,
   colonyId: z.string('Choose a colony').trim().min(1, 'Choose a colony').max(120, 'Choose a colony'),
