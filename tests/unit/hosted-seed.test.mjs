@@ -1,0 +1,34 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {readFileSync,readdirSync} from 'node:fs';
+import {hashDemoAccessCode} from '../../worker/auth.js';
+import {buildDemoSeed,hostedSnapshotRefresh} from '../../dev/seed-hosted-demo.mjs';
+import {getCanonicalWorkspace} from '../../worker/census.js';
+
+test('hosted seed is idempotent, retains reviewed identities and separates negative checks from reported sightings',async()=>{
+  const users=await Promise.all(['admin','coordinator','volunteer','sponsor'].map(async role=>({role,email:role+'@mangrovemews.demo',passwordHash:await hashDemoAccessCode(crypto.randomUUID().replaceAll('-','')+'A'.repeat(11))})));
+  const sqlite=new DatabaseSync(':memory:');
+  for(const file of readdirSync('migrations').filter(file=>file.endsWith('.sql')).sort())sqlite.exec(readFileSync('migrations/'+file,'utf8'));
+  const seed=await buildDemoSeed(JSON.stringify(users));sqlite.exec(seed);
+  const refresh=at=>{const query=hostedSnapshotRefresh(at);sqlite.prepare(query.sql).run(...query.params);};
+  refresh('2026-11-08T20:00:00.000Z');
+  assert.equal(sqlite.prepare('SELECT count(*) n FROM intake_source_messages').get().n,112);
+  assert.equal(sqlite.prepare('SELECT count(*) n FROM intake_assessments').get().n,112);
+  assert.equal(sqlite.prepare('SELECT count(*) n FROM canonical_colonies').get().n,18);
+  assert.equal(sqlite.prepare('SELECT count(*) n FROM field_appointments').get().n,1);
+  const candidate=sqlite.prepare("SELECT cat_key FROM canonical_cats WHERE cat_key='CAT-02-ALT'").get();assert.ok(candidate);
+  sqlite.exec("UPDATE canonical_cats SET status='merged',merged_into_cat_key='CAT-02',canonical_cat_key='CAT-02' WHERE cat_key='CAT-02-ALT'");
+  refresh('2026-11-08T20:01:00.000Z');
+  const before=sqlite.prepare("SELECT known_cat_records FROM canonical_census_snapshots WHERE colony_key='COL-02' ORDER BY materialized_at DESC LIMIT 1").get().known_cat_records;
+  sqlite.exec(seed);refresh('2026-11-08T20:02:00.000Z');
+  assert.equal(sqlite.prepare('SELECT count(*) n FROM intake_source_messages').get().n,112);
+  assert.equal(sqlite.prepare("SELECT status FROM canonical_cats WHERE cat_key='CAT-02-ALT'").get().status,'merged');
+  assert.equal(sqlite.prepare("SELECT known_cat_records FROM canonical_census_snapshots WHERE colony_key='COL-02' ORDER BY materialized_at DESC LIMIT 1").get().known_cat_records,before);
+  assert.equal(sqlite.prepare('PRAGMA foreign_key_check').all().length,0);
+  const db={prepare(sql){return{bind(...params){return{async all(){return{results:sqlite.prepare(sql).all(...params)}},async first(){return sqlite.prepare(sql).get(...params)??null;}}}}}};
+  const workspace=await getCanonicalWorkspace(db);const anchor=workspace.cats.find(cat=>cat.name==='Anchor');
+  assert.ok(anchor);assert.ok(Date.parse(anchor.last_report_at)>Date.parse(anchor.last_seen_at));
+  assert.equal(anchor.last_verified_sighting_at,null);assert.ok(workspace.history.some(row=>row.cat_key===anchor.cat_key&&row.kind==='Negative search check'));
+  sqlite.close();
+});

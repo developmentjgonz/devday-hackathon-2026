@@ -12,6 +12,8 @@ const SESSION_TTL_SECONDS = 60 * 60 * 8;
 const PASSWORD_MIN_LENGTH = 12;
 const PASSWORD_MAX_LENGTH = 256;
 const EMAIL_MAX_LENGTH = 254;
+const DEMO_CODE_PREFIX = "mews-demo-code-v1";
+const DEMO_CODE_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 
 export const AUTH_COOKIE = "mews_session";
 export const CSRF_COOKIE = "mews_csrf";
@@ -66,6 +68,29 @@ export async function verifyPassword(password, encodedHash) {
   } catch { return false; }
 }
 
+/** Hosted synthetic-demo access only. The trusted setup must generate each code
+ * from 32 random bytes; this is not a password KDF or a public registration API.
+ * Cloudflare caps native PBKDF2 below our existing password cost. Keep those
+ * password hashes intact and use separate high-entropy, salted access codes. */
+export async function hashDemoAccessCode(code) {
+  if (typeof code !== "string" || !DEMO_CODE_PATTERN.test(code)) throw new Error("Hosted demo codes must be 43 base64url characters generated from 32 random bytes.");
+  const salt = bytesToBase64Url(randomBytes(16));
+  const digest = await sha256(`${DEMO_CODE_PREFIX}:${salt}:${code}`);
+  return `${DEMO_CODE_PREFIX}$${salt}$${digest}`;
+}
+
+export async function verifyDemoAccessCode(code, encodedHash, env) {
+  if (env?.SYNTHETIC_HOSTED_DEMO !== "true" || typeof code !== "string" || !DEMO_CODE_PATTERN.test(code) || typeof encodedHash !== "string") return false;
+  const [prefix, salt, digest, extra] = encodedHash.split("$");
+  if (prefix !== DEMO_CODE_PREFIX || extra !== undefined || !/^[A-Za-z0-9_-]{22}$/.test(salt ?? "") || !/^[A-Za-z0-9_-]{43}$/.test(digest ?? "")) return false;
+  try {
+    const expected = base64UrlToBytes(digest);
+    if (base64UrlToBytes(salt).length !== 16 || expected.length !== 32) return false;
+    const actual = base64UrlToBytes(await sha256(`${DEMO_CODE_PREFIX}:${salt}:${code}`));
+    return constantTimeEqual(actual, expected);
+  } catch { return false; }
+}
+
 /** Use only from a protected admin/setup workflow; do not attach this to public registration. */
 export async function provisionUser(env, { email, password, role }) {
   if (!env?.DB) throw new Error("Database binding is required.");
@@ -89,7 +114,11 @@ export async function loginWithPassword(env, request, { email, password }) {
   const user = await env.DB.prepare("SELECT id, email, password_hash, role FROM users WHERE email = ? AND disabled_at IS NULL LIMIT 1").bind(normalizedEmail).first();
   // Do the same expensive work with an inert valid-format hash when no user exists to reduce enumeration timing.
   const inertHash = "pbkdf2-sha256$310000$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-  if (!await verifyPassword(password, user?.password_hash ?? inertHash)) return null;
+  const hash = user?.password_hash ?? inertHash;
+  const valid = hash.startsWith(`${DEMO_CODE_PREFIX}$`)
+    ? await verifyDemoAccessCode(password, hash, env)
+    : await verifyPassword(password, hash);
+  if (!valid) return null;
   if (!user || !isValidRole(user.role)) return null;
   return createSession(env, Number(user.id), { id: Number(user.id), email: user.email, role: user.role });
 }

@@ -6,6 +6,15 @@ type Colony = { colony_key: string; broad_area: string; cat_count: number; needs
 type Cat = { cat_key: string; name: string; status: string; colonies: string[]; last_seen_at: string | null; medical: string };
 type MissingCase = { id: string; name: string; status: string; lastSeenArea: string; lastSeenAt: string; plan?: { zones: { id: string; label: string; position: { lat: number; lng: number } | null; radiusM: number; confidence: number; safeGuide: string }[] } | null };
 const positions: Record<string, string> = { "COL-02": "col-lr", "COL-04": "col-fy", "COL-07": "col-cc", "COL-11": "col-rw", "COL-MB-DEMO": "col-mb", "COL-HL-DEMO": "col-hl", "COL-HM-DEMO": "col-hm" };
+function colonyAnchor(colony:Colony) {
+  const primary=mapRecords.find(record=>record.id===positions[colony.colony_key]);
+  if(primary)return primary;
+  const area=mapRecords.find(record=>record.layer==='colonies'&&record.area===colony.broad_area);
+  const base=area??(colony.broad_area==='Hollywood / Broward'?{...mapRecords.find(record=>record.id==='col-rw')!,area:colony.broad_area,position:{lat:26.01,lng:-80.16}}:null);
+  if(!base)return null;
+  const hash=[...colony.colony_key].reduce((value,char)=>Math.imul(value,31)+char.charCodeAt(0)|0,0)>>>0;
+  return {...base,title:colony.colony_key+' · '+colony.broad_area,position:{lat:base.position.lat+((hash%7)-3)*.003,lng:base.position.lng+((Math.floor(hash/7)%7)-3)*.003}};
+}
 export function ConnectedFieldMap() {
   const [records, setRecords] = useState<MapRecord[]>([]);
   const [revision, setRevision] = useState(0);
@@ -27,7 +36,7 @@ export function ConnectedFieldMap() {
         if (!response.ok) throw new Error();
         const census = await response.json() as { colonies: Colony[]; cats: Cat[] };
         const next = census.colonies.flatMap((colony) => {
-          const anchor = mapRecords.find((record) => record.id === positions[colony.colony_key]);
+          const anchor = colonyAnchor(colony);
           if (!anchor) return [];
           return [{ ...anchor, id: colony.colony_key, title: anchor.title, detail: colony.cat_count + " identified cats · " + (colony.fixed_count == null ? "fixed status unknown" : colony.fixed_count + " documented fixed") + " · " + colony.tnr_pending + " TNR pending · " + colony.needs_vet + " care reviews", status: colony.needs_vet ? "Care review" : "Monitoring", observedAt: "Stored census", layer: "colonies" as const }];
         });
@@ -39,7 +48,7 @@ export function ConnectedFieldMap() {
         const care = next.filter((record) => record.status === "Care review").map((record) => ({ ...record, id: "care:" + record.id, title: record.title + " care review", layer: "urgent" as const }));
         const feeding = census.colonies.filter((colony) => colony.last_fed_at).flatMap((colony) => { const home = next.find((record) => record.id === colony.colony_key); return home ? [{ ...home, id: "feed:" + colony.colony_key, layer: "feeding" as const, title: home.title + " last feed", detail: "Last confirmed feed " + new Date(colony.last_fed_at!).toLocaleString(), observedAt: colony.last_fed_at! }] : []; });
         const missing: MapRecord[] = (await missingRequest).filter((item) => item.status === "active").flatMap((item) => (item.plan?.zones ?? []).filter((zone) => zone.position).map((zone) => ({ id: "missing:" + item.id + ":" + zone.id, title: item.name + " · " + zone.label, area: item.lastSeenArea, position: zone.position!, layer: "searches", status: "Saved search suggestion", detail: "Unverified heuristic priority " + Math.round(zone.confidence * 100) + "% · " + zone.safeGuide, locationSignal: "last-seen", internalRadiusMeters: zone.radiusM, confidence: zone.confidence, observedAt: "Case last seen " + new Date(item.lastSeenAt).toLocaleString() })));
-        if (active) { const roleScope = session ? session.user.role === "sponsor" ? "sponsor" : "internal" : "public"; setAccess(roleScope); setScope((current) => access === roleScope ? current : roleScope); setRecords([...next, ...cats, ...care, ...feeding, ...missing]); setNotice(next.length ? "Stored census, observations and saved search plans refresh every 30 seconds. Anchors are fictional; public view uses broad activity zones. Radii are planning heuristics, not measured probabilities." : "Import a fictional chat in Care workspace to populate this map."); }
+        if (active) { const roleScope = session ? session.user.role === "sponsor" ? "sponsor" : "internal" : "public"; setAccess(roleScope); setScope((current) => access === roleScope ? current : roleScope); setRecords([...next, ...cats, ...care, ...feeding, ...missing]); const focus=sessionStorage.getItem('mews-map-focus');if(focus){const match=next.find(record=>record.id===focus);if(match){setSelected(match);sessionStorage.removeItem('mews-map-focus');}} setNotice(next.length ? "Stored census, observations and saved search plans refresh every 30 seconds. Anchors are fictional; public view uses broad activity zones. Radii are planning heuristics, not measured probabilities." : "Import a fictional chat in Care workspace to populate this map."); }
       } catch { if (active) setNotice("Unable to load colony census. Refresh after the backend is available."); }
     })();
     return () => { active = false; };

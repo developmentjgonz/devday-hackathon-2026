@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main, release]
   workflow_dispatch:
+    inputs:
+      deploy_demo:
+        description: Deploy this tested feature branch to dedicated synthetic D1/R2 resources
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -50,6 +55,15 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: npx --yes wrangler@4.158.0 deploy
+
+      - name: Deploy dedicated synthetic demo
+        if: github.event_name == 'workflow_dispatch' && inputs.deploy_demo && github.ref == 'refs/heads/feat/mangrove-mews-field-ops'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          MEWS_DEMO_USERS_JSON: ${{ secrets.MEWS_DEMO_USERS_JSON }}
+          MEWS_OPENAI_API_KEY: ${{ secrets.MEWS_OPENAI_API_KEY }}
+          MEWS_GOOGLE_MAPS_BROWSER_KEY: ${{ secrets.MEWS_GOOGLE_MAPS_BROWSER_KEY }}
+        run: node dev/deploy-demo.mjs
 
       - name: Check production app and database connection
         if: github.ref == 'refs/heads/release' && github.event_name != 'pull_request'

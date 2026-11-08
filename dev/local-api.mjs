@@ -47,9 +47,21 @@ export async function createLocalApi(root, config = {}) {
     async get(key) { const path = objectPath(key); return existsSync(path) ? { body: new Uint8Array(readFileSync(path)) } : null; },
     async delete(key) { const path = objectPath(key); if (existsSync(path)) unlinkSync(path); },
   };
+  // Match the Worker's assets binding for server-side vision inputs, restricted
+  // to fixture images rather than arbitrary URLs or local filesystem paths.
+  const ASSETS = {
+    async fetch(request) {
+      const path = new URL(request.url).pathname;
+      if (!/^\/demo-assets\/[a-z0-9-]+\.(png|jpe?g|webp)$/i.test(path)) return new Response("Not found", { status: 404 });
+      const file = resolve(root, "public", path.slice(1));
+      if (!existsSync(file)) return new Response("Not found", { status: 404 });
+      const type = path.endsWith(".png") ? "image/png" : path.endsWith(".webp") ? "image/webp" : "image/jpeg";
+      return new Response(new Uint8Array(readFileSync(file)), { headers: { "Content-Type": type } });
+    },
+  };
   const varsPath = resolve(root, ".dev.vars");
   const localVars = existsSync(varsPath) ? Object.fromEntries(readFileSync(varsPath, "utf8").split(/\r?\n/).filter((line) => /^[A-Z_]+=/.test(line.trim())).map((line) => { const equals = line.indexOf("="); return [line.slice(0, equals).trim(), line.slice(equals + 1).trim().replace(/^(["'])(.*)\1$/, "$2")]; })) : {};
-  const env = { DB, PHOTOS, LOCAL_DEMO: true, GOOGLE_MAPS_BROWSER_KEY: config.GOOGLE_MAPS_BROWSER_KEY || localVars.GOOGLE_MAPS_BROWSER_KEY, APP_ORIGIN: "http://127.0.0.1:5197", OPENAI_API_KEY: process.env.MEWS_ENABLE_OPENAI === "1" ? config.OPENAI_API_KEY || localVars.OPENAI_API_KEY : undefined };
+  const env = { DB, PHOTOS, ASSETS, LOCAL_DEMO: true, GOOGLE_MAPS_BROWSER_KEY: config.GOOGLE_MAPS_BROWSER_KEY || localVars.GOOGLE_MAPS_BROWSER_KEY, APP_ORIGIN: "http://127.0.0.1:5197", OPENAI_API_KEY: process.env.MEWS_ENABLE_OPENAI === "1" ? config.OPENAI_API_KEY || localVars.OPENAI_API_KEY : undefined };
   for (const role of ["admin", "coordinator", "volunteer", "sponsor"]) {
     const email = role + "@mangrovemews.demo";
     if (!sqlite.prepare("SELECT id FROM users WHERE email=?").get(email)) await provisionUser(env, { email, password: "SyntheticMiami2026!", role });

@@ -17,20 +17,28 @@ import { deliverFieldOutbox } from "./lib/field-outbox";
 import { TodayBoard } from "./components/TodayBoard";
 import { IntakeReview } from "./components/IntakeReview";
 import { MissingCases } from "./components/MissingCases";
+import { VisionMatch } from "./components/VisionMatch";
+import { FieldTools } from "./components/FieldTools";
+import { WorkspaceSearch } from "./components/WorkspaceSearch";
+import { MyShift } from "./components/MyShift";
 
-type View = "overview" | "map" | "lost" | "imports" | "photos" | "evaluation" | "community" | "schedule" | "search-tasks" | "outcomes" | "report" | "matches" | "cats" | "intake-review" | "missing";
+type View = "overview" | "map" | "lost" | "imports" | "photos" | "evaluation" | "community" | "schedule" | "search-tasks" | "outcomes" | "report" | "matches" | "cats" | "intake-review" | "missing" | "vision" | "field-tools" | "workspace-search" | "my-shift";
 const views = [
   ["overview", "Care workspace", Database],
+  ["my-shift", "My shift", CalendarDays],
+  ["workspace-search", "Search records", Compass],
   ["report", "New field report", PawPrint],
   ["intake-review", "Clarifications & routing", MessageSquare],
   ["imports", "Chat imports & outbox", Upload],
   ["map", "Field map", Compass],
   ["cats", "Cat profiles & visits", PawPrint],
   ["matches", "Photo match review", Image],
+  ["vision", "AI image comparison", Image],
   ["lost", "Lost cat navigator", Crosshair],
   ["missing", "Missing-cat cases", Crosshair],
   ["photos", "Private photo review", Image],
   ["schedule", "Feeding schedule", CalendarDays],
+  ["field-tools", "Field coordination", CalendarDays],
   ["search-tasks", "Field-search tasks", Crosshair],
   ["outcomes", "Care outcomes & reports", Database],
   ["evaluation", "Agent evaluation", FlaskConical],
@@ -119,6 +127,10 @@ export function Workspace({ photos }: { photos?: React.ReactNode }) {
       {view === "cats" && <CatDirectory/>}
       {view === "intake-review" && <IntakeReview/>}
       {view === "missing" && <MissingCases/>}
+      {view === "vision" && <VisionMatch/>}
+      {view === "field-tools" && <FieldTools/>}
+      {view === "workspace-search" && <WorkspaceSearch/>}
+      {view === "my-shift" && <MyShift/>}
     </div></main>
   </div>;
 }

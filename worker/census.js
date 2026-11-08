@@ -1,6 +1,8 @@
 import { getCareOutcomeStates } from "./reports.js";
+import { WEEKEND_CAT_META, WEEKEND_CAT_DETAILS } from "./synthetic-cat-catalog.js";
 /** Canonical, traceable census projection. No parser or materializer can merge cats. */
 const META = {
+  ...WEEKEND_CAT_META,
   "CAT-02": { name: "Marmalade", photo: "/demo-assets/marmalade-orange-tabby.png", fixed: null, tnr: "ear tip disputed" },
   "CAT-02-ALT": { name: "Marmalade candidate", photo: "/demo-assets/marmalade-orange-tabby.png", fixed: null, tnr: "unconfirmed duplicate" },
   "CAT-04": { name: "Poppy", photo: "/demo-assets/poppy-calico-limp.png", fixed: null, tnr: "unknown" },
@@ -9,6 +11,7 @@ const META = {
   "CAT-SKIPPER": { name: "Skipper", photo: null, fixed: null, tnr: "unknown", tracker: "Simulated demo tag · six-second pings" },
 };
 const DETAILS = {
+  ...WEEKEND_CAT_DETAILS,
   "CAT-02": { coat: "Orange tabby", markings: "White chin; left-ear nick under review", sex: "Female, reported", estimated_dob: "2023-03 (estimated)", breed: "Domestic shorthair" },
   "CAT-02-ALT": { coat: "Orange tabby", markings: "White chin; possible left-ear nick", sex: "Unknown", estimated_dob: null, breed: "Domestic shorthair, unverified" },
   "CAT-04": { coat: "Split-face calico", markings: "Orange/black face split; white front paw", sex: "Female, reported", estimated_dob: "2022-05 (estimated)", breed: "Domestic shorthair" },
@@ -17,6 +20,7 @@ const DETAILS = {
   "CAT-SKIPPER": { coat: "Gray tabby", markings: "Dark stripes; simulated tracker collar", sex: "Unknown", estimated_dob: "2024-02 (estimated)", breed: "Domestic shorthair" },
 };
 function fail(message) { throw new Error(`Canonical census rejected: ${message}`); }
+function negativeCheck(observation) { return /\b(?:did not appear|was not in view|did not see|not seen (?:during|on|at|in))\b/i.test(observation.body_redacted ?? ""); }
 function key(value, field) { const out = String(value ?? "").trim(); if (!/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(out)) fail(`invalid ${field}`); return out; }
 function actor(value) { const out = Number(value); if (!Number.isInteger(out) || out < 1) fail("reviewerId must be a valid user ID"); return out; }
 function note(value) { const out = String(value ?? "").trim(); if (!out || out.length > 500) fail("invalid reasoning"); return out; }
@@ -55,7 +59,7 @@ export async function getCanonicalWorkspace(db, { publicView = false } = {}) {
     all(db, "SELECT s.colony_key,c.broad_area,s.known_cat_records AS cat_count,s.urgent_open AS needs_vet,s.tnr_pending,s.last_feeder_alias AS last_feeder,s.last_fed_at FROM canonical_census_snapshots s JOIN canonical_colonies c ON c.colony_key=s.colony_key WHERE s.id IN (SELECT MAX(id) FROM canonical_census_snapshots GROUP BY colony_key) ORDER BY s.colony_key"),
     all(db, "SELECT cat_key,canonical_cat_key,status,merged_into_cat_key FROM canonical_cats ORDER BY cat_key"),
     all(db, "SELECT colony_key,materialized_at,known_cat_records AS cat_count,urgent_open AS needs_vet,tnr_pending,last_feeder_alias AS last_feeder,last_fed_at FROM canonical_census_snapshots WHERE id IN (SELECT MAX(id) FROM canonical_census_snapshots GROUP BY colony_key) ORDER BY colony_key"),
-    all(db, "SELECT o.proposed_cat_key AS cat_key,o.assigned_colony_key AS colony_key,o.proposed_colony_key,o.assignment_state,o.urgency,m.received_at,m.trace_id FROM intake_observations o JOIN intake_source_messages m ON m.id=o.source_message_id WHERE o.proposed_cat_key IS NOT NULL ORDER BY julianday(m.received_at) DESC"),
+    all(db, "SELECT o.proposed_cat_key AS cat_key,o.assigned_colony_key AS colony_key,o.proposed_colony_key,o.assignment_state,o.urgency,m.received_at,m.trace_id,m.body_redacted FROM intake_observations o JOIN intake_source_messages m ON m.id=o.source_message_id WHERE o.proposed_cat_key IS NOT NULL ORDER BY julianday(m.received_at) DESC"),
     all(db, "SELECT colony_key,reported_count_low,reported_count_high,count_confidence,event_at FROM (SELECT o.assigned_colony_key AS colony_key,COALESCE(o.verified_count_low,o.source_count_low) AS reported_count_low,COALESCE(o.verified_count_high,o.source_count_high) AS reported_count_high,COALESCE(o.verified_count_confidence,o.source_count_confidence) AS count_confidence,m.received_at AS event_at,ROW_NUMBER() OVER (PARTITION BY o.assigned_colony_key ORDER BY julianday(m.received_at) DESC,o.id DESC) AS rank FROM intake_observations o JOIN intake_source_messages m ON m.id=o.source_message_id WHERE o.assigned_colony_key IS NOT NULL AND COALESCE(o.verified_count_high,o.source_count_high) IS NOT NULL) WHERE rank=1"),
   ]);
   const visibleCats = cats.map((row) => {
@@ -64,13 +68,13 @@ export async function getCanonicalWorkspace(db, { publicView = false } = {}) {
     const colonies = [...new Set(linked.map((item) => item.colony_key).filter(Boolean))];
     const outcome = outcomes[row.cat_key];
     const details = DETAILS[row.cat_key] ?? { coat: "Unconfirmed", markings: "Not recorded", sex: "Unknown", estimated_dob: null, breed: "Unknown" };
-    return { cat_key: row.cat_key, canonical_cat_key: row.canonical_cat_key, status: row.status, merged_into_cat_key: row.merged_into_cat_key, ...metadata, ...details, fixed: outcome?.fixed ?? metadata.fixed, tnr: outcome?.tnr && outcome.tnr !== "unknown" ? outcome.tnr : metadata.tnr, medical: outcome?.medical ?? "unknown", species: "Domestic cat", microchip: "No verified scan on file", tracker: metadata.tracker ?? "No verified live tag", photo_path: metadata.photo, colony_key: colonies[0] ?? null, colonies, last_seen_at: linked[0]?.received_at ?? null, description: details.coat + " · " + details.markings, vaccinations: row.cat_key === "CAT-11" ? "Synthetic rabies record · April 2026" : "Not recorded" };
+    return { cat_key: row.cat_key, canonical_cat_key: row.canonical_cat_key, status: row.status, merged_into_cat_key: row.merged_into_cat_key, ...metadata, ...details, fixed: outcome?.fixed ?? metadata.fixed, tnr: outcome?.tnr && outcome.tnr !== "unknown" ? outcome.tnr : metadata.tnr, medical: outcome?.medical ?? "unknown", species: "Domestic cat", microchip: details.microchip ?? "No verified scan on file", tracker: metadata.tracker ?? "No verified live tag", photo_path: metadata.photo, colony_key: colonies[0] ?? null, colonies, last_report_at: linked[0]?.received_at ?? null, last_seen_at: linked.find(item=>!negativeCheck(item))?.received_at ?? null, last_verified_sighting_at: null, description: details.coat + " · " + details.markings, vaccinations: details.vaccinations ?? (row.cat_key === "CAT-11" ? "Synthetic rabies record · April 2026" : "Not recorded") };
   });
   const fixedByColony = new Map();
   const countsByColony = new Map(counts.map((count) => [count.colony_key, { reported_count_low: count.reported_count_low, reported_count_high: count.reported_count_high, count_confidence: count.count_confidence, count_reported_at: count.event_at }]));
   // Metadata is a fictional fixture truth; unknown values are deliberately not counted as fixed.
   for (const cat of visibleCats) if (cat.status !== "merged" && cat.fixed === true) for (const colony of cat.colonies) fixedByColony.set(colony, (fixedByColony.get(colony) ?? 0) + 1);
-  return { colonies: snapshots.map((row) => ({ colony_key: row.colony_key, broad_area: row.broad_area, cat_count: Number(row.cat_count ?? 0), ...countsByColony.get(row.colony_key), fixed_count: fixedByColony.get(row.colony_key) ?? 0, tnr_pending: visibleCats.filter((cat) => cat.status !== "merged" && cat.colonies.includes(row.colony_key) && cat.tnr === "pending").length, tnr_unknown: visibleCats.filter((cat) => cat.status !== "merged" && cat.colonies.includes(row.colony_key) && cat.fixed == null && cat.tnr !== "pending").length, needs_vet: Number(row.needs_vet ?? 0), last_feeder: publicView ? null : row.last_feeder ?? null, last_fed_at: row.last_fed_at ?? null })), cats: visibleCats, history: publicView ? [] : [...observations.map((row) => ({ cat_key: row.cat_key, colony_key: row.colony_key, kind: "Source observation", message: row.trace_id + " · " + row.urgency, happened_at: row.received_at })), ...history.map((row) => ({ colony_key: row.colony_key, kind: "Census refreshed", happened_at: row.materialized_at, message: row.cat_count + " identified records" }))], publicView: Boolean(publicView), disclaimer: "Synthetic fixture view; exact locations, contacts, raw source text and attachments are omitted." };
+  return { colonies: snapshots.map((row) => ({ colony_key: row.colony_key, broad_area: row.broad_area, cat_count: Number(row.cat_count ?? 0), ...countsByColony.get(row.colony_key), fixed_count: fixedByColony.get(row.colony_key) ?? 0, tnr_pending: visibleCats.filter((cat) => cat.status !== "merged" && cat.colonies.includes(row.colony_key) && cat.tnr === "pending").length, tnr_unknown: visibleCats.filter((cat) => cat.status !== "merged" && cat.colonies.includes(row.colony_key) && cat.fixed == null && cat.tnr !== "pending").length, needs_vet: Number(row.needs_vet ?? 0), last_feeder: publicView ? null : row.last_feeder ?? null, last_fed_at: row.last_fed_at ?? null })), cats: visibleCats, history: publicView ? [] : [...observations.map((row) => ({ cat_key: row.cat_key, colony_key: row.colony_key, kind: negativeCheck(row) ? "Negative search check" : "Source observation", message: row.trace_id + " · " + row.urgency, happened_at: row.received_at })), ...history.map((row) => ({ colony_key: row.colony_key, kind: "Census refreshed", happened_at: row.materialized_at, message: row.cat_count + " identified records" }))], publicView: Boolean(publicView), disclaimer: "Synthetic fixture view; exact locations, contacts, raw source text and attachments are omitted. Last reported observations are unverified; a negative search check is not a sighting." };
 }
 
 /** Human-only review tied to its source observation; active roots prevent cycles/chains. */

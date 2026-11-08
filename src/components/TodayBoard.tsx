@@ -92,7 +92,7 @@ export function TodayBoard() {
       setCareCases((nextCases as { cases?: CareCase[] } | null)?.cases ?? null);
       setCensus(null); setOutcomes(null);
       setUpdatedAt(new Date().toISOString());
-      setNotice("Live local operations view. Counts appear only when their protected source returned.");
+      setNotice("Shared operations view. Counts appear only when their protected source returned.");
     } catch {
       setSession(null); setIntake(null); setAssignments(null); setCareCases(null); setCensus(null); setOutcomes(null);
       setNotice("Operations data is unavailable. Start the local full demo server, then refresh.");

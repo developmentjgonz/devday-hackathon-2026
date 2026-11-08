@@ -1,0 +1,1952 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "batchId": "fixture-weekend-dispatch-2026-11-08-v1",
+  "provenance": "Fictional multilingual hackathon fixture. Every alias, animal, colony, message and photo is invented. Broad neighborhood labels provide demo context only; no real animal locations, contacts or private chat data are included.",
+  "sourceKind": "whatsapp_export",
+  "fixtureGuide": {
+    "scenario": "72-report weekend dispatch, four connected rounds across 18 fictional colonies.",
+    "languages": [
+      "English",
+      "Spanish",
+      "Portuguese",
+      "Haitian Creole"
+    ],
+    "catCatalogPurpose": "Explicit fictional profile metadata, not model-generated identity evidence. New profiles have no photo; known photos are clearly marked earlier fixture images.",
+    "rawCompanionBoundary": "The raw parsers preserve messages, source traces, attached fixture photos and broad areas. They recognize a small fixed set of demo cats; new names and expanded colony keys in these raw chats remain unmatched for human review. The structured replay carries their explicit synthetic identity/colony proposals.",
+    "expectedHumanActions": [
+      "Clarify kitten counts before verifying totals",
+      "Review Guava/Coco duplicate candidates side by side; no automatic merge",
+      "Confirm search/missing/reunion and medical outcomes separately",
+      "Assign the evening feeder offer; a chat offer is not a completed visit",
+      "Respect unsafe flood/traffic access reports"
+    ]
+  },
+  "colonyCatalog": [
+    {
+      "colonyKey": "COL-04",
+      "broadArea": "Little Havana",
+      "label": "Flagler Yard",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-LH-COURT-DEMO",
+      "broadArea": "Little Havana",
+      "label": "Mango Court",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-02",
+      "broadArea": "Little River",
+      "label": "Laundry Commons",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-LR-SHADE-DEMO",
+      "broadArea": "Little River",
+      "label": "Palm Shade",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-07",
+      "broadArea": "North Miami",
+      "label": "Canal Commons",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-NM-GARDEN-DEMO",
+      "broadArea": "North Miami",
+      "label": "Garden Steps",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-NM-OAK-DEMO",
+      "broadArea": "North Miami",
+      "label": "Oak Commons",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-11",
+      "broadArea": "Fort Lauderdale",
+      "label": "Riverwalk Commons",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-FL-COURT-DEMO",
+      "broadArea": "Fort Lauderdale",
+      "label": "Citrus Court",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-MB-DEMO",
+      "broadArea": "Miami Beach",
+      "label": "Shade Bowl",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-MB-PALM-DEMO",
+      "broadArea": "Miami Beach",
+      "label": "Palm Walk",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-MB-BREEZE-DEMO",
+      "broadArea": "Miami Beach",
+      "label": "Breeze Court",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-HL-DEMO",
+      "broadArea": "Hialeah",
+      "label": "Lime Commons",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-HL-COURT-DEMO",
+      "broadArea": "Hialeah",
+      "label": "Lime Court",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-HM-DEMO",
+      "broadArea": "Homestead",
+      "label": "Dry Commons",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-HM-MANGO-DEMO",
+      "broadArea": "Homestead",
+      "label": "Mango Shade",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-HB-GROVE-DEMO",
+      "broadArea": "Hollywood / Broward",
+      "label": "Grove Commons",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    },
+    {
+      "colonyKey": "COL-HB-PATIO-DEMO",
+      "broadArea": "Hollywood / Broward",
+      "label": "Patio Commons",
+      "locationNote": "Fictional colony; no exact location is supplied."
+    }
+  ],
+  "catCatalog": {
+    "CAT-W-DOMINO": {
+      "name": "Domino",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Cream short coat",
+      "markings": "Small white bib and pale left forepaw",
+      "sex": "Unknown",
+      "estimated_dob": "2021-01 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-GUAVA": {
+      "name": "Guava",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "White with brown patches",
+      "markings": "Brown saddle patch and white nose blaze",
+      "sex": "Unknown",
+      "estimated_dob": "2022-02 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-PEPPER": {
+      "name": "Pepper",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Smoke gray",
+      "markings": "Small chin spot and dark tail rings",
+      "sex": "Unknown",
+      "estimated_dob": "2022-02 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-COCO": {
+      "name": "Coco",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Brown ticked coat",
+      "markings": "Light muzzle and one pale rear toe",
+      "sex": "Unknown",
+      "estimated_dob": "2023-03 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-BISCUIT": {
+      "name": "Biscuit",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Dilute tortoiseshell",
+      "markings": "Amber cheek patch and pale chest fleck",
+      "sex": "Unknown",
+      "estimated_dob": "2024-04 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-LUNA": {
+      "name": "Luna",
+      "photo": null,
+      "fixed": true,
+      "tnr": "completed",
+      "coat": "Silver classic tabby",
+      "markings": "Dark forehead M and white lower lip",
+      "sex": "Unknown",
+      "estimated_dob": "2024-04 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-MISO": {
+      "name": "Miso",
+      "photo": null,
+      "fixed": true,
+      "tnr": "completed",
+      "coat": "Cream-and-white bicolor",
+      "markings": "Cream ear patch and narrow tail stripe",
+      "sex": "Unknown",
+      "estimated_dob": "2025-05 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-NORI": {
+      "name": "Nori",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Chocolate brown",
+      "markings": "Small pale chest crescent",
+      "sex": "Unknown",
+      "estimated_dob": "2025-05 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-PEBBLE": {
+      "name": "Pebble",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "White with gray patches",
+      "markings": "Gray cheek patch and white tail tip",
+      "sex": "Unknown",
+      "estimated_dob": "2021-06 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-ZURI": {
+      "name": "Zuri",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Brown spotted tabby",
+      "markings": "Spotted shoulders and pale chin",
+      "sex": "Unknown",
+      "estimated_dob": "2021-06 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-WILLOW": {
+      "name": "Willow",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Warm buff coat",
+      "markings": "Darker muzzle and white right forepaw",
+      "sex": "Unknown",
+      "estimated_dob": "2022-07 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-JUNIPER": {
+      "name": "Juniper",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Tortoiseshell",
+      "markings": "Gold patch over right eye",
+      "sex": "Unknown",
+      "estimated_dob": "2022-07 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-ANCHOR": {
+      "name": "Anchor",
+      "photo": null,
+      "fixed": true,
+      "tnr": "completed",
+      "coat": "Blue-gray short coat",
+      "markings": "Pale chin and small white chest star",
+      "sex": "Unknown",
+      "estimated_dob": "2023-08 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-TAMARIND": {
+      "name": "Tamarind",
+      "photo": null,
+      "fixed": true,
+      "tnr": "completed",
+      "coat": "Brown-and-white tabby",
+      "markings": "Brown cheek stripe and white back paws",
+      "sex": "Unknown",
+      "estimated_dob": "2024-09 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-KIWI": {
+      "name": "Kiwi",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Cream classic tabby",
+      "markings": "Cream flank swirl and dark ear rim",
+      "sex": "Unknown",
+      "estimated_dob": "2024-09 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-CORAL": {
+      "name": "Coral",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Cream short coat",
+      "markings": "Small white bib and pale left forepaw",
+      "sex": "Unknown",
+      "estimated_dob": "2025-10 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-SOMBRA": {
+      "name": "Sombra",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "White with brown patches",
+      "markings": "Brown saddle patch and white nose blaze",
+      "sex": "Unknown",
+      "estimated_dob": "2021-11 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-MARINA": {
+      "name": "Marina",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Smoke gray",
+      "markings": "Small chin spot and dark tail rings",
+      "sex": "Unknown",
+      "estimated_dob": "2021-11 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-PEARL": {
+      "name": "Pearl",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Black-and-white bicolor",
+      "markings": "Uneven white socks and narrow face blaze",
+      "sex": "Unknown",
+      "estimated_dob": "2022-12 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-ECHO": {
+      "name": "Echo",
+      "photo": null,
+      "fixed": true,
+      "tnr": "completed",
+      "coat": "Brown ticked coat",
+      "markings": "Light muzzle and one pale rear toe",
+      "sex": "Unknown",
+      "estimated_dob": "2022-12 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-CHISPA": {
+      "name": "Chispa",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Silver classic tabby",
+      "markings": "Dark forehead M and white lower lip",
+      "sex": "Unknown",
+      "estimated_dob": "2023-01 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-LIME": {
+      "name": "Lime",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Cream-and-white bicolor",
+      "markings": "Cream ear patch and narrow tail stripe",
+      "sex": "Unknown",
+      "estimated_dob": "2024-02 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-BUTTON": {
+      "name": "Button",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Chocolate brown",
+      "markings": "Small pale chest crescent",
+      "sex": "Unknown",
+      "estimated_dob": "2024-02 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-MANGO": {
+      "name": "Mango",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "White with gray patches",
+      "markings": "Gray cheek patch and white tail tip",
+      "sex": "Unknown",
+      "estimated_dob": "2025-03 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-OLIVE": {
+      "name": "Olive",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Brown spotted tabby",
+      "markings": "Spotted shoulders and pale chin",
+      "sex": "Unknown",
+      "estimated_dob": "2025-03 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-PAPAYA": {
+      "name": "Papaya",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Warm buff coat",
+      "markings": "Darker muzzle and white right forepaw",
+      "sex": "Unknown",
+      "estimated_dob": "2021-04 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-FIG": {
+      "name": "Fig",
+      "photo": null,
+      "fixed": true,
+      "tnr": "completed",
+      "coat": "Tortoiseshell",
+      "markings": "Gold patch over right eye",
+      "sex": "Unknown",
+      "estimated_dob": "2021-04 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-SUNNY": {
+      "name": "Sunny",
+      "photo": null,
+      "fixed": true,
+      "tnr": "completed",
+      "coat": "White-and-brown bicolor",
+      "markings": "White bib and a single dark knee patch",
+      "sex": "Unknown",
+      "estimated_dob": "2022-05 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-VELVET": {
+      "name": "Velvet",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Blue-gray short coat",
+      "markings": "Pale chin and small white chest star",
+      "sex": "Unknown",
+      "estimated_dob": "2022-05 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-MOCHA": {
+      "name": "Mocha",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Brown-and-white tabby",
+      "markings": "Brown cheek stripe and white back paws",
+      "sex": "Unknown",
+      "estimated_dob": "2023-06 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-CLOVER": {
+      "name": "Clover",
+      "photo": null,
+      "fixed": null,
+      "tnr": "review needed",
+      "coat": "Cream classic tabby",
+      "markings": "Cream flank swirl and dark ear rim",
+      "sex": "Unknown",
+      "estimated_dob": "2023-06 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Invented weekend fixture identity; no photo supplied. Markings are report descriptors, not verified visual matching."
+    },
+    "CAT-W-GUAVA-ALT": {
+      "name": "Guava candidate",
+      "photo": null,
+      "fixed": null,
+      "tnr": "unconfirmed duplicate",
+      "coat": "White with brown patches",
+      "markings": "Brown saddle patch and white nose blaze",
+      "sex": "Unknown",
+      "estimated_dob": "2022-02 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Separate fictional candidate pending coordinator photo/evidence review. Never automatically merge."
+    },
+    "CAT-W-COCO-ALT": {
+      "name": "Coco candidate",
+      "photo": null,
+      "fixed": null,
+      "tnr": "unconfirmed duplicate",
+      "coat": "Brown ticked coat",
+      "markings": "Light muzzle and one pale rear toe",
+      "sex": "Unknown",
+      "estimated_dob": "2023-03 (estimated; fictional)",
+      "breed": "Domestic shorthair, fictional record",
+      "microchip": "No verified scan on file",
+      "vaccinations": "Synthetic review pending; no administered dose recorded",
+      "profile_note": "Separate fictional candidate pending coordinator photo/evidence review. Never automatically merge."
+    }
+  },
+  "records": [
+    {
+      "id": "wa-w001",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Maya",
+      "receivedAt": "2026-11-08T04:00:00-05:00",
+      "broadArea": "Little Havana",
+      "text": "DEMO Little Havana · Flagler Yard: Poppy, the split-face calico, came out for breakfast, ate a little, then settled in shade. Count 6 adults; feed complete, water refreshed. Same fictional photo from the earlier report attached for context.",
+      "attachments": [
+        {
+          "kind": "image",
+          "fixturePath": "/demo-assets/poppy-calico-limp.png"
+        }
+      ],
+      "proposedColonyKey": "COL-04",
+      "proposedCatKey": "CAT-04",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 6,
+        "high": 6,
+        "confidence": 0.9
+      }
+    },
+    {
+      "id": "wa-w002",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Sol",
+      "receivedAt": "2026-11-08T04:03:00-05:00",
+      "broadArea": "Little Havana",
+      "text": "DEMO Little Havana · Mango Court: Guava ya vino por su desayuno, bien puntual. Conté 5 adultos y dejé agua fresca. Feed complete ✅",
+      "attachments": [],
+      "proposedColonyKey": "COL-LH-COURT-DEMO",
+      "proposedCatKey": "CAT-W-GUAVA",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 5,
+        "high": 5,
+        "confidence": 0.88
+      }
+    },
+    {
+      "id": "wa-w003",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Rina",
+      "receivedAt": "2026-11-08T04:06:00-05:00",
+      "broadArea": "Little River",
+      "text": "DEMO Little River · Laundry Commons: Marmalade is here with the breakfast crew. Fed 7, bowls cleaned. Reattaching the earlier fictional image, not a new photo.",
+      "attachments": [
+        {
+          "kind": "image",
+          "fixturePath": "/demo-assets/marmalade-orange-tabby.png"
+        }
+      ],
+      "proposedColonyKey": "COL-02",
+      "proposedCatKey": "CAT-02",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 7,
+        "high": 7,
+        "confidence": 0.9
+      }
+    },
+    {
+      "id": "wa-w004",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Teo",
+      "receivedAt": "2026-11-08T04:09:00-05:00",
+      "broadArea": "Little River",
+      "text": "DEMO Little River · Palm Shade: Biscuit e Luna chegaram juntos. Vi 4 adultos, comida e água ok; feed complete. Bom turno, gente.",
+      "attachments": [],
+      "proposedColonyKey": "COL-LR-SHADE-DEMO",
+      "proposedCatKey": "CAT-W-BISCUIT",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 4,
+        "high": 4,
+        "confidence": 0.87
+      }
+    },
+    {
+      "id": "wa-w005",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Jo",
+      "receivedAt": "2026-11-08T04:12:00-05:00",
+      "broadArea": "North Miami",
+      "text": "DEMO North Miami · Canal Commons: Miso ap manje trankil. Mwen konte 5 gran chat, dlo pwòp disponib. Feed complete, mesi ekip.",
+      "attachments": [],
+      "proposedColonyKey": "COL-07",
+      "proposedCatKey": "CAT-W-MISO",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 5,
+        "high": 5,
+        "confidence": 0.86
+      }
+    },
+    {
+      "id": "wa-w006",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Nia",
+      "receivedAt": "2026-11-08T04:15:00-05:00",
+      "broadArea": "North Miami",
+      "text": "DEMO North Miami · Garden Steps: Pebble checked in, but no feeder is confirmed for this evening. Count 4 adults now; can a coordinator assign the later shift?",
+      "attachments": [],
+      "proposedColonyKey": "COL-NM-GARDEN-DEMO",
+      "proposedCatKey": "CAT-W-PEBBLE",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": false,
+      "flags": [
+        "feeder_gap"
+      ],
+      "duplicateGroup": null,
+      "count": {
+        "low": 4,
+        "high": 4,
+        "confidence": 0.8
+      }
+    },
+    {
+      "id": "wa-w007",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Ana",
+      "receivedAt": "2026-11-08T04:18:00-05:00",
+      "broadArea": "North Miami",
+      "text": "DEMO North Miami · Oak Commons: Willow and Juniper waited at the shaded bowl. Count 6; feed complete. Leaving the path clear for everyone.",
+      "attachments": [],
+      "proposedColonyKey": "COL-NM-OAK-DEMO",
+      "proposedCatKey": "CAT-W-WILLOW",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 6,
+        "high": 6,
+        "confidence": 0.88
+      }
+    },
+    {
+      "id": "wa-w008",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Sam",
+      "receivedAt": "2026-11-08T04:21:00-05:00",
+      "broadArea": "Fort Lauderdale",
+      "text": "DEMO Fort Lauderdale · Riverwalk Commons: Tux showed up late as usual, white paws first 😅 Fed 5, water refreshed. Earlier fictional Tux image attached for context.",
+      "attachments": [
+        {
+          "kind": "image",
+          "fixturePath": "/demo-assets/tux-missing-search.png"
+        }
+      ],
+      "proposedColonyKey": "COL-11",
+      "proposedCatKey": "CAT-11",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 5,
+        "high": 5,
+        "confidence": 0.9
+      }
+    },
+    {
+      "id": "wa-w009",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Dani",
+      "receivedAt": "2026-11-08T04:24:00-05:00",
+      "broadArea": "Fort Lauderdale",
+      "text": "DEMO Fort Lauderdale · Citrus Court: Tamarind comeu bem. Conte 4 adultos, água trocada e feed complete. Hoje fiquei só na área pública.",
+      "attachments": [],
+      "proposedColonyKey": "COL-FL-COURT-DEMO",
+      "proposedCatKey": "CAT-W-TAMARIND",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 4,
+        "high": 4,
+        "confidence": 0.85
+      }
+    },
+    {
+      "id": "wa-w010",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Lila",
+      "receivedAt": "2026-11-08T04:27:00-05:00",
+      "broadArea": "Miami Beach",
+      "text": "DEMO Miami Beach · Shade Bowl: Skipper did the breakfast loop. Count 4, feed complete. The demo tag animation is not a real location update.",
+      "attachments": [],
+      "proposedColonyKey": "COL-MB-DEMO",
+      "proposedCatKey": "CAT-SKIPPER",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 4,
+        "high": 4,
+        "confidence": 0.89
+      }
+    },
+    {
+      "id": "wa-w011",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Cam",
+      "receivedAt": "2026-11-08T04:30:00-05:00",
+      "broadArea": "Miami Beach",
+      "text": "DEMO Miami Beach · Palm Walk: Sombra llegó calladita. Vi 5 adultos; feed complete y agua a la sombra. Marina estaba cerca también.",
+      "attachments": [],
+      "proposedColonyKey": "COL-MB-PALM-DEMO",
+      "proposedCatKey": "CAT-W-SOMBRA",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 5,
+        "high": 5,
+        "confidence": 0.84
+      }
+    },
+    {
+      "id": "wa-w012",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Vale",
+      "receivedAt": "2026-11-08T04:33:00-05:00",
+      "broadArea": "Miami Beach",
+      "text": "DEMO Miami Beach · Breeze Court: Pearl bò kote bòl la; Echo te vini apre. Mwen konte 3 gran chat. Feed complete, dlo fre la.",
+      "attachments": [],
+      "proposedColonyKey": "COL-MB-BREEZE-DEMO",
+      "proposedCatKey": "CAT-W-PEARL",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 3,
+        "high": 3,
+        "confidence": 0.84
+      }
+    },
+    {
+      "id": "wa-w013",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Isa",
+      "receivedAt": "2026-11-08T04:36:00-05:00",
+      "broadArea": "Hialeah",
+      "text": "DEMO Hialeah · Lime Commons: Coal made his entrance after everybody else. Fed 6 adults; ear-tip still not verified, please keep TNR review pending.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HL-DEMO",
+      "proposedCatKey": "CAT-COAL",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [
+        "tnr_candidate"
+      ],
+      "duplicateGroup": null,
+      "count": {
+        "low": 6,
+        "high": 6,
+        "confidence": 0.85
+      }
+    },
+    {
+      "id": "wa-w014",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Jules",
+      "receivedAt": "2026-11-08T04:39:00-05:00",
+      "broadArea": "Hialeah",
+      "text": "DEMO Hialeah · Lime Court: Lime came out, Button stayed back. Count 4 adults, feed complete. I watched from public access and left quietly.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HL-COURT-DEMO",
+      "proposedCatKey": "CAT-W-LIME",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 4,
+        "high": 4,
+        "confidence": 0.84
+      }
+    },
+    {
+      "id": "wa-w015",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Kai",
+      "receivedAt": "2026-11-08T04:42:00-05:00",
+      "broadArea": "Homestead",
+      "text": "DEMO Homestead · Dry Commons: Mango e Olive comeram. Vi 5 adultos, feed complete. A parte baixa está molhada; não entrei.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HM-DEMO",
+      "proposedCatKey": "CAT-W-MANGO",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [
+        "flood"
+      ],
+      "duplicateGroup": null,
+      "count": {
+        "low": 5,
+        "high": 5,
+        "confidence": 0.8
+      }
+    },
+    {
+      "id": "wa-w016",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Mar",
+      "receivedAt": "2026-11-08T04:45:00-05:00",
+      "broadArea": "Homestead",
+      "text": "DEMO Homestead · Mango Shade: Papaya came for food. Count 3 adults; feed complete and bowls washed. Fig watched from the shade.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HM-MANGO-DEMO",
+      "proposedCatKey": "CAT-W-PAPAYA",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 3,
+        "high": 3,
+        "confidence": 0.87
+      }
+    },
+    {
+      "id": "wa-w017",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Rui",
+      "receivedAt": "2026-11-08T04:48:00-05:00",
+      "broadArea": "Hollywood / Broward",
+      "text": "DEMO Hollywood / Broward · Grove Commons: Sunny y Velvet llegaron juntos hoy. Count 4, feed complete. Está tranquilo por ahora.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HB-GROVE-DEMO",
+      "proposedCatKey": "CAT-W-SUNNY",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 4,
+        "high": 4,
+        "confidence": 0.85
+      }
+    },
+    {
+      "id": "wa-w018",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Luz",
+      "receivedAt": "2026-11-08T04:51:00-05:00",
+      "broadArea": "Hollywood / Broward",
+      "text": "DEMO Hollywood / Broward · Patio Commons: Mocha manje byen, Clover la tou. Mwen konte 5 gran chat; feed complete. M ap kite yon nòt pou pwochen ekip la.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HB-PATIO-DEMO",
+      "proposedCatKey": "CAT-W-MOCHA",
+      "colonyConfidence": 0.9,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 5,
+        "high": 5,
+        "confidence": 0.86
+      }
+    },
+    {
+      "id": "wa-w019",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Teo",
+      "receivedAt": "2026-11-08T04:54:00-05:00",
+      "broadArea": "Little Havana",
+      "text": "DEMO Little Havana · Flagler Yard: Domino is holding up a hind paw and only took a few bites. I kept my distance. Please make this an injury review for the coordinator.",
+      "attachments": [],
+      "proposedColonyKey": "COL-04",
+      "proposedCatKey": "CAT-W-DOMINO",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "injury"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "wa-w020",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Jo",
+      "receivedAt": "2026-11-08T04:57:00-05:00",
+      "broadArea": "Little Havana",
+      "text": "DEMO Little Havana · Mango Court: Pepper parece tener la barriga más grande. Puede ser embarazo, pero yo no puedo confirmar. Pregnancy review please; sin tocarla.",
+      "attachments": [],
+      "proposedColonyKey": "COL-LH-COURT-DEMO",
+      "proposedCatKey": "CAT-W-PEPPER",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "pregnancy"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "wa-w021",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Nia",
+      "receivedAt": "2026-11-08T05:00:00-05:00",
+      "broadArea": "Little River",
+      "text": "DEMO Little River · Laundry Commons: Coco was behind the group. Maybe 2 tiny young cats heard under cover, not safely visible. Keep the range 0–2 and ask someone to clarify.",
+      "attachments": [],
+      "proposedColonyKey": "COL-02",
+      "proposedCatKey": "CAT-W-COCO",
+      "colonyConfidence": 0.58,
+      "feedingConfirmed": false,
+      "flags": [
+        "kittens",
+        "uncertain_count"
+      ],
+      "duplicateGroup": null,
+      "count": {
+        "low": 0,
+        "high": 2,
+        "confidence": 0.45
+      }
+    },
+    {
+      "id": "wa-w022",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Ana",
+      "receivedAt": "2026-11-08T05:03:00-05:00",
+      "broadArea": "Little River",
+      "text": "DEMO Little River · Palm Shade: Luna espirrou várias vezes e deixou a comida. Não sei a causa; illness review por favor. Fiquei observando de longe.",
+      "attachments": [],
+      "proposedColonyKey": "COL-LR-SHADE-DEMO",
+      "proposedCatKey": "CAT-W-LUNA",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "illness"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "wa-w023",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Sam",
+      "receivedAt": "2026-11-08T05:06:00-05:00",
+      "broadArea": "North Miami",
+      "text": "DEMO North Miami · Canal Commons: Nori pa vini bò bòl la. Mwen tande ti chat, petèt 3, men mwen pa wè yo. Maybe 3 kittens; pa antre pou verifye.",
+      "attachments": [],
+      "proposedColonyKey": "COL-07",
+      "proposedCatKey": "CAT-W-NORI",
+      "colonyConfidence": 0.58,
+      "feedingConfirmed": false,
+      "flags": [
+        "kittens",
+        "uncertain_count"
+      ],
+      "duplicateGroup": null,
+      "count": {
+        "low": 0,
+        "high": 3,
+        "confidence": 0.48
+      }
+    },
+    {
+      "id": "wa-w024",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Dani",
+      "receivedAt": "2026-11-08T05:09:00-05:00",
+      "broadArea": "North Miami",
+      "text": "DEMO North Miami · Garden Steps: Zuri did not appear during my quiet ten-minute check. That is only a negative check; please ask before any missing-status change.",
+      "attachments": [],
+      "proposedColonyKey": "COL-NM-GARDEN-DEMO",
+      "proposedCatKey": "CAT-W-ZURI",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "missing"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "wa-w025",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Lila",
+      "receivedAt": "2026-11-08T05:12:00-05:00",
+      "broadArea": "North Miami",
+      "text": "DEMO North Miami · Oak Commons: Juniper looks new to me; I cannot confirm an ear tip. Please add a new-cat/TNR review, not a procedure booking.",
+      "attachments": [],
+      "proposedColonyKey": "COL-NM-OAK-DEMO",
+      "proposedCatKey": "CAT-W-JUNIPER",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "new_cat",
+        "tnr_candidate"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "wa-w026",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Cam",
+      "receivedAt": "2026-11-08T05:15:00-05:00",
+      "broadArea": "Fort Lauderdale",
+      "text": "DEMO Fort Lauderdale · Riverwalk Commons: Anchor walked past the usual bowl toward loud traffic. I stopped at public access. Traffic note, not an exact animal pin.",
+      "attachments": [],
+      "proposedColonyKey": "COL-11",
+      "proposedCatKey": "CAT-W-ANCHOR",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "traffic"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "wa-w027",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Vale",
+      "receivedAt": "2026-11-08T05:18:00-05:00",
+      "broadArea": "Fort Lauderdale",
+      "text": "DEMO Fort Lauderdale · Citrus Court: Kiwi está mancando e evitando apoiar a pata. Injury review; não tentei pegar nem chegar perto.",
+      "attachments": [],
+      "proposedColonyKey": "COL-FL-COURT-DEMO",
+      "proposedCatKey": "CAT-W-KIWI",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "injury"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "wa-w028",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Isa",
+      "receivedAt": "2026-11-08T05:21:00-05:00",
+      "broadArea": "Miami Beach",
+      "text": "DEMO Miami Beach · Shade Bowl: Coral stayed in cover as the heat picked up. Maybe 4 or 5 adults total; my view was partly blocked.",
+      "attachments": [],
+      "proposedColonyKey": "COL-MB-DEMO",
+      "proposedCatKey": "CAT-W-CORAL",
+      "colonyConfidence": 0.58,
+      "feedingConfirmed": false,
+      "flags": [
+        "heat",
+        "uncertain_count"
+      ],
+      "duplicateGroup": null,
+      "count": {
+        "low": 4,
+        "high": 5,
+        "confidence": 0.55
+      }
+    },
+    {
+      "id": "wa-w029",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Jules",
+      "receivedAt": "2026-11-08T05:24:00-05:00",
+      "broadArea": "Miami Beach",
+      "text": "DEMO Miami Beach · Palm Walk: Marina no llegó en esta vuelta. No la marquen missing por este mensaje; solo solicito una revisión y otra observación segura.",
+      "attachments": [],
+      "proposedColonyKey": "COL-MB-PALM-DEMO",
+      "proposedCatKey": "CAT-W-MARINA",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "missing"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "wa-w030",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Kai",
+      "receivedAt": "2026-11-08T05:27:00-05:00",
+      "broadArea": "Miami Beach",
+      "text": "DEMO Miami Beach · Breeze Court: Echo gen nen k ap koule epi li pa manje anpil. Mwen pa ka di sa li genyen. Illness review pou kowòdonatè a.",
+      "attachments": [],
+      "proposedColonyKey": "COL-MB-BREEZE-DEMO",
+      "proposedCatKey": "CAT-W-ECHO",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "illness"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "wa-w031",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Mar",
+      "receivedAt": "2026-11-08T05:30:00-05:00",
+      "broadArea": "Hialeah",
+      "text": "DEMO Hialeah · Lime Commons: Chispa looked rounder than last week. Possible pregnancy, not confirmed; please flag for a coordinator to review the evidence.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HL-DEMO",
+      "proposedCatKey": "CAT-W-CHISPA",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "pregnancy"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "wa-w032",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Rui",
+      "receivedAt": "2026-11-08T05:33:00-05:00",
+      "broadArea": "Hialeah",
+      "text": "DEMO Hialeah · Lime Court: Button came close enough for a side view. Ear tip unknown; new-cat candidate and TNR review. No handling.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HL-COURT-DEMO",
+      "proposedCatKey": "CAT-W-BUTTON",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "new_cat",
+        "tnr_candidate"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "wa-w033",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Luz",
+      "receivedAt": "2026-11-08T05:36:00-05:00",
+      "broadArea": "Homestead",
+      "text": "DEMO Homestead · Dry Commons: Olive ficou do outro lado da água parada. Eu parei. Flood access note; nenhuma busca pela área alagada.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HM-DEMO",
+      "proposedCatKey": "CAT-W-OLIVE",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "flood"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "wa-w034",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Maya",
+      "receivedAt": "2026-11-08T05:39:00-05:00",
+      "broadArea": "Homestead",
+      "text": "DEMO Homestead · Mango Shade: Fig is taking shorter steps and has a visible scrape. Injury review please; I did not handle or diagnose him.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HM-MANGO-DEMO",
+      "proposedCatKey": "CAT-W-FIG",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "injury"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "wa-w035",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Sol",
+      "receivedAt": "2026-11-08T05:42:00-05:00",
+      "broadArea": "Hollywood / Broward",
+      "text": "DEMO Hollywood / Broward · Grove Commons: Velvet estaba con dos pequeños, quizá tres. No pude contarlos bien. Young-cat welfare review; range 2–3 until a safe check.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HB-GROVE-DEMO",
+      "proposedCatKey": "CAT-W-VELVET",
+      "colonyConfidence": 0.58,
+      "feedingConfirmed": false,
+      "flags": [
+        "kittens",
+        "uncertain_count"
+      ],
+      "duplicateGroup": null,
+      "count": {
+        "low": 2,
+        "high": 3,
+        "confidence": 0.5
+      }
+    },
+    {
+      "id": "wa-w036",
+      "sourceKind": "whatsapp_export",
+      "volunteerAlias": "Demo Rina",
+      "receivedAt": "2026-11-08T05:45:00-05:00",
+      "broadArea": "Hollywood / Broward",
+      "text": "DEMO Hollywood / Broward · Patio Commons: Clover pa touche manje a jodi a. Not eating, tanpri fè yon illness review; mwen pa fè okenn dyagnostik.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HB-PATIO-DEMO",
+      "proposedCatKey": "CAT-W-CLOVER",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "illness"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w037",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Ana",
+      "receivedAt": "2026-11-08T05:48:00-05:00",
+      "broadArea": "Little Havana",
+      "text": "DEMO Little Havana · Flagler Yard: Poppy ate again on the second pass. I did not assess Domino’s paw. Keeping the earlier welfare review open; no medical outcome from this note.",
+      "attachments": [],
+      "proposedColonyKey": "COL-04",
+      "proposedCatKey": "CAT-04",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w038",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Sam",
+      "receivedAt": "2026-11-08T05:51:00-05:00",
+      "broadArea": "Little Havana",
+      "text": "DEMO Little Havana · Mango Court: Guava se movió entre las dos áreas de Little Havana. La vi desde el paso público, sin perseguirla. Otra observación, misma ficha propuesta.",
+      "attachments": [],
+      "proposedColonyKey": "COL-04",
+      "proposedCatKey": "CAT-W-GUAVA",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w039",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Dani",
+      "receivedAt": "2026-11-08T05:54:00-05:00",
+      "broadArea": "Little River",
+      "text": "DEMO Little River · Laundry Commons: Marmalade came back for water. New fictional alternate-view photo attached for coordinator comparison; Coco stayed under cover. No handling.",
+      "attachments": [
+        {
+          "kind": "image",
+          "fixturePath": "/demo-assets/marmalade-alternate-view.png"
+        }
+      ],
+      "proposedColonyKey": "COL-02",
+      "proposedCatKey": "CAT-02",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w040",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Lila",
+      "receivedAt": "2026-11-08T05:57:00-05:00",
+      "broadArea": "Little River",
+      "text": "DEMO Little River · Palm Shade: Biscuit apareceu de novo, Luna ficou quieta. Feed complete para o grupo; não é confirmação de melhora da Luna.",
+      "attachments": [],
+      "proposedColonyKey": "COL-LR-SHADE-DEMO",
+      "proposedCatKey": "CAT-W-BISCUIT",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 4,
+        "high": 4,
+        "confidence": 0.82
+      }
+    },
+    {
+      "id": "sms-w041",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Cam",
+      "receivedAt": "2026-11-08T06:00:00-05:00",
+      "broadArea": "North Miami",
+      "text": "DEMO North Miami · Canal Commons: Miso te retounen bò dlo a. Mwen pa wè Nori klè; pa gen foto ni prèv idantite nan mesaj sa a.",
+      "attachments": [],
+      "proposedColonyKey": "COL-07",
+      "proposedCatKey": "CAT-W-MISO",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w042",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Vale",
+      "receivedAt": "2026-11-08T06:03:00-05:00",
+      "broadArea": "North Miami",
+      "text": "DEMO North Miami · Garden Steps: Pebble’s evening coverage was offered by Demo Nia. Coordinator still needs to assign it; this message alone does not complete a visit.",
+      "attachments": [],
+      "proposedColonyKey": "COL-NM-GARDEN-DEMO",
+      "proposedCatKey": "CAT-W-PEBBLE",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w043",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Isa",
+      "receivedAt": "2026-11-08T06:06:00-05:00",
+      "broadArea": "North Miami",
+      "text": "DEMO North Miami · Oak Commons: Willow ate with the group on another pass. Fed 6 and water refreshed. Juniper’s TNR status remains for human review.",
+      "attachments": [],
+      "proposedColonyKey": "COL-NM-OAK-DEMO",
+      "proposedCatKey": "CAT-W-WILLOW",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 6,
+        "high": 6,
+        "confidence": 0.88
+      }
+    },
+    {
+      "id": "sms-w044",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Jules",
+      "receivedAt": "2026-11-08T06:09:00-05:00",
+      "broadArea": "Fort Lauderdale",
+      "text": "DEMO Fort Lauderdale · Riverwalk Commons: Tux visible on the public-side path this pass. Please compare this sighting with the earlier search case; do not mark reunited automatically.",
+      "attachments": [],
+      "proposedColonyKey": "COL-11",
+      "proposedCatKey": "CAT-11",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w045",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Kai",
+      "receivedAt": "2026-11-08T06:12:00-05:00",
+      "broadArea": "Fort Lauderdale",
+      "text": "DEMO Fort Lauderdale · Citrus Court: Tamarind está na sombra, sem aproximação. A observação de Kiwi segue para revisão humana; não confirmo recuperação.",
+      "attachments": [],
+      "proposedColonyKey": "COL-FL-COURT-DEMO",
+      "proposedCatKey": "CAT-W-TAMARIND",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w046",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Mar",
+      "receivedAt": "2026-11-08T06:15:00-05:00",
+      "broadArea": "Miami Beach",
+      "text": "DEMO Miami Beach · Shade Bowl: Skipper passed near the fictional Palm Walk colony as well. Same cat proposal, second colony association; no live GPS claim.",
+      "attachments": [],
+      "proposedColonyKey": "COL-MB-PALM-DEMO",
+      "proposedCatKey": "CAT-SKIPPER",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w047",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Rui",
+      "receivedAt": "2026-11-08T06:18:00-05:00",
+      "broadArea": "Miami Beach",
+      "text": "DEMO Miami Beach · Palm Walk: Sombra salió después del ruido. Feeding complete para 5 adultos; Marina no se vio en mi tramo. Ese dato no prueba ausencia.",
+      "attachments": [],
+      "proposedColonyKey": "COL-MB-PALM-DEMO",
+      "proposedCatKey": "CAT-W-SOMBRA",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 5,
+        "high": 5,
+        "confidence": 0.83
+      }
+    },
+    {
+      "id": "sms-w048",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Luz",
+      "receivedAt": "2026-11-08T06:21:00-05:00",
+      "broadArea": "Miami Beach",
+      "text": "DEMO Miami Beach · Breeze Court: Pearl te vini ankò pou dlo. Mwen rete sou chemen piblik la. Nou bezwen yon moun verifye kondisyon Echo anvan pwochen deplasman.",
+      "attachments": [],
+      "proposedColonyKey": "COL-MB-BREEZE-DEMO",
+      "proposedCatKey": "CAT-W-PEARL",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w049",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Maya",
+      "receivedAt": "2026-11-08T06:24:00-05:00",
+      "broadArea": "Hialeah",
+      "text": "DEMO Hialeah · Lime Commons: Coal was seen again after the earlier pass. Count 6 adults; feeding complete. Leave the ear-tip uncertainty in the record.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HL-DEMO",
+      "proposedCatKey": "CAT-COAL",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 6,
+        "high": 6,
+        "confidence": 0.84
+      }
+    },
+    {
+      "id": "sms-w050",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Sol",
+      "receivedAt": "2026-11-08T06:27:00-05:00",
+      "broadArea": "Hialeah",
+      "text": "DEMO Hialeah · Lime Court: Lime crossed between two fictional Hialeah colony areas. Quiet observation only; one cat can have more than one colony association.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HL-DEMO",
+      "proposedCatKey": "CAT-W-LIME",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w051",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Rina",
+      "receivedAt": "2026-11-08T06:30:00-05:00",
+      "broadArea": "Homestead",
+      "text": "DEMO Homestead · Dry Commons: Mango comeu na segunda passagem. Feeding complete para 5; a rota com água parada continua sem acesso verificado.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HM-DEMO",
+      "proposedCatKey": "CAT-W-MANGO",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 5,
+        "high": 5,
+        "confidence": 0.82
+      }
+    },
+    {
+      "id": "sms-w052",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Teo",
+      "receivedAt": "2026-11-08T06:33:00-05:00",
+      "broadArea": "Homestead",
+      "text": "DEMO Homestead · Mango Shade: Papaya came for water. Count 3 adults; feeding complete. Fig’s earlier scrape still needs the coordinator’s review.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HM-MANGO-DEMO",
+      "proposedCatKey": "CAT-W-PAPAYA",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 3,
+        "high": 3,
+        "confidence": 0.85
+      }
+    },
+    {
+      "id": "sms-w053",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Jo",
+      "receivedAt": "2026-11-08T06:36:00-05:00",
+      "broadArea": "Hollywood / Broward",
+      "text": "DEMO Hollywood / Broward · Grove Commons: Sunny salió cuando bajó el ruido. Feeding complete para 4 adultos; no pude confirmar el número de pequeños con Velvet.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HB-GROVE-DEMO",
+      "proposedCatKey": "CAT-W-SUNNY",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 4,
+        "high": 4,
+        "confidence": 0.8
+      }
+    },
+    {
+      "id": "sms-w054",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Nia",
+      "receivedAt": "2026-11-08T06:39:00-05:00",
+      "broadArea": "Hollywood / Broward",
+      "text": "DEMO Hollywood / Broward · Patio Commons: Mocha tounen ankò. Feeding complete pou 5 gran chat. Nòt sou Clover la toujou bezwen swivi moun, pa gen rezilta medikal konfime.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HB-PATIO-DEMO",
+      "proposedCatKey": "CAT-W-MOCHA",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": true,
+      "flags": [],
+      "duplicateGroup": null,
+      "count": {
+        "low": 5,
+        "high": 5,
+        "confidence": 0.83
+      }
+    },
+    {
+      "id": "sms-w055",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Lila",
+      "receivedAt": "2026-11-08T06:42:00-05:00",
+      "broadArea": "Little Havana",
+      "text": "DEMO Little Havana · Flagler Yard: Domino stayed near cover. Count 6 adults from the public side; no close exam. Passing the injury review to the next coordinator.",
+      "attachments": [],
+      "proposedColonyKey": "COL-04",
+      "proposedCatKey": "CAT-W-DOMINO",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "injury"
+      ],
+      "duplicateGroup": null,
+      "count": {
+        "low": 6,
+        "high": 6,
+        "confidence": 0.76
+      }
+    },
+    {
+      "id": "sms-w056",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Cam",
+      "receivedAt": "2026-11-08T06:45:00-05:00",
+      "broadArea": "Little Havana",
+      "text": "DEMO Little Havana · Mango Court: Tal vez sea Guava, pero esta vista parcial no basta. Different observer, separate candidate key until someone checks both records; possible duplicate.",
+      "attachments": [],
+      "proposedColonyKey": "COL-LH-COURT-DEMO",
+      "proposedCatKey": "CAT-W-GUAVA-ALT",
+      "colonyConfidence": 0.61,
+      "feedingConfirmed": false,
+      "flags": [
+        "possible_duplicate"
+      ],
+      "duplicateGroup": "GUAVA-WEEKEND"
+    },
+    {
+      "id": "sms-w057",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Vale",
+      "receivedAt": "2026-11-08T06:48:00-05:00",
+      "broadArea": "Little River",
+      "text": "DEMO Little River · Laundry Commons: Talvez seja Coco de novo; vi só parte do rosto. Another observer, possible duplicate. Keep a separate candidate; never merge automatically.",
+      "attachments": [],
+      "proposedColonyKey": "COL-02",
+      "proposedCatKey": "CAT-W-COCO-ALT",
+      "colonyConfidence": 0.61,
+      "feedingConfirmed": false,
+      "flags": [
+        "possible_duplicate"
+      ],
+      "duplicateGroup": "COCO-WEEKEND"
+    },
+    {
+      "id": "sms-w058",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Isa",
+      "receivedAt": "2026-11-08T06:51:00-05:00",
+      "broadArea": "Little River",
+      "text": "DEMO Little River · Palm Shade: Luna’s bowl was untouched when I left. Please leave the illness review visible in handoff; I cannot verify whether she ate later.",
+      "attachments": [],
+      "proposedColonyKey": "COL-LR-SHADE-DEMO",
+      "proposedCatKey": "CAT-W-LUNA",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "illness"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w059",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Jules",
+      "receivedAt": "2026-11-08T06:54:00-05:00",
+      "broadArea": "North Miami",
+      "text": "DEMO North Miami · Canal Commons: Nori pa parèt sou dènye pas mwen an. Gen moun ki tande ti chat toujou. Keep kittens count uncertain; pa antre anba okenn bilding.",
+      "attachments": [],
+      "proposedColonyKey": "COL-07",
+      "proposedCatKey": "CAT-W-NORI",
+      "colonyConfidence": 0.58,
+      "feedingConfirmed": false,
+      "flags": [
+        "kittens",
+        "uncertain_count"
+      ],
+      "duplicateGroup": null,
+      "count": {
+        "low": 0,
+        "high": 3,
+        "confidence": 0.44
+      }
+    },
+    {
+      "id": "sms-w060",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Kai",
+      "receivedAt": "2026-11-08T06:57:00-05:00",
+      "broadArea": "North Miami",
+      "text": "DEMO North Miami · Garden Steps: Zuri appeared for a moment on the public-side path. New sighting only; coordinator compares it with the prior negative check.",
+      "attachments": [],
+      "proposedColonyKey": "COL-NM-GARDEN-DEMO",
+      "proposedCatKey": "CAT-W-ZURI",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w061",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Mar",
+      "receivedAt": "2026-11-08T07:00:00-05:00",
+      "broadArea": "North Miami",
+      "text": "DEMO North Miami · Oak Commons: Juniper has a pale tail tip and a small shoulder patch. Logging markings for review; no photo today and no identity claim.",
+      "attachments": [],
+      "proposedColonyKey": "COL-NM-OAK-DEMO",
+      "proposedCatKey": "CAT-W-JUNIPER",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w062",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Rui",
+      "receivedAt": "2026-11-08T07:03:00-05:00",
+      "broadArea": "Fort Lauderdale",
+      "text": "DEMO Fort Lauderdale · Riverwalk Commons: Anchor was not in view on the final pass. Negative search check logged from a safe path, not proof that a cat left the colony.",
+      "attachments": [],
+      "proposedColonyKey": "COL-11",
+      "proposedCatKey": "CAT-W-ANCHOR",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w063",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Luz",
+      "receivedAt": "2026-11-08T07:06:00-05:00",
+      "broadArea": "Fort Lauderdale",
+      "text": "DEMO Fort Lauderdale · Citrus Court: Kiwi não veio ao pote desta vez. Mantém injury review para a coordenação. Não entrei em área restrita para procurar.",
+      "attachments": [],
+      "proposedColonyKey": "COL-FL-COURT-DEMO",
+      "proposedCatKey": "CAT-W-KIWI",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "injury"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w064",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Maya",
+      "receivedAt": "2026-11-08T07:09:00-05:00",
+      "broadArea": "Miami Beach",
+      "text": "DEMO Miami Beach · Shade Bowl: Coral came out for water. Count 4 now. Water is shaded, but this does not resolve the earlier count uncertainty by itself.",
+      "attachments": [],
+      "proposedColonyKey": "COL-MB-DEMO",
+      "proposedCatKey": "CAT-W-CORAL",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "heat"
+      ],
+      "duplicateGroup": null,
+      "count": {
+        "low": 4,
+        "high": 4,
+        "confidence": 0.78
+      }
+    },
+    {
+      "id": "sms-w065",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Sol",
+      "receivedAt": "2026-11-08T07:12:00-05:00",
+      "broadArea": "Miami Beach",
+      "text": "DEMO Miami Beach · Palm Walk: Marina apareció a distancia, con el grupo. Nueva observación para revisar; nadie debe cerrar el caso sin confirmar identidad.",
+      "attachments": [],
+      "proposedColonyKey": "COL-MB-PALM-DEMO",
+      "proposedCatKey": "CAT-W-MARINA",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w066",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Rina",
+      "receivedAt": "2026-11-08T07:15:00-05:00",
+      "broadArea": "Miami Beach",
+      "text": "DEMO Miami Beach · Breeze Court: Echo rete lwen bòl la. Mwen kite nòt ak lè pou pwochen ekip la. Illness review toujou ouvè; pa gen dyagnostik.",
+      "attachments": [],
+      "proposedColonyKey": "COL-MB-BREEZE-DEMO",
+      "proposedCatKey": "CAT-W-ECHO",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "illness"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w067",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Teo",
+      "receivedAt": "2026-11-08T07:18:00-05:00",
+      "broadArea": "Hialeah",
+      "text": "DEMO Hialeah · Lime Commons: Chispa stayed in shade. Feeding complete for the group, count 6. Pregnancy review remains open; no trapping decision was made here.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HL-DEMO",
+      "proposedCatKey": "CAT-W-CHISPA",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": true,
+      "flags": [
+        "pregnancy"
+      ],
+      "duplicateGroup": null,
+      "count": {
+        "low": 6,
+        "high": 6,
+        "confidence": 0.8
+      }
+    },
+    {
+      "id": "sms-w068",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Jo",
+      "receivedAt": "2026-11-08T07:21:00-05:00",
+      "broadArea": "Hialeah",
+      "text": "DEMO Hialeah · Lime Court: Button was seen near the second Hialeah colony’s public-side area too. Same proposed cat, extra colony association, no forced home-colony change.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HL-DEMO",
+      "proposedCatKey": "CAT-W-BUTTON",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w069",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Nia",
+      "receivedAt": "2026-11-08T07:24:00-05:00",
+      "broadArea": "Homestead",
+      "text": "DEMO Homestead · Dry Commons: Olive foi vista de longe, sem atravessar água. Acesso segue inseguro; aguardar revisão humana da rota antes de designar busca.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HM-DEMO",
+      "proposedCatKey": "CAT-W-OLIVE",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "flood"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w070",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Ana",
+      "receivedAt": "2026-11-08T07:27:00-05:00",
+      "broadArea": "Homestead",
+      "text": "DEMO Homestead · Mango Shade: Fig came close to the water then returned to cover. Earlier injury review stays open; handing off to the next shift.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HM-MANGO-DEMO",
+      "proposedCatKey": "CAT-W-FIG",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "injury"
+      ],
+      "duplicateGroup": null
+    },
+    {
+      "id": "sms-w071",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Sam",
+      "receivedAt": "2026-11-08T07:30:00-05:00",
+      "broadArea": "Hollywood / Broward",
+      "text": "DEMO Hollywood / Broward · Grove Commons: Velvet y los pequeños se quedaron bajo sombra. Maybe 3 tiny young cats, pero no vista completa. No cierro la revisión con este mensaje.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HB-GROVE-DEMO",
+      "proposedCatKey": "CAT-W-VELVET",
+      "colonyConfidence": 0.58,
+      "feedingConfirmed": false,
+      "flags": [
+        "kittens",
+        "uncertain_count"
+      ],
+      "duplicateGroup": null,
+      "count": {
+        "low": 0,
+        "high": 3,
+        "confidence": 0.48
+      }
+    },
+    {
+      "id": "sms-w072",
+      "sourceKind": "sms_relay",
+      "volunteerAlias": "Demo Dani",
+      "receivedAt": "2026-11-08T07:33:00-05:00",
+      "broadArea": "Hollywood / Broward",
+      "text": "DEMO Hollywood / Broward · Patio Commons: Clover pran de bouch manje sèlman. Illness review rete ouvè pou kowòdonatè a. Pa gen okenn tretman oswa rezilta otomatik.",
+      "attachments": [],
+      "proposedColonyKey": "COL-HB-PATIO-DEMO",
+      "proposedCatKey": "CAT-W-CLOVER",
+      "colonyConfidence": 0.83,
+      "feedingConfirmed": false,
+      "flags": [
+        "illness"
+      ],
+      "duplicateGroup": null
+    }
+  ]
+}

@@ -10,6 +10,9 @@ import { readPrivatePhoto, reviewPrivatePhoto, uploadPrivatePhoto } from "./phot
 import { importSyntheticFixture, validateSyntheticFixtureBatch } from "./intake.js";
 import { parseSyntheticSmsRelay, parseSyntheticWhatsAppExport } from "./raw-intake.js";
 import { seedCanonicalCatsFromObservations, materializeCanonicalCensus, applyHumanDedupeDecision, getCanonicalWorkspace } from "./census.js";
+import { getVisionWorkspace, compareCatPhotos, reviewVisionComparison } from "./vision-matching.js";
+import { listFieldTools, createAppointment, updateAppointment, createSupplyRequest, pledgeSupply, updateSupply, createHandoff, acknowledgeHandoff, closeHandoff } from "./field-tools.js";
+import { searchWorkspace, getMyShift } from "./workspace-tools.js";
 
 const service = "devday-js-2026";
 
@@ -30,9 +33,13 @@ async function readLimitedJson(request, limit) {
 
 async function assessFixture(fixture, env) {
   const validated = validateSyntheticFixtureBatch(fixture);
+  if (fixture.analysisMode != null && !["rules", "agent"].includes(fixture.analysisMode)) throw new Error("Synthetic intake rejected: invalid analysis mode");
+  // Large fixture packs stay quick and predictable. A selected single-message
+  // replay can opt into live agents; the result always records its real mode.
+  const assessmentEnv = fixture.analysisMode === "rules" || (!fixture.analysisMode && validated.records.length > 12) ? { ...env, OPENAI_API_KEY: undefined } : env;
   const assessments = {};
   for (const record of validated.records) {
-    const result = await triageReport({ message: record.text, source: record.sourceKind, catCount: record.count?.high, feedingConfirmed: record.feedingConfirmed }, env);
+    const result = await triageReport({ message: record.text, source: record.sourceKind, catCount: record.count?.high, feedingConfirmed: record.feedingConfirmed }, assessmentEnv);
     assessments[record.id] = result;
     if (result.urgency === "urgent" && !record.flags.includes("agent_urgent")) record.flags.push("agent_urgent");
   }
@@ -68,6 +75,43 @@ export default {
       const auth = await requireRole(request, env, ["admin", "coordinator", "volunteer", "sponsor"], { csrf: true });
       if (!auth.ok) return auth.response;
       return Response.json({ ok: true }, { headers: await revokeCurrentSession(request, env) });
+    }
+
+    if (["/api/private/workspace-search", "/api/private/my-shift"].includes(pathname)) {
+      if (request.method !== "GET") return json({error:"Method not allowed"},405);
+      const auth=await requireRole(request,env,["admin","coordinator","volunteer"]);
+      if(!auth.ok)return auth.response;
+      try {
+        const common={db:env.DB,session:auth.session};
+        const query=new URL(request.url).searchParams;
+        return json(pathname.endsWith("my-shift") ? await getMyShift(common) : await searchWorkspace({...common,query:query.get("q")??"",kind:query.get("kind")??"all",area:query.get("area")??""}));
+      }catch(error){return json({error:String(error?.message??"Workspace tool unavailable").slice(0,240)},Number(error?.status)||400);}
+    }
+
+    if (["/api/private/vision", "/api/private/vision/compare", "/api/private/vision/review"].includes(pathname)) {
+      const read=request.method==="GET"&&pathname==="/api/private/vision";
+      if(!read&&(request.method!=="POST"||pathname==="/api/private/vision"))return json({error:"Method not allowed"},405);
+      const auth=await requireRole(request,env,["admin","coordinator"],{csrf:!read});
+      if(!auth.ok)return auth.response;
+      try{
+        const common={env,session:auth.session};
+        if(read)return json(await getVisionWorkspace(common));
+        const input=await readLimitedJson(request,5000);
+        return json(await (pathname.endsWith("/compare")?compareCatPhotos:reviewVisionComparison)({...common,input}));
+      }catch(error){return json({error:String(error?.message??"Image comparison unavailable").slice(0,240)},Number(error?.status)||400);}
+    }
+
+    if (pathname==="/api/private/field-tools"||pathname.startsWith("/api/private/field-tools/")) {
+      const actions={"/appointments":createAppointment,"/appointments/update":updateAppointment,"/supplies":createSupplyRequest,"/supplies/pledge":pledgeSupply,"/supplies/update":updateSupply,"/handoffs":createHandoff,"/handoffs/acknowledge":acknowledgeHandoff,"/handoffs/close":closeHandoff};
+      const suffix=pathname.slice("/api/private/field-tools".length);
+      const read=request.method==="GET"&&suffix==="";
+      if(!read&&(!actions[suffix]||request.method!=="POST"))return json({error:"Method not allowed"},405);
+      const auth=await requireRole(request,env,["admin","coordinator","volunteer"],{csrf:!read});
+      if(!auth.ok)return auth.response;
+      try{
+        const common={db:env.DB,session:auth.session};
+        return json(read?await listFieldTools(common):await actions[suffix]({...common,input:await readLimitedJson(request,8000)}));
+      }catch(error){return json({error:String(error?.message??"Field coordination unavailable").slice(0,240)},Number(error?.status)||400);}
     }
 
     if (["/api/private/intake-review", "/api/private/routing-settings", "/api/private/clarifications", "/api/private/clarifications/reply", "/api/private/observations/confirm"].includes(pathname)) {
@@ -179,7 +223,8 @@ export default {
       if (!auth.ok) return auth.response;
       if (!(request.headers.get("content-type") ?? "").includes("application/json") || Number(request.headers.get("content-length") || 0) > 250000) return json({ error: "Invalid fixture" }, 400);
       try {
-        const fixture = validateSyntheticFixtureBatch(await readLimitedJson(request, 250000));
+        const input = await readLimitedJson(request, 250000);
+        const fixture = { ...validateSyntheticFixtureBatch(input), analysisMode: input.analysisMode };
         const stored = await env.DB.prepare("SELECT id FROM intake_import_batches WHERE id=?").bind(fixture.batchId).first();
         if (stored) return json({ error: "This fixture batch is already imported; existing reviews were preserved.", batchId: stored.id }, 409);
         const assessed = await assessFixture(fixture, env);
@@ -207,7 +252,7 @@ export default {
         if (existing) return json({ error: "This source was already imported. Stored reviews and census were preserved.", batchId: existing.id }, 409);
         const common = { batchId: input.batchId, provenance: "Deliberately synthetic exported chat fixture; submitted by an authenticated team member." };
         const fixture = input.sourceKind === "whatsapp_export" ? parseSyntheticWhatsAppExport({ ...common, text: input.text }) : parseSyntheticSmsRelay({ ...common, ndjson: input.text });
-        const assessed = await assessFixture(fixture, env);
+        const assessed = await assessFixture({ ...fixture, analysisMode: input.analysisMode }, env);
         const result = await importSyntheticFixture({ db: env.DB, ...assessed, sourceDigest });
         await seedCanonicalCatsFromObservations(env.DB);
         await materializeCanonicalCensus(env.DB);
