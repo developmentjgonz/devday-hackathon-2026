@@ -1,4 +1,4 @@
-import { Bot, Cat, House, Inbox, LayoutDashboard, ListTodo, Newspaper, Settings2, UsersRound } from 'lucide-react'
+import { Bot, Cat, ChartNoAxesColumn, House, Inbox, LayoutDashboard, ListTodo, Newspaper, Settings2, UsersRound } from 'lucide-react'
 import { NavLink } from 'react-router'
 import type { MouseEvent } from 'react'
 import { isPlainNavigation } from '@/lib/navigation'
@@ -32,6 +32,9 @@ export function WorkspaceNavigation({ showTeam = false, showAutomation = false, 
           </TextLink>
         ))}
         {showTeam ? <>
+          <TextLink variant="navigation" onClick={(event) => followLink(event, '/app/statistics')} render={<NavLink to="/app/statistics" />}>
+            <ChartNoAxesColumn className="size-4 shrink-0" aria-hidden="true" />Statistics &amp; exports
+          </TextLink>
           {showAutomation ? <TextLink variant="navigation" onClick={(event) => followLink(event, '/app/automation')} render={<NavLink to="/app/automation" />}><Bot className="size-4 shrink-0" aria-hidden="true" />Automation</TextLink> : null}
           <TextLink variant="navigation" onClick={(event) => followLink(event, '/app/community')} render={<NavLink to="/app/community" />}>
             <Newspaper className="size-4 shrink-0" aria-hidden="true" />Community board
