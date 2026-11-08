@@ -26,7 +26,7 @@ import type { AutopilotSettings } from '../../../../shared/types/automation'
 
 const sections = [
   { to: '/app/configuration', label: 'Communication setup', end: true },
-  { to: '/app/configuration/ai', label: 'AI analysis', end: false },
+  { to: '/app/configuration/ai', label: 'AI features', end: false },
   { to: '/app/configuration/access', label: 'Sign-in access', end: false },
 ]
 
@@ -194,7 +194,7 @@ function AiForm({ initial, store, onSaved, onDirtyChange }: { initial: Configura
     : saved.openaiKeyStatus === 'unavailable' ? 'The saved key cannot be accessed. You can replace or remove it.'
       : 'No API key is saved.'
   return <div className="space-y-6">
-    <div className="space-y-2"><Heading level={2} size="card">AI analysis</Heading><Text size="small" tone="muted">When a key is saved, opening a report sends report details, supported attachments, and related reports to OpenAI for suggestions.</Text></div>
+    <div className="space-y-2"><Heading level={2} size="card">AI features</Heading><Text size="small" tone="muted">When a key is saved, opening a report sends report details, supported attachments, and related reports to OpenAI for suggestions.</Text></div>
     <Card><CardContent><form onSubmit={submit} className="space-y-6">
       <div className="grid gap-2">
         <Label htmlFor="configuration-model">OpenAI model</Label>

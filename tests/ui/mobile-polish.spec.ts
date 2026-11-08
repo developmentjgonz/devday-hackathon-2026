@@ -31,7 +31,7 @@ test('configuration keeps drafts between sections and warns until every section 
   await open(page, 'pages-configuration--communication-setup', info.project.name === 'dark')
   await page.getByLabel('Phone number', { exact: true }).fill('+1 305 555 0123')
   const nav = page.getByRole('navigation', { name: 'Configuration sections' })
-  await nav.getByRole('link', { name: 'AI analysis', exact: true }).click()
+  await nav.getByRole('link', { name: 'AI features', exact: true }).click()
   await page.getByLabel('OpenAI model', { exact: true }).fill('example-model')
   await page.getByRole('button', { name: 'Save changes', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled()

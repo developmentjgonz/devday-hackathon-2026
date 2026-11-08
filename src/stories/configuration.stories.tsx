@@ -77,7 +77,7 @@ type Story = StoryObj<typeof meta>
 
 export const CommunicationSetup: Story = {}
 export const ChatEnabled: Story = { args: { values: { ...initial, reportChatEnabled: true, openaiKeyStatus: 'saved' } } }
-export const AiAnalysis: Story = { args: { path: '/app/configuration/ai' } }
+export const AiFeatures: Story = { args: { path: '/app/configuration/ai' } }
 export const SavedKey: Story = { args: { path: '/app/configuration/ai', values: { ...initial, openaiModel: 'example-model', openaiKeyStatus: 'saved' } } }
 export const Autopilot: Story = { args: { path: '/app/configuration/ai', values: { ...initial, openaiKeyStatus: 'saved', autopilot: { ...defaultAutopilot, enabled: true } } } }
 export const KeyStorageUnavailable: Story = { args: { path: '/app/configuration/ai', values: { ...initial, openaiKeyStatus: 'unavailable', secureKeyStorageAvailable: false } } }

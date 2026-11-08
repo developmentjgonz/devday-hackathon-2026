@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 const story = (name: string) => `/iframe.html?id=pages-configuration--${name}&viewMode=story`
 
 test('administrators can edit, save, and restore the report chat prompt', async ({ page }) => {
-  await page.goto(story('ai-analysis'))
+  await page.goto(story('ai-features'))
   const prompt = page.getByLabel('Report chat system prompt', { exact: true })
   const original = await prompt.inputValue()
   expect(original).toContain('warm, attentive assistant')
@@ -11,7 +11,7 @@ test('administrators can edit, save, and restore the report chat prompt', async 
   await page.getByRole('button', { name: 'Save changes', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled()
   await page.getByRole('link', { name: 'Communication setup', exact: true }).click()
-  await page.getByRole('link', { name: 'AI analysis', exact: true }).click()
+  await page.getByRole('link', { name: 'AI features', exact: true }).click()
   await expect(prompt).toHaveValue('Be kind. Ask one question at a time. Thank people for helping cats.')
   await page.getByRole('button', { name: 'Restore default prompt', exact: true }).click()
   await expect(prompt).toHaveValue(original)
@@ -38,8 +38,8 @@ test('administrators can enable contact options, retain details when disabled, a
   await emailSwitch.click()
   await page.getByLabel('Phone number', { exact: true }).fill('+1 (305) 555-0123')
   await page.getByLabel('Email address', { exact: true }).fill('REPORTS@example.test')
-  await navigation.getByRole('link', { name: 'AI analysis' }).click()
-  await expect(page.getByRole('heading', { name: 'AI analysis', exact: true })).toBeVisible()
+  await navigation.getByRole('link', { name: 'AI features' }).click()
+  await expect(page.getByRole('heading', { name: 'AI features', exact: true })).toBeVisible()
   await navigation.getByRole('link', { name: 'Communication setup' }).click()
   await expect(page.getByRole('heading', { name: 'Communication setup', exact: true })).toBeVisible()
   await expect(page.getByLabel('Phone number', { exact: true })).toHaveValue('+1 (305) 555-0123')
@@ -50,7 +50,7 @@ test('administrators can enable contact options, retain details when disabled, a
   await expect(phoneSwitch).not.toBeChecked()
   await expect(emailSwitch).toBeChecked()
   await expect(page.getByLabel('Phone number', { exact: true })).toHaveValue('+1 (305) 555-0123')
-  await navigation.getByRole('link', { name: 'AI analysis' }).click()
+  await navigation.getByRole('link', { name: 'AI features' }).click()
   await page.getByLabel('OpenAI model').fill('example-model')
   const key = page.getByLabel('OpenAI API key')
   await key.fill('fictional-test-key')
