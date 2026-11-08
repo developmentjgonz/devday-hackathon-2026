@@ -5,8 +5,8 @@ export const reportStatusLabels: Record<ReportStatus, string> = {
   waiting: 'Waiting for details',
   processed: 'Processed',
 }
-export type InboxColony = { id: string; name: string }
-export type InboxCat = { id: string; colonyId: string; name: string }
+export type InboxColony = { id: string; name: string; photoUrl?: string; coordinates?: [longitude: number, latitude: number] }
+export type InboxCat = { id: string; colonyId: string; name: string; photoUrl?: string }
 export type TaskStatus = 'open' | 'completed'
 export type ReportTask = { id: string; title: string; owner: string; due: string; status: TaskStatus }
 export type ReportEntry = { id: string; author: string; text: string }
