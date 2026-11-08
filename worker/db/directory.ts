@@ -1,4 +1,4 @@
-import type { Cat, Colony, Directory } from '../../shared/types/directory.ts'
+import type { Cat, Colony, Coordinates, Directory } from '../../shared/types/directory.ts'
 import type { ValidCatInput } from '../../shared/schemas/directory.ts'
 
 type ColonyRow = { id: string; name: string; photoUrl: string | null; longitude: number | null; latitude: number | null }
@@ -13,25 +13,36 @@ function catFromRow(row: CatRow): Cat {
   }
 }
 const catSelect = 'SELECT c.id, c.colony_id AS colonyId, c.name, c.photo_url AS photoUrl, c.birth_date AS birthDate, c.birth_date_estimated AS birthDateEstimated, c.description, p.revision AS photoRevision FROM cats c LEFT JOIN cat_photos p ON p.cat_id = c.id'
+const colonySelect = 'id, name, photo_url AS photoUrl, longitude, latitude'
+
+function colonyFromRow({ photoUrl, longitude, latitude, ...colony }: ColonyRow): Colony {
+  return { ...colony,
+    ...(photoUrl ? { photoUrl } : {}),
+    ...(longitude !== null && latitude !== null ? { coordinates: [longitude, latitude] as Coordinates } : {}),
+  }
+}
 
 export async function listDirectory(db: D1Database): Promise<Directory> {
   const [colonies, cats] = await Promise.all([
-    db.prepare('SELECT id, name, photo_url AS photoUrl, longitude, latitude FROM colonies ORDER BY name COLLATE NOCASE, id').all<ColonyRow>(),
+    db.prepare(`SELECT ${colonySelect} FROM colonies ORDER BY name COLLATE NOCASE, id`).all<ColonyRow>(),
     db.prepare(`${catSelect} ORDER BY c.name COLLATE NOCASE, c.id`).all<CatRow>(),
   ])
   return {
-    colonies: colonies.results.map(({ photoUrl, longitude, latitude, ...colony }) => ({ ...colony,
-      ...(photoUrl ? { photoUrl } : {}),
-      ...(longitude !== null && latitude !== null ? { coordinates: [longitude, latitude] as [number, number] } : {}),
-    })),
+    colonies: colonies.results.map(colonyFromRow),
     cats: cats.results.map(catFromRow),
   }
 }
 
-export async function insertColony(db: D1Database, name: string, userId: string): Promise<Colony> {
-  const colony = { id: crypto.randomUUID(), name }
-  await db.prepare('INSERT INTO colonies (id, name, created_by) VALUES (?, ?, ?)').bind(colony.id, name, userId).run()
+export async function insertColony(db: D1Database, name: string, userId: string, coordinates?: Coordinates): Promise<Colony> {
+  const colony: Colony = { id: crypto.randomUUID(), name, ...(coordinates ? { coordinates } : {}) }
+  await db.prepare('INSERT INTO colonies (id, name, longitude, latitude, created_by) VALUES (?, ?, ?, ?, ?)').bind(colony.id, name, coordinates?.[0] ?? null, coordinates?.[1] ?? null, userId).run()
   return colony
+}
+
+export async function updateColonyLocation(db: D1Database, id: string, coordinates: Coordinates | null): Promise<Colony | null> {
+  const row = await db.prepare(`UPDATE colonies SET longitude = ?, latitude = ? WHERE id = ? RETURNING ${colonySelect}`)
+    .bind(coordinates?.[0] ?? null, coordinates?.[1] ?? null, id).first<ColonyRow>()
+  return row ? colonyFromRow(row) : null
 }
 
 export async function saveCat(db: D1Database, input: ValidCatInput, userId: string, existingId?: string): Promise<Cat | null> {
