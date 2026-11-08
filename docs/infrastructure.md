@@ -1,11 +1,12 @@
 # Cloudflare infrastructure
 
-Dedicated resources were created for this project in the user's existing paid Cloudflare account. Migrations and fictional seeds for workspace and public content are available locally; they have not been applied to the remote database. The configured private R2 upload bucket must be created before deployment. See [local accounts](local-accounts.md).
+Dedicated resources were created for this project in the user's existing paid Cloudflare account. The current migrations are applied to remote D1 and the private R2 upload bucket is provisioned. Local and live data are separate. Fictional seeds are for local development only; do not apply them to remote D1. See [local accounts](local-accounts.md) and [Google sign-in](google-sign-in.md).
 
 | Resource | Name | Management |
 | --- | --- | --- |
 | Worker and static app assets | `devday-js-2026` | [Cloudflare dashboard](https://dash.cloudflare.com/d4501cb4c3a0ec6b4b67b051d83d3a30/workers/services/view/devday-js-2026/production) |
 | D1 database | `devday-js-2026-db` | [Cloudflare dashboard](https://dash.cloudflare.com/d4501cb4c3a0ec6b4b67b051d83d3a30/workers/d1/databases/5e49e8ba-625a-4954-9ebc-10d7f3100b90) |
+| Private R2 uploads | `devday-js-2026-uploads` | Cloudflare R2 dashboard |
 
 ## Live URLs
 
@@ -26,9 +27,9 @@ Resource identifiers in the configuration are not API credentials. Wrangler uses
 
 ## Current behavior
 
-The root displays only Hello. `GET /api/health` executes `SELECT 1 AS ok` through the database binding and returns a no-cache JSON response indicating connectivity. Database failures return 503, unsupported health methods return 405, and unknown `/api` paths return JSON 404. The route does not read product records or accept writes.
+The Worker serves the app and its public and authenticated API routes. `GET /api/health` executes `SELECT 1 AS ok` through the database binding and returns a no-cache JSON response indicating connectivity. Database failures return 503, unsupported health methods return 405, and unknown `/api` paths return JSON 404.
 
-The initial deployment was checked in Chrome, its HTML/JS/CSS matched the local `dist/` output, and the health request succeeded against the remote D1 binding. A schema inspection confirmed no application tables.
+The live Google sign-in and administrator account were verified in Chrome. A disposable colony, cat, report, and task remained available after refresh; the test records were then removed. Google OAuth is in testing mode and only listed test users can sign in.
 
 On November 7, 2026, both live URLs returned HTTP 200. The health response was:
 
@@ -51,7 +52,9 @@ Checks install dependencies, build the app and Storybook, and validate the Worke
 
 Deployment uses the repository's `CLOUDFLARE_API_TOKEN` Actions secret. Resource identifiers and bindings come from [`wrangler.jsonc`](../wrangler.jsonc). After deployment, the workflow checks the app URL and requires the health response shown above.
 
-The [verified release run](https://github.com/developmentjgonz/devday-hackathon-2026/actions/runs/42413318529) deployed commit [`0a4344c`](https://github.com/developmentjgonz/devday-hackathon-2026/commit/0a4344c1041ae8db985babf0f067efdf762a5777). Later documentation commits on `main` do not change the live deployment.
+The [verified release run](https://github.com/developmentjgonz/devday-hackathon-2026/actions/runs/42438124376) deployed commit [`6110353`](https://github.com/developmentjgonz/devday-hackathon-2026/commit/61103537adece588ad8c018099cae6540808bdd0).
+
+The release workflow does not apply D1 migrations. Before deploying code that requires a new schema, review and apply the required migrations to the intended database with `npx wrangler d1 migrations apply DB --remote`. Do not apply the local seed files to the live database.
 
 ## Build and deploy
 

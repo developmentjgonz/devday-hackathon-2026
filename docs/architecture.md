@@ -1,12 +1,12 @@
 # Architecture
 
-Status: the local React frontend has separate public and workspace shells with placeholder rescue content, local test sign-in, and server sessions. Storybook is the separate local component workspace. A dedicated Cloudflare Worker serves the last deployed frontend with a D1 health endpoint. The account work has not been deployed.
+The React frontend has separate public and workspace shells. A Cloudflare Worker serves the live app and its API. The live workspace uses Google sign-in and server sessions; local development uses test sign-in. Storybook is the separate local component workspace.
 
-Account, colony, cat, report, task, and published public-content tables and endpoints are implemented locally. Report attachments use private R2 storage. Google sign-in, outbound messaging, and AI integrations remain open.
+Account, colony, cat, report, task, and published public-content tables and endpoints use D1 locally and in the live app. Report attachments use private R2 storage. Outbound messaging and AI integrations remain open.
 
 ## System
 
-The frontend uses Vite, React, TypeScript, React Router in Data Mode, Tailwind CSS v4, and shadcn/ui. The installed shadcn components use Base UI primitives. The local backend uses Hono and strict TypeScript on Cloudflare Workers, with Zod for input validation and D1 for application records. The deployed Worker serves `dist/` and `/api/health`. The local Worker emulates the private R2 upload bucket; the remote bucket is not yet provisioned.
+The frontend uses Vite, React, TypeScript, React Router in Data Mode, Tailwind CSS v4, and shadcn/ui. The installed shadcn components use Base UI primitives. The backend uses Hono and strict TypeScript on Cloudflare Workers, with Zod for input validation and D1 for application records. The deployed Worker serves `dist/` and the API. The local Worker emulates the private R2 upload bucket; the live Worker uses a separate remote bucket.
 
 `src/router.tsx` defines frontend routes with `createBrowserRouter`. `src/main.tsx` renders its `RouterProvider`. The root `App` component owns shared route behavior: the skip link, focus on the main region after a path change, and scroll restoration. Layouts own their separate headers and navigation. See [the routing decision](decisions/0001-react-router.md) and [the layout decision](decisions/0002-public-and-workspace-layouts.md).
 
@@ -16,7 +16,7 @@ The frontend uses Vite, React, TypeScript, React Router in Data Mode, Tailwind C
 | `/community` | `SiteLayout` | Published volunteer openings and news from D1. Local seeds are fictional; an editing workflow is not implemented. |
 | `/privacy` | `SiteLayout` | Privacy Policy page shell; policy text is not yet supplied |
 | `/terms` | `SiteLayout` | Terms page shell; terms text is not yet supplied |
-| `/sign-in` | `AccountLayout` | Local test account picker |
+| `/sign-in` | `AccountLayout` | Google sign-in on the live app; test account picker locally |
 | `/sign-up` | `AccountLayout` | Local signup with optional phone; creates a pending member |
 | `/account-status` | `AccountLayout` | Pending approval or suspended access |
 | `/app` | `AppLayout` | Personal and team overview from saved records. |
@@ -28,7 +28,7 @@ The frontend uses Vite, React, TypeScript, React Router in Data Mode, Tailwind C
 
 The root route has loading and error boundaries. Page components set their document title. The `/app` loader requests `/api/workspace`, `/api/directory`, and `/api/workspace-data`. Each requires an active account. Signed-out users return to `/sign-in`; pending or suspended users return to `/account-status`. Write endpoints also check request origin and validate input. Public content is limited to explicitly published area summaries and posts.
 
-Account users, provider identities, and hashed session tokens are stored in D1. Roles are separate from account status. Test sign-in requires an explicit server flag and an HTTP localhost address. Seed fixtures live outside migrations. See [the account decision](decisions/0003-local-accounts.md) and [local setup](local-accounts.md).
+Account users, provider identities, and hashed session tokens are stored in D1. Roles are separate from account status. Test sign-in requires an explicit server flag and an HTTP localhost address. Seed fixtures live outside migrations. See [Google sign-in](google-sign-in.md) and [local setup](local-accounts.md).
 
 Browser requests go through the Worker for protected application operations. Worker instances must not be relied on for persistent state. API secrets stay on the server.
 

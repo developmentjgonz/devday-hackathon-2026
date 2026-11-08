@@ -149,3 +149,17 @@ test('Google identities cannot silently claim existing email records or bootstra
   assert.equal(pending.headers.get('location'), '/account-status')
   assert.equal(sqlite.prepare("SELECT role FROM users WHERE email = 'other@example.com'").get().role, 'member')
 })
+
+test('the configured verified Google Workspace account can bootstrap the administrator', async (t) => {
+  const { request, env } = fixture(t)
+  env.GOOGLE_ADMIN_EMAIL = 'owner@rescue.example'
+  let profile = { subject: 'workspace-owner', email: 'owner@rescue.example', hd: 'rescue.example', nonce: '' }
+  installGoogle(t, () => profile)
+  const flow = await openFlow(request)
+  profile.nonce = flow.url.searchParams.get('nonce')
+  const response = await finishFlow(request, flow)
+  assert.equal(response.headers.get('location'), '/app')
+  const user = (await (await request('/api/auth/session', sessionCookie(response))).json()).user
+  assert.equal(user.role, 'administrator')
+  assert.equal(user.status, 'active')
+})
