@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useId, useRef, useState } from 'react'
 import { LocateFixed } from 'lucide-react'
 import type { Coordinates } from '../../../shared/types/directory'
+import { AddressSearch } from './address-search'
 import { Alert } from './alert'
 import { Button } from './button'
 import { Card } from './card'
@@ -77,6 +78,7 @@ export function LocationPicker({ value, onChange, initialCenter, disabled = fals
   }
 
   return <div className="space-y-3">
+    <AddressSearch disabled={disabled} onSelect={(result) => choose(result.coordinates, true)} />
     <Text size="small" tone="muted">Click or tap the map to place a pin. You can also enter coordinates.</Text>
     <Card padding="none" className="h-72">
       <Suspense fallback={<div role="status" className="flex h-full items-center justify-center gap-3"><LoadingIndicator decorative /><Text size="small" tone="muted">Loading map…</Text></div>}>

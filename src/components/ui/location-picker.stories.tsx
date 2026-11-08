@@ -10,7 +10,7 @@ function LocationPickerPreview({ hasLocation = false }: { hasLocation?: boolean 
 const meta = {
   title: 'Forms/Location picker',
   component: LocationPickerPreview,
-  parameters: { docs: { description: { component: 'Choose a single point by clicking the map, using the device location, or entering latitude and longitude. The map uses the OpenFreeMap basemap and retains its attribution. Coordinates remain usable if the map background is unavailable. Story locations are fictional.' } } },
+  parameters: { docs: { description: { component: 'Search for an address or choose a single point by clicking the map, using the device location, or entering latitude and longitude. Address search uses Photon and OpenStreetMap data; the map uses OpenFreeMap and retains its attribution. Coordinates remain usable if either service is unavailable. Story locations are fictional.' } } },
 } satisfies Meta<typeof LocationPickerPreview>
 export default meta
 type Story = StoryObj<typeof meta>
