@@ -14,6 +14,8 @@ import { configurationRoutes } from './routes/configuration.ts'
 import { publicReportRoutes } from './routes/public-reports.ts'
 import { reportAnalysisRoutes } from './routes/report-analysis.ts'
 import { generateCareTasks } from './db/care-rules.ts'
+import { automationRoutes } from './routes/automation.ts'
+import { runAutopilot } from './services/autopilot.ts'
 
 const app = new Hono<AppEnv>()
 const api = new Hono<AppEnv>()
@@ -36,6 +38,7 @@ api.route('/public-content', publicContentRoutes)
 api.route('/community-board', communityRoutes)
 api.route('/public-reports', publicReportRoutes)
 api.route('/configuration', configurationRoutes)
+api.route('/automation', automationRoutes)
 api.route('/', reportAnalysisRoutes)
 api.notFound((c) => c.json({ error: 'Not found' }, 404))
 
@@ -51,6 +54,10 @@ app.notFound((c) => {
 export default {
   fetch: app.fetch,
   scheduled(controller: ScheduledController, env: Bindings, ctx: ExecutionContext) {
-    ctx.waitUntil(generateCareTasks(env.DB, new Date(controller.scheduledTime)))
+    ctx.waitUntil((async () => {
+      try { await generateCareTasks(env.DB, new Date(controller.scheduledTime)) }
+      catch (error) { console.error('Care task generation failed', error) }
+      await runAutopilot(env)
+    })())
   },
 }

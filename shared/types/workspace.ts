@@ -62,4 +62,4 @@ export type Report = {
   thread: ReportEntry[]
   history: string[]
 }
-export type WorkspaceSnapshot = { reports: Report[]; tasks: Task[]; members: WorkspaceMember[]; careRules: CareRule[]; aiAnalysisEnabled: boolean; careGenerationFailed?: boolean }
+export type WorkspaceSnapshot = { reports: Report[]; tasks: Task[]; members: WorkspaceMember[]; careRules: CareRule[]; aiAnalysisEnabled: boolean; careGenerationFailed?: boolean; autopilotEnabled?: boolean; directory?: import('./directory').Directory }

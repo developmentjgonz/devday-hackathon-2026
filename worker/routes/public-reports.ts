@@ -6,10 +6,11 @@ import { publicReportChatSchema } from '../../shared/schemas/public-report-chat.
 import { hasOpenAiConfiguration, openAiConfiguration, publicReportChatEnabled, readPublicContacts } from '../db/configuration.ts'
 import { configurationKey } from '../lib/configuration-secret.ts'
 import { requireSameOrigin } from '../middleware/auth.ts'
-import { requireJson, validateJson } from '../middleware/validation.ts'
 import { preparePublicReport } from '../services/public-report-chat.ts'
 import { submitPublicReport } from '../services/public-report-submission.ts'
-import { attachmentError, maxAttachments, maxAttachmentSize } from '../../shared/attachments.ts'
+import { maxAttachments, maxAttachmentSize } from '../../shared/attachments.ts'
+import { readReportInput } from '../lib/report-input.ts'
+import { uploadedAnalysisAttachments } from '../services/analysis-attachments.ts'
 import type { AppEnv } from '../types.ts'
 
 export const publicReportRoutes = new Hono<AppEnv>()
@@ -21,10 +22,10 @@ publicReportRoutes.get('/contact', async (c) => {
   return c.json({ ...contacts, chatAvailable })
 })
 
-publicReportRoutes.post('/chat', requireSameOrigin, requireJson, bodyLimit({
-  maxSize: 32 * 1024,
-  onError: () => { throw new HTTPException(413, { message: 'The conversation is too long.' }) },
-}), validateJson(publicReportChatSchema), async (c) => {
+publicReportRoutes.post('/chat', requireSameOrigin, bodyLimit({
+  maxSize: maxAttachments * maxAttachmentSize + 65536,
+  onError: () => { throw new HTTPException(413, { message: 'The conversation or attachments are too large.' }) },
+}), async (c) => {
   if (!await publicReportChatEnabled(c.env.DB)) throw new HTTPException(404, { message: 'The assistant is unavailable. Use the report form.' })
   if (!c.env.PUBLIC_CHAT_RATE_LIMITER || !c.env.PUBLIC_CHAT_TOTAL_LIMITER) throw new HTTPException(503, { message: 'The assistant is unavailable. Use the report form.' })
   const [perVisitor, total] = await Promise.all([
@@ -33,8 +34,12 @@ publicReportRoutes.post('/chat', requireSameOrigin, requireJson, bodyLimit({
   ])
   if (!perVisitor.success || !total.success) throw new HTTPException(429, { message: 'The assistant is busy. Try again later or use the report form.' })
   const settings = await openAiConfiguration(c.env.DB, await configurationKey(c.env.CONFIG_ENCRYPTION_KEY))
-  const input = c.req.valid('json')
-  return c.json(await preparePublicReport(settings, input.messages, input))
+  const { value, uploads } = await readReportInput(c.req.raw)
+  const parsed = publicReportChatSchema.safeParse(value)
+  if (!parsed.success) throw new HTTPException(400, { message: parsed.error.issues[0]?.message ?? 'The conversation is invalid.' })
+  const prepared = await uploadedAnalysisAttachments(settings.apiKey, uploads)
+  const draft = await preparePublicReport(settings, parsed.data.messages, parsed.data, prepared)
+  return c.json({ ...draft, ...(uploads.length ? { skippedAttachments: prepared.skipped } : {}) })
 })
 
 publicReportRoutes.post('/', requireSameOrigin, bodyLimit({
@@ -46,25 +51,7 @@ publicReportRoutes.post('/', requireSameOrigin, bodyLimit({
   if (!success) throw new HTTPException(429, { message: 'Too many reports. Please try again later.' })
   await next()
 }, async (c) => {
-  let value: unknown
-  let uploads: File[] = []
-  const contentType = c.req.header('Content-Type') ?? ''
-  if (/^multipart\/form-data(?:\s*;|$)/i.test(contentType)) {
-    let form: FormData
-    try { form = await c.req.raw.formData() } catch { throw new HTTPException(400, { message: 'Report data is invalid.' }) }
-    const data = form.get('data')
-    if (typeof data !== 'string' || data.length > 32 * 1024) throw new HTTPException(400, { message: 'Report data is invalid.' })
-    try { value = JSON.parse(data) } catch { throw new HTTPException(400, { message: 'Report data is invalid.' }) }
-    const files = form.getAll('files')
-    if (files.some((file) => !(file instanceof File))) throw new HTTPException(400, { message: 'Choose valid attachments.' })
-    uploads = files as File[]
-    const error = attachmentError(uploads)
-    if (error) throw new HTTPException(uploads.some((file) => file.size > maxAttachmentSize) ? 413 : 400, { message: error })
-  } else if (/^application\/json(?:\s*;|$)/i.test(contentType)) {
-    const body = await c.req.text()
-    if (body.length > 32 * 1024) throw new HTTPException(413, { message: 'Report is too large.' })
-    try { value = JSON.parse(body) } catch { throw new HTTPException(400, { message: 'Report data is invalid.' }) }
-  } else throw new HTTPException(415, { message: 'Send report data and optional attachments.' })
+  const { value, uploads } = await readReportInput(c.req.raw)
   const parsed = publicReportSchema.safeParse(value)
   if (!parsed.success) throw new HTTPException(400, { message: parsed.error.issues[0]?.message ?? 'Report data is invalid.' })
   const submissionKey = c.req.header('Idempotency-Key')

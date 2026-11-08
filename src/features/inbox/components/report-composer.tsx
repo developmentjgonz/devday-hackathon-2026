@@ -16,6 +16,7 @@ import { useInbox } from '../inbox-context'
 import type { ReportAttachment } from '../types'
 import { ReportAttachments } from './report-attachments'
 import { useReportDetail } from './report-detail-context'
+import { attachmentAccept, attachmentError } from '../../../../shared/attachments'
 
 type ReportDefaults = { colonyId?: string; catId?: string }
 const ReportComposerContext = createContext<{
@@ -79,10 +80,8 @@ export function ReportComposerProvider({ children }: { children: ReactNode }) {
   }
   function requestClose() { discard.requestDiscard(closeComposer) }
   function addFiles(files: File[]) {
-    if (attachments.length + files.length > 5) { setFileError('Add up to 5 attachments.'); return }
-    if (files.some((file) => file.size > 10 * 1024 * 1024)) { setFileError('Each attachment must be 10 MB or smaller.'); return }
-    const images = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'])
-    if (files.some((file) => !images.has(file.type) && !file.type.startsWith('audio/') && !/\.(pdf|txt|docx|csv)$/i.test(file.name))) { setFileError('Choose supported photos, audio recordings, PDF, text, Word, or CSV files.'); return }
+    const error = attachmentError([...attachments.map((file) => ({ name: file.name, type: file.mimeType, size: file.size })), ...files])
+    if (error) { setFileError(error); return }
     setFileError('')
     const added = files.map(createAttachment)
     setAttachments((items) => [...items, ...added])
@@ -124,7 +123,7 @@ export function ReportComposerProvider({ children }: { children: ReactNode }) {
           </DrawerContext>
           <div className="grid gap-3">
             <Label htmlFor="field-report-attachments">Attachments (optional)</Label>
-            <Input ref={fileInput} id="field-report-attachments" type="file" multiple accept="image/jpeg,image/png,image/gif,image/webp,image/avif,audio/*,.pdf,.txt,.docx,.csv" disabled={saving} tabIndex={-1} className="sr-only" onChange={(event) => { addFiles(Array.from(event.target.files ?? [])); event.target.value = '' }} />
+            <Input ref={fileInput} id="field-report-attachments" type="file" multiple accept={attachmentAccept} disabled={saving} tabIndex={-1} className="sr-only" onChange={(event) => { addFiles(Array.from(event.target.files ?? [])); event.target.value = '' }} />
             <div><Button type="button" variant="outline" disabled={saving} onClick={() => fileInput.current?.click()}><Paperclip aria-hidden="true" />Add attachments</Button></div>
             <Text size="caption" tone="muted">Photos, recordings, or documents. Up to 5 files, 10 MB each.</Text>
             {fileError ? <Alert>{fileError}</Alert> : null}

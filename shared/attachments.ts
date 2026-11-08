@@ -4,11 +4,13 @@ export const attachmentAccept = 'image/jpeg,image/png,image/gif,image/webp,image
 
 const imageTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'])
 const documents: Record<string, string> = { pdf: 'application/pdf', txt: 'text/plain', csv: 'text/csv', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
+const mediaExtensions: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', avif: 'image/avif', mp3: 'audio/mpeg', mp4: 'audio/mp4', m4a: 'audio/mp4', wav: 'audio/wav', webm: 'audio/webm', ogg: 'audio/ogg', flac: 'audio/flac' }
 
 export function attachmentType(file: { name: string; type: string }): string | null {
   const mime = file.type.toLowerCase()
   if (imageTypes.has(mime) || /^audio\/[a-z0-9.+-]+$/.test(mime)) return mime
-  return documents[file.name.split('.').pop()?.toLowerCase() ?? ''] ?? null
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
+  return documents[extension] ?? ((!mime || mime === 'application/octet-stream') ? mediaExtensions[extension] ?? null : null)
 }
 
 export function attachmentError(files: { name: string; type: string; size: number }[]): string {

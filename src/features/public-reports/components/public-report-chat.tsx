@@ -45,12 +45,17 @@ export function PublicReportChat({ busy, error, attachments, onAttachmentsChange
   const [selectedLocation, setSelectedLocation] = useState<ChatLocation | null>(null)
   const [locating, setLocating] = useState(false)
   const [chatError, setChatError] = useState('')
+  const [reviewedAttachments, setReviewedAttachments] = useState<File[]>([])
+  const [skippedAttachments, setSkippedAttachments] = useState<NonNullable<PublicChatDraft['skippedAttachments']>>([])
+  const [filedAttachmentCount, setFiledAttachmentCount] = useState(0)
   const inFlight = useRef(false)
   const viewport = useRef<HTMLDivElement>(null)
   const follow = useRef(true)
   const previousScrollTop = useRef(0)
   const limitReached = messages.filter((item) => item.role === 'user').length >= 8
   const lastAssistantIndex = messages.findLastIndex((item) => item.role === 'assistant') + 1
+  const attachmentsChanged = attachments.length !== reviewedAttachments.length || attachments.some((file, index) => file !== reviewedAttachments[index])
+  const attachmentCount = phase === 'filed' ? filedAttachmentCount : attachments.length
 
   useLayoutEffect(() => {
     if (follow.current && viewport.current) viewport.current.scrollTop = viewport.current.scrollHeight
@@ -70,6 +75,7 @@ export function PublicReportChat({ busy, error, attachments, onAttachmentsChange
 
   async function sendText(text: string, selection?: ChatLocation | null, currentLocation?: ChatCoordinates) {
     text = text.trim()
+    if (!text && attachmentsChanged) text = 'I updated the attachments. Please use the current files to help prepare my cat report.'
     if (!text || text.length > 300 || inFlight.current || phase === 'filed') return
     const next: PublicChatMessage[] = [...messages, { role: 'user', text }]
     const addReply = (reply: string) => setMessages([...next, { role: 'assistant', text: reply }])
@@ -83,11 +89,12 @@ export function PublicReportChat({ busy, error, attachments, onAttachmentsChange
       setPhase('correcting')
       return
     }
-    if (!currentLocation && !selection && phase === 'confirming' && draft && isYes(text)) {
+    if (!currentLocation && !selection && phase === 'confirming' && draft && isYes(text) && !attachmentsChanged) {
       inFlight.current = true
       setMessages(next)
       try {
         if (await onSubmit(draft, next)) {
+          setFiledAttachmentCount(attachments.length)
           addReply('Your report has been sent to the care team for review. Thank you for looking out for the cats. If they need immediate help, please contact a local animal emergency service.')
           setPhase('filed')
         } else {
@@ -111,13 +118,19 @@ export function PublicReportChat({ busy, error, attachments, onAttachmentsChange
     setMessages(next)
     setSending(true)
     try {
+      const data = JSON.stringify({ messages: next,
+        ...(currentLocation ? { currentLocation } : selection === null ? {} : selection || selectedLocation ? { selectedLocation: selection ?? selectedLocation } : {}),
+      })
+      const form = new FormData()
+      form.set('data', data)
+      attachments.forEach((file) => form.append('files', file))
       const response = await fetch('/api/public-reports/chat', {
-        method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: next,
-          ...(currentLocation ? { currentLocation } : selection === null ? {} : selection || selectedLocation ? { selectedLocation: selection ?? selectedLocation } : {}),
-        }),
+        method: 'POST', credentials: 'omit', ...(!attachments.length ? { headers: { 'Content-Type': 'application/json' } } : {}), body: attachments.length ? form : data,
       })
       const result = await response.json().catch(() => null) as (PublicChatDraft & { error?: string }) | null
       if (!response.ok || !result) throw new Error(result?.error ?? 'The assistant is unavailable. Try again or use the report form.')
+      setReviewedAttachments(attachments)
+      setSkippedAttachments(result.skippedAttachments ?? [])
       if (currentLocation) setSelectedLocation(null)
       if (result.locations?.length) setPlaces({ index: next.length, locations: result.locations, source: result.locationSource })
       if (result.ready) {
@@ -155,6 +168,7 @@ export function PublicReportChat({ busy, error, attachments, onAttachmentsChange
   function startAgain() {
     follow.current = true
     onAttachmentsChange([])
+    setReviewedAttachments([]); setSkippedAttachments([]); setFiledAttachmentCount(0)
     setMessages([]); setMessage(''); setDraft(null); setPhase('collecting'); setChatError(''); setPlaces(null); setSelectedLocation(null)
   }
 
@@ -180,12 +194,12 @@ export function PublicReportChat({ busy, error, attachments, onAttachmentsChange
                 <div className="space-y-1"><Text size="caption" weight="semibold">Location</Text><Text size="small" className="wrap-anywhere">{draft.location}</Text></div>
                 <div className="space-y-1"><Text size="caption" weight="semibold">What you noticed</Text><Text size="small" className="whitespace-pre-wrap wrap-anywhere">{draft.details}</Text></div>
                 {draft.urgent ? <Text size="small" weight="semibold">Needs urgent attention</Text> : null}
-                {attachments.length ? <Text size="small">{attachments.length} {attachments.length === 1 ? 'attachment' : 'attachments'} will be sent with your report.</Text> : null}
+                {attachmentCount ? <Text size="small">{attachmentCount} {attachmentCount === 1 ? 'attachment' : 'attachments'} {phase === 'filed' ? 'sent' : 'will be sent'} with your report.</Text> : null}
                 {phase === 'confirming' ? <>
                   {contactFields}
                   <Text size="caption" tone="muted">Check the details. You can add more information or files before sending.</Text>
                   {message.trim() ? <Text size="caption" tone="muted">Send your new message to update the report before confirming.</Text> : null}
-                  <div className="flex flex-wrap gap-2"><Button type="button" size="sm" loading={busy} disabled={sending || Boolean(message.trim())} onClick={() => void sendText('Yes, send it.')}>Yes, send report</Button><Button type="button" variant="outline" size="sm" disabled={sending || busy || Boolean(message.trim())} onClick={() => void sendText('No.')}>Change details</Button></div>
+                  <div className="flex flex-wrap gap-2"><Button type="button" size="sm" loading={busy} disabled={sending || Boolean(message.trim())} onClick={() => void sendText(attachmentsChanged ? 'I updated the attachments. Please review the report using the current files.' : 'Yes, send it.')}>{attachmentsChanged ? 'Review attachments' : 'Yes, send report'}</Button><Button type="button" variant="outline" size="sm" disabled={sending || busy || Boolean(message.trim())} onClick={() => void sendText('No.')}>Change details</Button></div>
                 </> : null}
               </CardContent>
                 {phase === 'filed' ? <CardFooter className="flex-col items-stretch gap-2 sm:flex-row sm:items-center">
@@ -210,8 +224,9 @@ export function PublicReportChat({ busy, error, attachments, onAttachmentsChange
     </div>
     {phase !== 'filed' ? <div className="mx-auto w-full max-w-3xl shrink-0 space-y-3 px-5 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8">
         <CurrentLocationButton disabled={sending || busy || limitReached} onLocatingChange={setLocating} onSelect={(point) => void sendText(message.trim() || 'I’m sharing my current location to help find the cats.', undefined, point)} />
-        <ChatComposer value={message} onChange={setMessage} onSubmit={send} loading={sending} readOnly={busy || locating} maxLength={300} actions={<AttachmentUpload files={attachments} onChange={onAttachmentsChange} disabled={sending || busy || locating} compact />} />
-        {attachments.length ? <Text size="caption" tone="muted">Files will be sent to the care team with your report.</Text> : null}
+        <ChatComposer value={message} onChange={setMessage} onSubmit={send} loading={sending} readOnly={busy || locating} allowEmpty={attachmentsChanged} maxLength={300} actions={<AttachmentUpload files={attachments} onChange={onAttachmentsChange} disabled={sending || busy || locating} compact />} />
+        {attachments.length ? <Text size="caption" tone="muted">Mews uses supported files when you send a message. All files go to the care team with your report.</Text> : null}
+        {skippedAttachments.filter((item) => attachments.some((file) => file.name === item.name)).map((item, index) => <Text key={index} role="status" size="caption" tone="muted" className="wrap-anywhere">{item.name}: {item.reason} The file can still be sent to the care team.</Text>)}
     </div> : null}
   </div>
 }

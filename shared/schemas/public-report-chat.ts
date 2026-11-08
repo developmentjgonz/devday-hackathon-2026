@@ -35,4 +35,5 @@ export type PublicChatDraft = {
   locations: ChatPlace[]
   locationSource?: 'search' | 'device'
   mapLocation?: PublicReportMapLocation
+  skippedAttachments?: { name: string; reason: string }[]
 }

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
 import { test } from 'node:test'
 import worker from '../../worker/index.ts'
@@ -10,9 +10,8 @@ const base = 'https://mews.example'
 function fixture(t) {
   const sqlite = new DatabaseSync(':memory:')
   sqlite.exec('PRAGMA foreign_keys = ON')
-  for (const file of ['0001_accounts.sql', '0002_colonies_and_cats.sql', '0003_cat_profiles.sql', '0012_user_photos.sql', '0016_configuration.sql', '0018_demo_access.sql', '0019_session_auth_method.sql', '0023_task_assignment_availability.sql', '0026_communication_channels.sql', '0027_public_report_chat.sql', '0030_report_chat_prompt.sql']) {
-    sqlite.exec(readFileSync(new URL(`../../migrations/${file}`, import.meta.url), 'utf8'))
-  }
+  const migrations = new URL('../../migrations/', import.meta.url)
+  for (const file of readdirSync(migrations).filter((name) => name.endsWith('.sql')).sort()) sqlite.exec(readFileSync(new URL(file, migrations), 'utf8'))
   sqlite.exec(readFileSync(new URL('../../seeds/local.sql', import.meta.url), 'utf8'))
   sqlite.exec("UPDATE users SET role = 'member' WHERE id = 'local-admin'")
   sqlite.exec("INSERT INTO users (id, name, email, role, status) VALUES ('real-admin', 'Real Admin', 'admin@example.com', 'administrator', 'active')")

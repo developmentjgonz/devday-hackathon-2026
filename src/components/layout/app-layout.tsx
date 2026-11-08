@@ -45,7 +45,7 @@ export function AppLayout({ directoryStore = databaseDirectory, workspaceStore =
 }
 
 function WorkspaceFrame({ user }: { user: SessionUser }) {
-  const { data } = useInbox()
+  const { data, autopilotEnabled } = useInbox()
   const location = useLocation()
   const outlet = useOutlet()
   const breadcrumbs = useMatches().flatMap((match) => {
@@ -62,9 +62,9 @@ function WorkspaceFrame({ user }: { user: SessionUser }) {
   const title = frame.breadcrumbs.at(-1)?.label ?? 'Page not found'
   return (
     <div className="min-h-svh bg-background text-foreground md:grid md:grid-cols-[248px_minmax(0,1fr)]">
-      <AppSidebar user={user} />
+      <AppSidebar user={user} showAutomation={autopilotEnabled} />
       <div className="min-w-0">
-        <WorkspaceHeader title={title} breadcrumbs={frame.breadcrumbs.slice(0, -1)} mobileStart={<Brand to="/app" variant="mark" />} mobileEnd={<MobileWorkspaceMenu user={user} />} />
+        <WorkspaceHeader title={title} breadcrumbs={frame.breadcrumbs.slice(0, -1)} mobileStart={<Brand to="/app" variant="mark" />} mobileEnd={<MobileWorkspaceMenu user={user} showAutomation={autopilotEnabled} />} />
         <main id="main-content" aria-labelledby="workspace-page-title" tabIndex={-1} className="mx-auto max-w-[1240px] px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] outline-none sm:px-10 sm:py-6 lg:px-12">
           {frame.outlet}
         </main>

@@ -35,11 +35,11 @@ Each cat and colony profile has a **Care schedule**. A team member can create a 
 
 The care rule drawer puts cat and colony context in the scrolling body. Only its title and main actions stay fixed. A colony rule shows its colony; a cat rule shows the cat and its current colony.
 
-Rules create ordinary tasks linked to the cat or colony. The Worker checks for due occurrences every hour and also checks when a member loads or refreshes workspace data. Tasks are created through the next UTC date so they are available before their due date in any time zone. A saved occurrence key prevents duplicates if checks overlap or are retried. Missed occurrences are created on later checks, up to 90 per rule per check. The configured Worker cron must be deployed for checks to run when nobody opens the app.
+Rules create ordinary tasks linked to the cat or colony. The Worker checks for due occurrences every five minutes and also checks when a member loads or refreshes workspace data. Tasks are created through the next UTC date so they are available before their due date in any time zone. A saved occurrence key prevents duplicates if checks overlap or are retried. Missed occurrences are created on later checks, up to 90 per rule per check. The configured Worker cron must be deployed for checks to run when nobody opens the app.
 
 Wrangler does not run the cron automatically in local development. The local app checks schedules on workspace load and refresh; use `/cdn-cgi/local/scheduled` on the local Worker to invoke the scheduled handler manually.
 
-The creator, assignee, or an administrator can edit, pause, and resume a rule. Editing a task does not edit its rule. Editing or pausing a rule does not change tasks already created; resuming skips dates before the current UTC date. If an assignee becomes inactive or unavailable for new assignments, their scheduled tasks remain assigned to them and the rule shows a warning so the team can choose an available assignee.
+The creator, assignee, or an administrator can edit, pause, and resume a rule. Editing a task does not edit its rule. Editing or pausing a rule does not change tasks already created; resuming skips dates before the current UTC date. If an assignee becomes inactive or unavailable for new assignments, the rule shows a warning so the team can choose an available assignee. When [autopilot task assignment](autopilot.md) is enabled, it can reassign existing open tasks to an available member. The rule still needs an available assignee for future tasks.
 
 ## Storybook and verification
 

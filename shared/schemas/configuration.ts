@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { autopilotSchema } from './automation.ts'
 
 export const demoAccessSchema = z.strictObject({ enabled: z.boolean() })
 
@@ -17,6 +18,7 @@ export const channelsSchema = z.strictObject({
 })
 
 export const aiSchema = z.strictObject({
+  autopilot: autopilotSchema.optional(),
   reportChatPrompt: z.string().trim().min(1, 'Enter report chat instructions.').max(6000, 'Keep the instructions under 6,000 characters.').optional(),
   openaiModel: z.string().trim().max(200, 'Model must be 200 characters or fewer.')
     .refine((value) => !/[\u0000-\u001f\u007f]/.test(value), 'Enter a valid model name.'),

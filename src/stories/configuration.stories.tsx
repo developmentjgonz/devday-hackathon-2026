@@ -12,9 +12,10 @@ import type { Configuration } from '../../shared/types/configuration'
 import { storyDirectoryStore, storyWorkspace } from './fixtures/directory-store'
 import { storyWorkspaceStore } from './fixtures/workspace-store'
 import { defaultReportChatPrompt } from '../../shared/report-chat-instructions'
+import { defaultAutopilot } from '../../shared/types/automation'
 
 const admin: SessionUser = { id: 'alex', name: 'Alex Morgan', email: 'alex@mews.test', phone: null, avatarUrl: userPortraitUrl('Alex Morgan'), role: 'administrator', status: 'active' }
-const initial: Configuration = { inboundPhone: '', inboundEmail: '', phoneEnabled: false, emailEnabled: false, reportChatEnabled: false, openaiModel: '', reportChatPrompt: defaultReportChatPrompt, openaiKeyStatus: 'not-set', secureKeyStorageAvailable: true, demoSignInEnabled: false }
+const initial: Configuration = { autopilot: defaultAutopilot, inboundPhone: '', inboundEmail: '', phoneEnabled: false, emailEnabled: false, reportChatEnabled: false, openaiModel: '', reportChatPrompt: defaultReportChatPrompt, openaiKeyStatus: 'not-set', secureKeyStorageAvailable: true, demoSignInEnabled: false }
 
 function memoryConfiguration(mode: 'ready' | 'loading' | 'load-error' | 'save-error', values: Configuration): ConfigurationStore {
   let configuration = { ...values }
@@ -31,12 +32,12 @@ function memoryConfiguration(mode: 'ready' | 'loading' | 'load-error' | 'save-er
     },
     async saveAi(input) {
       if (mode === 'save-error') throw new Error('Could not save AI settings. Try again.')
-      configuration = { ...configuration, openaiModel: input.openaiModel.trim(), ...(input.reportChatPrompt !== undefined ? { reportChatPrompt: input.reportChatPrompt.trim() } : {}), ...(input.apiKey ? { openaiKeyStatus: 'saved' } : {}) }
+      configuration = { ...configuration, ...(input.autopilot ? { autopilot: input.autopilot } : {}), openaiModel: input.openaiModel.trim(), ...(input.reportChatPrompt !== undefined ? { reportChatPrompt: input.reportChatPrompt.trim() } : {}), ...(input.apiKey ? { openaiKeyStatus: 'saved' } : {}) }
       return { ...configuration }
     },
     async removeAiKey() {
       if (mode === 'save-error') throw new Error('Could not remove the API key. Try again.')
-      configuration = { ...configuration, openaiKeyStatus: 'not-set' }
+      configuration = { ...configuration, openaiKeyStatus: 'not-set', autopilot: { ...configuration.autopilot, enabled: false } }
       return { ...configuration }
     },
     async setDemoAccess(enabled) {
@@ -78,6 +79,7 @@ export const CommunicationSetup: Story = {}
 export const ChatEnabled: Story = { args: { values: { ...initial, reportChatEnabled: true, openaiKeyStatus: 'saved' } } }
 export const AiAnalysis: Story = { args: { path: '/app/configuration/ai' } }
 export const SavedKey: Story = { args: { path: '/app/configuration/ai', values: { ...initial, openaiModel: 'example-model', openaiKeyStatus: 'saved' } } }
+export const Autopilot: Story = { args: { path: '/app/configuration/ai', values: { ...initial, openaiKeyStatus: 'saved', autopilot: { ...defaultAutopilot, enabled: true } } } }
 export const KeyStorageUnavailable: Story = { args: { path: '/app/configuration/ai', values: { ...initial, openaiKeyStatus: 'unavailable', secureKeyStorageAvailable: false } } }
 export const SignInAccess: Story = { args: { path: '/app/configuration/access' } }
 export const Loading: Story = { args: { mode: 'loading' } }

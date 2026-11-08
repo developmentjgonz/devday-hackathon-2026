@@ -29,17 +29,24 @@ function fixture(t) {
   };
   const visitorLimit = { allowed: true, async limit() { return { success: this.allowed }; } };
   const totalLimit = { allowed: true, async limit() { return { success: this.allowed }; } };
+  const objects = new Map();
   const env = {
+    UPLOADS: {
+      async put(key, stream) { objects.set(key, await new Response(stream).arrayBuffer()); },
+      async get(key) { const bytes = objects.get(key); return bytes ? { body: bytes, async arrayBuffer() { return bytes.slice(0); } } : null; },
+      async delete(key) { objects.delete(key); },
+    },
+    AI_ANALYSIS_RATE_LIMITER: { async limit() { return { success: true }; } },
     DB, LOCAL_TEST_SIGN_IN: 'true', CONFIG_ENCRYPTION_KEY: Buffer.alloc(32, 42).toString('base64'),
     PUBLIC_CHAT_RATE_LIMITER: visitorLimit, PUBLIC_CHAT_TOTAL_LIMITER: totalLimit,
     PUBLIC_REPORT_RATE_LIMITER: { async limit() { return { success: true }; } },
     ASSETS: { fetch: () => new Response('Public app') },
   };
-  async function request(path, { body, cookie, origin = 'http://127.0.0.1:5197' } = {}) {
+  async function request(path, { body, cookie, method, origin = 'http://127.0.0.1:5197' } = {}) {
     return worker.fetch(new Request(`http://127.0.0.1:5197${path}`, {
-      method: body === undefined ? 'GET' : 'POST',
-      headers: { ...(body === undefined ? {} : { Origin: origin, 'Content-Type': 'application/json' }), ...(cookie ? { Cookie: cookie } : {}) },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      method: method ?? (body === undefined ? 'GET' : 'POST'),
+      headers: { ...(body === undefined && method !== 'POST' ? {} : { Origin: origin, ...(body instanceof FormData ? {} : { 'Content-Type': 'application/json' }) }), ...(cookie ? { Cookie: cookie } : {}) },
+      ...(body === undefined ? {} : { body: body instanceof FormData ? body : JSON.stringify(body) }),
     }), env);
   }
   async function signIn(userId) {
@@ -47,7 +54,7 @@ function fixture(t) {
     assert.equal(response.status, 200);
     return response.headers.get('set-cookie').split(';')[0];
   }
-  return { sqlite, env, request, signIn, visitorLimit, totalLimit };
+  return { sqlite, env, request, signIn, visitorLimit, totalLimit, objects };
 }
 
 const channels = { inboundPhone: '', inboundEmail: '', phoneEnabled: false, emailEnabled: false, reportChatEnabled: true };
@@ -277,4 +284,100 @@ test('a typed location correction does not keep the old selected pin', async (t)
   const result = await response.json();
   assert.equal(result.ready, true);
   assert.equal(result.mapLocation, undefined);
+});
+
+function chatWithFiles(files, input = firstMessage) {
+  const form = new FormData();
+  form.set('data', JSON.stringify(input));
+  files.forEach((file) => form.append('files', file));
+  return form;
+}
+
+test('chat attachments reach the model, save only on confirmation, and feed team analysis', async (t) => {
+  const { sqlite, request, signIn, objects } = await enableChat(t);
+  const member = await signIn('local-member');
+  const files = [
+    new File(['photo'], 'cat.png'),
+    new File(['pdf'], 'notes.pdf', { type: 'application/pdf' }),
+    new File(['word'], 'notes.docx'),
+    new File(['A gray cat by the shed.'], 'notes.txt'),
+    new File(['audio'], 'voice.ogg'),
+  ];
+  let analyses = 0;
+  let transcriptions = 0;
+  globalThis.fetch = async (url, init) => {
+    if (url.endsWith('/audio/transcriptions')) {
+      transcriptions++;
+      assert.equal(init.body.get('file').name, 'voice.ogg');
+      return Response.json({ text: 'The gray cat is by the shed.' });
+    }
+    assert.equal(url, 'https://api.openai.com/v1/responses');
+    const payload = JSON.parse(init.body);
+    assert.equal(payload.store, false);
+    const content = payload.input.at(-1).content;
+    assert.ok(content.some((part) => part.type === 'input_image' && part.image_url === 'data:image/png;base64,cGhvdG8='));
+    for (const filename of ['notes.pdf', 'notes.docx']) assert.ok(content.some((part) => part.type === 'input_file' && part.filename === filename && part.file_data.startsWith('data:')));
+    assert.ok(content.some((part) => part.type === 'input_text' && part.text.includes('A gray cat by the shed.')));
+    assert.ok(content.some((part) => part.type === 'input_text' && part.text.includes('The gray cat is by the shed.')));
+    if (payload.tools) return functionCall('prepareReport', { reply: 'Please check the details and files.', location: 'Oak Street', details: 'A gray cat by the shed.', urgent: false });
+    analyses++;
+    return Response.json({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: JSON.stringify({ tasks: [{ title: 'Check the shed', reason: 'The recording and notes place the cat by the shed.' }], cats: [], colonies: [], duplicates: [] }) }] }] });
+  };
+  const before = sqlite.prepare('SELECT count(*) AS n FROM reports').get().n;
+  const answer = await request('/api/public-reports/chat', { body: chatWithFiles(files) });
+  assert.equal(answer.status, 200);
+  const draft = await answer.json();
+  assert.equal(draft.ready, true);
+  assert.deepEqual(draft.skippedAttachments, []);
+  assert.equal(sqlite.prepare('SELECT count(*) AS n FROM reports').get().n, before);
+  assert.equal(objects.size, 0);
+
+  const saved = await request('/api/public-reports', { body: chatWithFiles(files, { location: draft.location, details: draft.details, urgent: draft.urgent }) });
+  assert.equal(saved.status, 201);
+  const report = sqlite.prepare("SELECT id FROM reports WHERE message = ?").get('Location: Oak Street\n\nDetails: A gray cat by the shed.');
+  assert.ok(report);
+  assert.equal(objects.size, 5);
+  const rows = sqlite.prepare('SELECT id, name FROM report_attachments WHERE report_id = ? ORDER BY rowid').all(report.id);
+  assert.deepEqual(rows.map((row) => row.name), files.map((file) => file.name));
+  for (const [index, row] of rows.entries()) {
+    const read = await request(`/api/attachments/${row.id}`, { cookie: member });
+    assert.equal(read.status, 200);
+    assert.equal(await read.text(), await files[index].text());
+    assert.equal((await request(`/api/attachments/${row.id}`)).status, 401);
+  }
+  const analysis = await request(`/api/reports/${report.id}/analyze`, { method: 'POST', cookie: member });
+  assert.equal(analysis.status, 200);
+  assert.equal((await analysis.json()).suggestions.tasks[0].title, 'Check the shed');
+  assert.equal(analyses, 1);
+  assert.equal(transcriptions, 2);
+});
+
+test('chat rejects invalid files before calling the provider and keeps unreadable files explicit', async (t) => {
+  const { request, objects, visitorLimit } = await enableChat(t);
+  globalThis.fetch = async () => { throw new Error('Unexpected provider request'); };
+  for (const files of [
+    [new File([], 'empty.txt')],
+    [new File(['bad'], 'program.exe')],
+    Array.from({ length: 6 }, () => new File(['notes'], 'notes.txt')),
+    [new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'large.txt')],
+  ]) {
+    const response = await request('/api/public-reports/chat', { body: chatWithFiles(files) });
+    assert.equal(response.status, files[0].size > 10 * 1024 * 1024 ? 413 : 400);
+  }
+  visitorLimit.allowed = false;
+  assert.equal((await request('/api/public-reports/chat', { body: chatWithFiles([new File(['audio'], 'voice.wav', { type: 'audio/wav' })]) })).status, 429);
+  visitorLimit.allowed = true;
+  globalThis.fetch = async (url, init) => {
+    if (url.endsWith('/audio/transcriptions')) return Response.json({ error: 'private provider detail' }, { status: 500 });
+    const content = JSON.parse(init.body).input.at(-1).content;
+    assert.ok(content.some((part) => part.type === 'input_text' && part.text.includes('The recording could not be transcribed.')));
+    assert.ok(content.some((part) => part.type === 'input_text' && part.text.includes('Useful notes')));
+    return functionCall('askQuestion', { reply: 'Where did you see the cat?' });
+  };
+  const response = await request('/api/public-reports/chat', { body: chatWithFiles([
+    new File(['audio'], 'voice.wav', { type: 'audio/wav' }), new File(['Useful notes'], 'notes.csv'),
+  ]) });
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).skippedAttachments, [{ name: 'voice.wav', reason: 'The recording could not be transcribed.' }]);
+  assert.equal(objects.size, 0);
 });

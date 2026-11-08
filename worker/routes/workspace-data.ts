@@ -10,32 +10,30 @@ import { requireActiveUser, requireSameOrigin } from '../middleware/auth.ts'
 import { requireJson, validateJson } from '../middleware/validation.ts'
 import { reportAnalysisAllowed } from '../services/report-analysis.ts'
 import { searchDuplicateReports } from '../db/duplicate-reports.ts'
+import { attachmentError, attachmentType, maxAttachments, maxAttachmentSize } from '../../shared/attachments.ts'
 import type { AppEnv } from '../types.ts'
+import { autopilotConfiguration } from '../db/automation.ts'
+import { listDirectory } from '../db/directory.ts'
 
 export const workspaceDataRoutes = new Hono<AppEnv>()
 workspaceDataRoutes.get('/workspace-data', requireActiveUser, async (c) => {
   let careGenerationFailed = false
   try { await generateCareTasks(c.env.DB) }
   catch (error) { careGenerationFailed = true; console.error('Care task generation failed', error) }
-  const [workspace, allowed, configured] = await Promise.all([
+  const [workspace, allowed, configured, autopilot, directory] = await Promise.all([
     listWorkspace(c.env.DB),
     reportAnalysisAllowed(c.req.raw, c.env, c.get('user').id),
     c.env.AI_ANALYSIS_RATE_LIMITER ? configurationKey(c.env.CONFIG_ENCRYPTION_KEY).then((key) => hasOpenAiConfiguration(c.env.DB, key)) : Promise.resolve(false),
+    autopilotConfiguration(c.env.DB),
+    listDirectory(c.env.DB),
   ])
-  return c.json({ ...workspace, careGenerationFailed, aiAnalysisEnabled: allowed && configured })
+  return c.json({ ...workspace, directory, autopilotEnabled: autopilot.settings.enabled, careGenerationFailed, aiAnalysisEnabled: allowed && configured })
 })
 const limitWorkspaceBody = bodyLimit({ maxSize: 32 * 1024, onError: () => { throw new HTTPException(413, { message: 'Form data is too large.' }) } })
 
 const imageTypes = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'])
-const documents: Record<string, string> = { pdf: 'application/pdf', txt: 'text/plain', csv: 'text/csv', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
-function attachmentType(file: File): string | null {
-  const mime = file.type.toLowerCase()
-  if (imageTypes.has(mime) || /^audio\/[a-z0-9.+-]+$/.test(mime)) return mime
-  const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
-  return documents[extension] ?? null
-}
 
-workspaceDataRoutes.post('/reports', requireActiveUser, requireSameOrigin, bodyLimit({ maxSize: 5 * 10 * 1024 * 1024 + 65536, onError: () => { throw new HTTPException(413, { message: 'Attachments are too large.' }) } }), async (c) => {
+workspaceDataRoutes.post('/reports', requireActiveUser, requireSameOrigin, bodyLimit({ maxSize: maxAttachments * maxAttachmentSize + 65536, onError: () => { throw new HTTPException(413, { message: 'Attachments are too large.' }) } }), async (c) => {
   if (!/^multipart\/form-data(?:\s*;|$)/i.test(c.req.header('Content-Type') ?? '')) throw new HTTPException(415, { message: 'Send report data and attachments.' })
   let form: FormData
   try { form = await c.req.raw.formData() } catch { throw new HTTPException(400, { message: 'Report data is invalid.' }) }
@@ -46,10 +44,10 @@ workspaceDataRoutes.post('/reports', requireActiveUser, requireSameOrigin, bodyL
   const parsed = createReportSchema.safeParse(value)
   if (!parsed.success) throw new HTTPException(400, { message: parsed.error.issues[0]?.message ?? 'Report data is invalid.' })
   const files = form.getAll('files')
-  if (files.length > 5 || files.some((file) => !(file instanceof File))) throw new HTTPException(400, { message: 'Add up to 5 attachments.' })
+  if (files.some((file) => !(file instanceof File))) throw new HTTPException(400, { message: 'Choose valid attachments.' })
   const uploads = files as File[]
-  if (uploads.some((file) => file.size > 10 * 1024 * 1024)) throw new HTTPException(413, { message: 'Each attachment must be 10 MB or smaller.' })
-  if (uploads.some((file) => !attachmentType(file))) throw new HTTPException(400, { message: 'Choose supported photos, audio, PDF, text, Word, or CSV files.' })
+  const fileError = attachmentError(uploads)
+  if (fileError) throw new HTTPException(uploads.some((file) => file.size > maxAttachmentSize) ? 413 : 400, { message: fileError })
 
   const id = crypto.randomUUID()
   const stored: StoredAttachment[] = []

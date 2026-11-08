@@ -20,6 +20,7 @@ import { CatsPage } from '@/features/cats/pages/cats-page'
 import { CatPage } from '@/features/cats/pages/cat-page'
 import { UsersPage } from '@/features/users/pages/users-page'
 import { ConfigurationPage } from '@/features/configuration/pages/configuration-page'
+import { AutomationPage } from '@/features/automation/pages/automation-page'
 import type { InboxData } from '@/features/inbox/types'
 import type { Params } from 'react-router'
 import { NotFoundPage } from '@/pages/not-found-page'
@@ -83,6 +84,7 @@ export const router = createBrowserRouter([
           { path: 'team-tasks', Component: TeamTasksPage, handle: { breadcrumb: 'Team Tasks' } },
           { path: 'team', Component: UsersPage, handle: { breadcrumb: 'Team' } },
           { path: 'configuration/:section?', Component: ConfigurationPage, handle: { breadcrumb: 'Configuration' } },
+          { path: 'automation', Component: AutomationPage, handle: { breadcrumb: 'Automation' } },
           { path: 'profile', Component: ProfilePage, handle: { breadcrumb: 'Profile' } },
           { path: '*', element: <NotFoundPage homePath="/app" /> },
         ],

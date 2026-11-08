@@ -1,3 +1,4 @@
+import { attachmentType } from '../../../shared/attachments'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { InboxCat, InboxColony, InboxData, InboxReport, ReportAttachment, Task } from './types'
 import type { CatInput } from '../../../shared/schemas/directory'
@@ -11,7 +12,7 @@ import type { ReportAnalysis } from '../../../shared/schemas/report-analysis'
 
 type InboxStore = {
   data: InboxData; reports: InboxReport[]; tasks: Task[]; members: WorkspaceMember[]; careRules: CareRule[]; careGenerationFailed: boolean
-  googleMapsEnabled: boolean; aiAnalysisEnabled: boolean
+  googleMapsEnabled: boolean; aiAnalysisEnabled: boolean; autopilotEnabled: boolean
   refreshWorkspace: (options?: { invalidate?: boolean }) => Promise<void>; refreshingWorkspace: boolean; workspaceRefreshFailed: boolean
   analyzeReport: (id: string, signal?: AbortSignal) => Promise<ReportAnalysis>
   searchDuplicateReports: (id: string, query: string, offset: number, signal?: AbortSignal) => Promise<DuplicateSearchResult>
@@ -34,6 +35,7 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
   const [members, setMembers] = useState(() => structuredClone(workspace.members))
   const [careRules, setCareRules] = useState(() => structuredClone(workspace.careRules))
   const [aiAnalysisEnabled, setAiAnalysisEnabled] = useState(workspace.aiAnalysisEnabled)
+  const [autopilotEnabled, setAutopilotEnabled] = useState(Boolean(workspace.autopilotEnabled))
   const [careGenerationFailed, setCareGenerationFailed] = useState(Boolean(workspace.careGenerationFailed))
   const [activityRevision, setActivityRevision] = useState(0)
   const getRecordActivity = useCallback((type: RecordType, id: string, signal?: AbortSignal) => directoryStore.getActivity(type, id, signal), [directoryStore])
@@ -82,6 +84,8 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
         setMembers(snapshot.members)
         setCareRules(snapshot.careRules)
         setAiAnalysisEnabled(snapshot.aiAnalysisEnabled)
+        setAutopilotEnabled(Boolean(snapshot.autopilotEnabled))
+        if (snapshot.directory) setDirectory(snapshot.directory)
         setCareGenerationFailed(Boolean(snapshot.careGenerationFailed))
         setActivityRevision((revision) => revision + 1)
         setWorkspaceRefreshFailed(false)
@@ -125,7 +129,7 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
   function createAttachment(file: File): ReportAttachment {
     const url = URL.createObjectURL(file)
     objectUrls.current.add(url)
-    const attachment = { id: crypto.randomUUID(), name: file.name, url, mimeType: file.type || 'application/octet-stream', size: file.size }
+    const attachment = { id: crypto.randomUUID(), name: file.name, url, mimeType: attachmentType(file) ?? 'application/octet-stream', size: file.size }
     attachmentFiles.current.set(attachment.id, file)
     return attachment
   }
@@ -208,7 +212,7 @@ export function InboxProvider({ data, workspace, directoryStore, workspaceStore,
   const createCareRule = useCallback((input: CareRuleInput) => mutateWorkspace(async () => applyCareRule(await workspaceStore.createCareRule(input))), [workspaceStore, applyCareRule, mutateWorkspace])
   const editCareRule = useCallback((id: string, input: CareRuleInput) => mutateWorkspace(async () => applyCareRule(await workspaceStore.editCareRule(id, input))), [workspaceStore, applyCareRule, mutateWorkspace])
   const setCareRuleActive = useCallback((id: string, active: boolean) => mutateWorkspace(async () => applyCareRule(await workspaceStore.setCareRuleActive(id, active))), [workspaceStore, applyCareRule, mutateWorkspace])
-  return <InboxContext value={{ data: workspaceData, reports, tasks, members, careRules, careGenerationFailed, googleMapsEnabled, aiAnalysisEnabled, getRecordActivity, activityRevision, refreshWorkspace, refreshingWorkspace, workspaceRefreshFailed, analyzeReport, searchDuplicateReports, addColony, updateColonyLocation, addCat, updateCat, changeCatColony, createAttachment, discardAttachment, createReport, finishReport, dismissReport, reopenReport, askQuestion, linkDuplicate, createTask, editTask, changeTaskStatus, createCareRule, editCareRule, setCareRuleActive }}>{children}</InboxContext>
+  return <InboxContext value={{ data: workspaceData, reports, tasks, members, careRules, careGenerationFailed, googleMapsEnabled, aiAnalysisEnabled, autopilotEnabled, getRecordActivity, activityRevision, refreshWorkspace, refreshingWorkspace, workspaceRefreshFailed, analyzeReport, searchDuplicateReports, addColony, updateColonyLocation, addCat, updateCat, changeCatColony, createAttachment, discardAttachment, createReport, finishReport, dismissReport, reopenReport, askQuestion, linkDuplicate, createTask, editTask, changeTaskStatus, createCareRule, editCareRule, setCareRuleActive }}>{children}</InboxContext>
 }
 export function useInbox() {
   const store = useContext(InboxContext)

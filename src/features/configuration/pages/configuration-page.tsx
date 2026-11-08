@@ -22,6 +22,7 @@ import { DemoAccess } from '../components/demo-access'
 import { ReportQrCode } from '../components/report-qr-code'
 import { useInbox } from '@/features/inbox/inbox-context'
 import { defaultReportChatPrompt, reportChatRequirements } from '../../../../shared/report-chat-instructions'
+import type { AutopilotSettings } from '../../../../shared/types/automation'
 
 const sections = [
   { to: '/app/configuration', label: 'Communication setup', end: true },
@@ -148,9 +149,10 @@ function AiForm({ initial, store, onSaved, onDirtyChange }: { initial: Configura
   const [model, setModel] = useState(initial.openaiModel)
   const [prompt, setPrompt] = useState(initial.reportChatPrompt)
   const [apiKey, setApiKey] = useState('')
+  const [autopilot, setAutopilot] = useState(initial.autopilot)
   const [action, setAction] = useState<'save' | 'remove' | null>(null)
   const [error, setError] = useState('')
-  const changed = model !== saved.openaiModel || prompt !== saved.reportChatPrompt || Boolean(apiKey.trim())
+  const changed = model !== saved.openaiModel || prompt !== saved.reportChatPrompt || Boolean(apiKey.trim()) || JSON.stringify(autopilot) !== JSON.stringify(saved.autopilot)
   useEffect(() => { onDirtyChange('ai', changed && !action) }, [changed, action, onDirtyChange])
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -159,11 +161,12 @@ function AiForm({ initial, store, onSaved, onDirtyChange }: { initial: Configura
     setAction('save')
     setError('')
     try {
-      const result = await store.saveAi({ openaiModel: model, reportChatPrompt: prompt, ...(apiKey.trim() ? { apiKey } : {}) })
+      const result = await store.saveAi({ openaiModel: model, reportChatPrompt: prompt, autopilot, ...(apiKey.trim() ? { apiKey } : {}) })
       setSaved(result)
       setModel(result.openaiModel)
       setPrompt(result.reportChatPrompt)
       setApiKey('')
+      setAutopilot(result.autopilot)
       void onSaved()
       toast.success('AI settings saved')
     } catch (cause) {
@@ -179,6 +182,7 @@ function AiForm({ initial, store, onSaved, onDirtyChange }: { initial: Configura
       const result = await store.removeAiKey()
       setSaved(result)
       setApiKey('')
+      setAutopilot(result.autopilot)
       void onSaved()
       toast.success('API key removed')
     } catch (cause) {
@@ -204,6 +208,27 @@ function AiForm({ initial, store, onSaved, onDirtyChange }: { initial: Configura
         <div><TextLink size="sm" render={<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" />}>Create an OpenAI API key</TextLink></div>
         {!saved.secureKeyStorageAvailable ? <Text size="small" tone="danger">Secure key storage is unavailable. Ask the site operator for help.</Text> : null}
         {saved.openaiKeyStatus !== 'not-set' ? <div><Button type="button" size="sm" variant="outline" loading={action === 'remove'} disabled={Boolean(action)} onClick={() => void removeKey()}>Remove key</Button></div> : null}
+      </div>
+      <div className="space-y-5">
+        <div className="space-y-1"><Heading level={3} size="compact">Autopilot</Heading><Text size="small" tone="muted">Let Mews manage reports, tasks, cats, and colonies. It checks for work every five minutes.</Text></div>
+        <div className="flex items-center gap-3"><Switch id="configuration-autopilot" checked={autopilot.enabled} onCheckedChange={(enabled) => setAutopilot((value) => ({ ...value, enabled }))} disabled={Boolean(action) || (saved.openaiKeyStatus !== 'saved' && !apiKey.trim() && !autopilot.enabled)} /><Label htmlFor="configuration-autopilot">Enable autopilot</Label></div>
+        {saved.openaiKeyStatus !== 'saved' && !apiKey.trim() ? <Text size="small" tone="muted">Add an OpenAI API key to enable autopilot. Removing the key pauses autopilot.</Text> : null}
+        {autopilot.enabled ? <>
+          <div className="space-y-5">
+            {([
+              ['resolveReports', 'Review reports', 'Review new reports, link confirmed duplicates, and finish reviews when the evidence is complete.'],
+              ['assignTasks', 'Assign tasks', 'Create tasks from reports and assign them to available team members with the fewest open tasks. Reassign work when a member becomes unavailable.'],
+              ['updateRecords', 'Update cats and colonies', 'Add records supported by reports, save cat observations, and fill missing colony locations.'],
+              ['mergeColonies', 'Merge duplicate colonies', 'Combine colonies when their names and locations match. Keep their cats, reports, tasks, care rules, and history.'],
+              ['requireHumanReview', 'Require human review', 'Send proposed changes, including duplicate links and colony merges, to Automation for approval before they are applied.'],
+            ] satisfies [keyof AutopilotSettings, string, string][]).map(([key, label, description]) => <div key={key} className="space-y-1">
+              <div className="flex items-center gap-3"><Switch id={`autopilot-${key}`} checked={autopilot[key]} disabled={Boolean(action)} onCheckedChange={(checked) => setAutopilot((value) => ({ ...value, [key]: checked }))} aria-describedby={`autopilot-${key}-help`} /><Label htmlFor={`autopilot-${key}`}>{label}</Label></div>
+              <Text id={`autopilot-${key}-help`} size="small" tone="muted">{description}</Text>
+            </div>)}
+          </div>
+          <Text size="small" tone="muted">Automation records each change and any work that needs attention. Reports with missing evidence stay open.</Text>
+          {saved.autopilot.enabled ? <TextLink render={<Link to="/app/automation" />}>Open Automation</TextLink> : <Text size="small" tone="muted">Save changes to enable Automation.</Text>}
+        </> : null}
       </div>
       <div className="grid gap-3">
         <div className="space-y-1"><Heading level={3} size="compact">Report chat</Heading><Text size="small" tone="muted">Set how Mews speaks with people and helps them prepare a report.</Text></div>

@@ -31,6 +31,10 @@ Use `agent-browser` when a change needs a browser check to verify its appearance
 - Run broader checks for large or high-risk changes, or when the user asks for them. Re-run only checks affected by later code changes or failures.
 - If a development server restarts or a test environment fails, retry only the affected check when useful. Do not repeat checks that already passed.
 
+# Release publishing
+
+The user wants completed changes published to production through the `release` branch. After the required checks pass, commit the completed changes, apply any required migrations to the configured production D1 database, and push to `release`. Verify the GitHub Actions deployment for the exact commit and check the public app and API health endpoint. Do not stop after local implementation. Do not publish unfinished work, force-push, discard remote changes, or apply local seed data to production. Explicit instructions for an individual task take precedence.
+
 # Local browser security
 
 For local Chromium automation, use `/Users/admin/.local/bin/eday-secure-chrome` and Playwright `chromiumSandbox: true`. The launcher checks the browser security baseline and rejects sandbox-disabling flags. Playwright MCP/CLI defaults are in `/Users/admin/.config/eday-browser/playwright.json`; agent-browser has the same launcher configured globally. Direct Playwright library calls need explicit launch options. Do not reinstall or use the quarantined old bundled Chromium builds to work around launch failures. Use a patched browser with sandboxing enabled instead. These defaults are safeguards, not an OS-enforced isolation boundary.

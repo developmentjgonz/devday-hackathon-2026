@@ -22,6 +22,8 @@ Cloudflare dashboard links require an account with access to these resources. Th
 
 Pushes to `main` run checks. Pushes to `release` run checks and deploy to the live URL. Pull requests to either branch run checks only. See the [workflow](.github/workflows/cloudflare.yml), [Cloudflare configuration](wrangler.jsonc), and [infrastructure guide](docs/infrastructure.md) for setup and deployment details.
 
+Completed work should be published to `release` after verification. A local Codex check is configured to look for completed unpublished changes every five minutes. It skips unfinished work and does not redeploy an unchanged, healthy release. The check needs Codex and the local workspace to be available. Required production database migrations must be applied before schema-dependent code is published.
+
 Storybook runs locally and is not deployed. The live database has the current migrations and the private R2 bucket is provisioned. Future schema changes must be applied to remote D1 separately; the release workflow deploys code but does not run migrations. Do not apply fictional local seeds to the live database.
 
 ## Project guide
@@ -34,6 +36,7 @@ Storybook runs locally and is not deployed. The live database has the current mi
 - [Map motion](docs/map-motion.md): how map selection handles pointer, keyboard, and reduced-motion input.
 - [Infrastructure](docs/infrastructure.md): dedicated Cloudflare resources, deployment, and health checks.
 - [Public reporting](docs/public-reporting.md): anonymous submissions and team review.
+- [Autopilot](docs/autopilot.md): optional background management, human review, and automation activity.
 - [Local accounts](docs/local-accounts.md): seeded users, signup, sessions, and approval checks.
 - [Google sign-in](docs/google-sign-in.md): live identity, Cloudflare secrets, and deployment setup.
 - [Local skills](.agents/skills/README.md): installed guidance and source revisions.

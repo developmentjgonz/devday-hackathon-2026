@@ -21,11 +21,11 @@ export const Inline: Story = { args: { layout: 'inline' } }
 
 export const WithAttachments: Story = {
   render: () => <AttachmentComposer />,
-  parameters: { docs: { description: { story: 'Use the actions slot for the shared AttachmentUpload control. File previews, removal, and validation stay in the composer. Files are held in memory until the enclosing report is submitted.' } } },
+  parameters: { docs: { description: { story: 'Use the actions slot for the shared AttachmentUpload control. File previews, removal, and validation stay in the composer. Set allowEmpty when selected files can be sent without text. This story clears the selection on send. The public report chat sends supported files for AI review and keeps the originals for final submission.' } } },
 }
 
 function AttachmentComposer() {
   const [value, setValue] = useState('')
   const [files, setFiles] = useState<File[]>([])
-  return <div className="w-96 max-w-full"><ChatComposer value={value} onChange={setValue} onSubmit={(event) => { event.preventDefault(); setValue('') }} actions={<AttachmentUpload compact files={files} onChange={setFiles} />} /></div>
+  return <div className="w-96 max-w-full"><ChatComposer value={value} onChange={setValue} onSubmit={(event) => { event.preventDefault(); setValue(''); setFiles([]) }} allowEmpty={files.length > 0} actions={<AttachmentUpload compact files={files} onChange={setFiles} />} /></div>
 }

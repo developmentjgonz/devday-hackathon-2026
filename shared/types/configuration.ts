@@ -1,4 +1,7 @@
+import type { AutopilotSettings } from './automation'
+
 export type Configuration = {
+  autopilot: AutopilotSettings
   demoSignInEnabled: boolean
   inboundPhone: string
   inboundEmail: string

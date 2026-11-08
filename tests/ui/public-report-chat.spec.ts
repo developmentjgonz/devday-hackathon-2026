@@ -73,10 +73,14 @@ test('photos survive assistant failure, form fallback, and a failed send', async
   await expect(page.getByRole('button', { name: 'Remove cat.png' })).toHaveCount(0)
 })
 
-test('chat keeps the caring reply and sends attachments only after review', async ({ page }) => {
+test('chat uses attachments during review and saves only after confirmation', async ({ page }) => {
   await page.route('**/api/public-reports/contact', (route) => route.fulfill({ json: enabled }))
   const reply = 'Thank you for looking out for them. I can send this to the care team. Please check the details below.'
-  await page.route('**/api/public-reports/chat', (route) => route.fulfill({ json: { ready: true, reply, location: 'Oak Street', details: 'Three cats were limping.', urgent: false, locations: [] } }))
+  await page.route('**/api/public-reports/chat', (route) => {
+    expect(route.request().headers()['content-type']).toContain('multipart/form-data')
+    expect(route.request().postDataBuffer()!.toString()).toContain('filename="notes.txt"')
+    return route.fulfill({ json: { ready: true, reply, location: 'Oak Street', details: 'Three cats were limping.', urgent: false, locations: [] } })
+  })
   let sent = 0
   await page.route('**/api/public-reports', (route) => {
     sent++
@@ -396,4 +400,48 @@ test('a failed form submission keeps the send button in place and preserves the 
   await send.click()
   await expect(page.getByRole('heading', { name: 'Thank you for helping cats.' })).toBeVisible()
   expect(requests[1]).toEqual(requests[0])
+})
+
+test('files can be sent without text and changed files need a new review before submission', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.route('**/api/public-reports/contact', (route) => route.fulfill({ json: enabled }))
+  const reviews: string[] = []
+  await page.route('**/api/public-reports/chat', (route) => {
+    expect(route.request().headers()['content-type']).toContain('multipart/form-data')
+    reviews.push(route.request().postDataBuffer()!.toString())
+    return route.fulfill({ json: { ready: true, reply: 'Please check the report and files.', location: 'Oak Street', details: 'A gray cat by the shed.', urgent: false, locations: [],
+      skippedAttachments: reviews.length === 1 ? [] : [{ name: 'cat.avif', reason: 'This file format is not supported for analysis.' }],
+    } })
+  })
+  const submissions: string[] = []
+  await page.route('**/api/public-reports', (route) => {
+    submissions.push(route.request().postDataBuffer()!.toString())
+    return route.fulfill({ status: 201, json: { submitted: true } })
+  })
+  await page.goto(story)
+  const send = page.getByRole('button', { name: 'Send message', exact: true })
+  await expect(send).toBeDisabled()
+  await page.getByLabel('Photos and attachments', { exact: true }).setInputFiles({ name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('A gray cat by the shed on Oak Street.') })
+  await expect(page.getByLabel('Your message')).toHaveValue('')
+  await expect(send).toBeEnabled()
+  await send.click()
+  await expect(page.getByRole('button', { name: 'Yes, send report' })).toBeVisible()
+  expect(reviews[0]).toContain('filename="notes.txt"')
+  expect(submissions).toHaveLength(0)
+  await page.getByRole('button', { name: 'Remove notes.txt' }).click()
+  await expect(page.getByRole('button', { name: 'Review attachments' })).toBeVisible()
+  await page.getByLabel('Photos and attachments', { exact: true }).setInputFiles({ name: 'cat.avif', mimeType: 'image/avif', buffer: Buffer.from('unreadable') })
+  await page.getByRole('button', { name: 'Review attachments' }).click()
+  await expect(page.getByRole('button', { name: 'Yes, send report' })).toBeVisible()
+  expect(reviews).toHaveLength(2)
+  expect(reviews[1]).toContain('filename="cat.avif"')
+  expect(reviews[1]).not.toContain('filename="notes.txt"')
+  await expect(page.getByText(/cat.avif: This file format is not supported for analysis/)).toBeVisible()
+  expect(submissions).toHaveLength(0)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.getByRole('button', { name: 'Yes, send report' }).click()
+  await expect(page.getByText('1 attachment sent with your report.', { exact: true })).toBeVisible()
+  expect(submissions).toHaveLength(1)
+  expect(submissions[0]).toContain('filename="cat.avif"')
+  expect(submissions[0]).not.toContain('filename="notes.txt"')
 })

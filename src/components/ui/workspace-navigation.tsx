@@ -1,4 +1,4 @@
-import { Cat, House, Inbox, LayoutDashboard, ListTodo, Newspaper, Settings2, UsersRound } from 'lucide-react'
+import { Bot, Cat, House, Inbox, LayoutDashboard, ListTodo, Newspaper, Settings2, UsersRound } from 'lucide-react'
 import { NavLink } from 'react-router'
 import type { MouseEvent } from 'react'
 import { isPlainNavigation } from '@/lib/navigation'
@@ -12,7 +12,7 @@ const items = [
   { to: '/app/cats', label: 'Cats', icon: Cat, end: false },
 ]
 
-export function WorkspaceNavigation({ showTeam = false, onNavigate }: { showTeam?: boolean; onNavigate?: (to: string) => void }) {
+export function WorkspaceNavigation({ showTeam = false, showAutomation = false, onNavigate }: { showTeam?: boolean; showAutomation?: boolean; onNavigate?: (to: string) => void }) {
   function followLink(event: MouseEvent<HTMLAnchorElement>, to: string) {
     if (isPlainNavigation(event)) onNavigate?.(to)
   }
@@ -32,6 +32,7 @@ export function WorkspaceNavigation({ showTeam = false, onNavigate }: { showTeam
           </TextLink>
         ))}
         {showTeam ? <>
+          {showAutomation ? <TextLink variant="navigation" onClick={(event) => followLink(event, '/app/automation')} render={<NavLink to="/app/automation" />}><Bot className="size-4 shrink-0" aria-hidden="true" />Automation</TextLink> : null}
           <TextLink variant="navigation" onClick={(event) => followLink(event, '/app/community')} render={<NavLink to="/app/community" />}>
             <Newspaper className="size-4 shrink-0" aria-hidden="true" />Community board
           </TextLink>

@@ -12,7 +12,7 @@ import { WorkspaceNavigation } from '@/components/ui/workspace-navigation'
 import { SignOutButton } from '@/features/auth/components/sign-out-button'
 import { isPlainNavigation } from '@/lib/navigation'
 
-export function MobileWorkspaceMenu({ user }: { user: SessionUser }) {
+export function MobileWorkspaceMenu({ user, showAutomation = false }: { user: SessionUser; showAutomation?: boolean }) {
   const [open, setOpen] = useState(false)
   const trigger = useRef<HTMLButtonElement>(null)
   const navigating = useRef(false)
@@ -62,7 +62,7 @@ export function MobileWorkspaceMenu({ user }: { user: SessionUser }) {
           <DialogDescription className="sr-only">Navigate the workspace and manage your account.</DialogDescription>
         </DrawerHeader>
         <DrawerBody className="space-y-0 px-0 py-4">
-          <WorkspaceNavigation showTeam={user.role === 'administrator'} onNavigate={closeForNavigation} />
+          <WorkspaceNavigation showTeam={user.role === 'administrator'} showAutomation={showAutomation} onNavigate={closeForNavigation} />
         </DrawerBody>
         <DrawerFooter layout="stack" className="gap-2 px-4">
           <div className="flex min-w-0 items-center gap-3 px-3 py-2">
