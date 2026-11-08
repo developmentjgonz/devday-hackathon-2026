@@ -3,7 +3,7 @@
 ## Confirmed
 
 - Project direction: a cat colony tracking app for rescue coordinators and volunteers, based on the Mangrove Mews challenge
-- Team: JS
+- Team: Joseph
 - Event: DevDay Exchange Community Hackathon
 - Challenge: Mangrove Mews cat colony tracking
 - Frontend foundation: Vite, React, TypeScript, Tailwind CSS, and shadcn/ui
