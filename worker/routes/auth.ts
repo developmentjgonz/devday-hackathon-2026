@@ -1,16 +1,42 @@
 import { Hono } from 'hono'
-import { localSignInSchema, signUpSchema } from '../../shared/schemas/auth.ts'
+import { HTTPException } from 'hono/http-exception'
+import { localSignInSchema, profileSchema, signUpSchema } from '../../shared/schemas/auth.ts'
 import type { SignInOptions } from '../../shared/types/auth.ts'
 import type { AppEnv } from '../types.ts'
-import { listLocalUsers } from '../db/accounts.ts'
-import { localSignInEnabled, requireLocalSignIn, requireSameOrigin } from '../middleware/auth.ts'
-import { limitFormBody, requireJson, validateJson } from '../middleware/validation.ts'
+import { findUserByEmail, listLocalUsers } from '../db/accounts.ts'
+import { getUserPhoto, saveProfile } from '../db/user-profile.ts'
+import { localSignInEnabled, requireActiveUser, requireLocalSignIn, requireSameOrigin } from '../middleware/auth.ts'
+import { limitFormBody, limitProfileBody, requireJson, validateJson } from '../middleware/validation.ts'
 import { signInLocalUser, signUpLocalUser } from '../services/accounts.ts'
 import { createSession, endSession, getSessionUser } from '../services/session.ts'
 
 export const authRoutes = new Hono<AppEnv>()
 
 authRoutes.get('/session', async (c) => c.json({ user: await getSessionUser(c.req.raw, c.env.DB) }))
+
+authRoutes.patch('/profile', requireActiveUser, requireSameOrigin, requireJson, limitProfileBody, validateJson(profileSchema), async (c) => {
+  const id = c.get('user').id
+  const profile = c.req.valid('json')
+  const existing = await findUserByEmail(c.env.DB, profile.email)
+  if (existing && existing.id !== id) throw new HTTPException(409, { message: 'This email already belongs to another account.' })
+  try {
+    await saveProfile(c.env.DB, id, profile)
+  } catch (error) {
+    const conflicting = await findUserByEmail(c.env.DB, profile.email)
+    if (conflicting && conflicting.id !== id) throw new HTTPException(409, { message: 'This email already belongs to another account.' })
+    throw error
+  }
+  const user = await getSessionUser(c.req.raw, c.env.DB)
+  if (!user) throw new HTTPException(401, { message: 'Sign in to continue' })
+  return c.json({ user })
+})
+
+authRoutes.get('/photos/:id', requireActiveUser, async (c) => {
+  const photo = await getUserPhoto(c.env.DB, c.req.param('id'))
+  if (!photo) throw new HTTPException(404, { message: 'Photo not found.' })
+  const bytes = Uint8Array.from(atob(photo.data), (character) => character.charCodeAt(0))
+  return new Response(bytes, { headers: { 'Content-Type': photo.mimeType, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } })
+})
 
 authRoutes.get('/options', async (c) => {
   const enabled = localSignInEnabled(c.req.raw, c.env)

@@ -36,10 +36,10 @@ function WorkspaceFrame({ user }: { user: SessionUser }) {
   })
   const title = breadcrumbs.at(-1)?.label ?? 'Page not found'
   return (
-    <div className="min-h-svh bg-background text-foreground md:grid md:grid-cols-[248px_minmax(0,1fr)]">
+    <div className="min-h-svh bg-background text-foreground [--workspace-header-offset:calc(var(--control-height)+var(--spacing)*3+1px)] md:[--workspace-header-offset:0px] md:grid md:grid-cols-[248px_minmax(0,1fr)]">
       <AppSidebar user={user} />
       <div className="min-w-0">
-        <WorkspaceToolbar title={title} breadcrumbs={breadcrumbs.slice(0, -1)} />
+        <WorkspaceToolbar title={title} breadcrumbs={breadcrumbs.slice(0, -1)} currentUser={user.id} />
         <main id="main-content" aria-labelledby="workspace-page-title" tabIndex={-1} className="mx-auto max-w-[1240px] px-6 py-6 outline-none sm:px-10 lg:px-12">
           <Outlet />
         </main>

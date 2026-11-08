@@ -1,4 +1,5 @@
 import type { SessionUser, SignInOptions } from '../../shared/types/auth.ts'
+import { userFromRow, type UserRow } from './user-profile.ts'
 
 export async function listLocalUsers(db: D1Database): Promise<SignInOptions['users']> {
   const { results } = await db.prepare(`
@@ -10,12 +11,14 @@ export async function listLocalUsers(db: D1Database): Promise<SignInOptions['use
   return results
 }
 
-export function findLocalUser(db: D1Database, userId: string): Promise<SessionUser | null> {
-  return db.prepare(`
-    SELECT u.id, u.name, u.email, u.phone, u.role, u.status
+export async function findLocalUser(db: D1Database, userId: string): Promise<SessionUser | null> {
+  const row = await db.prepare(`
+    SELECT u.id, u.name, u.email, u.phone, u.role, u.status, p.revision AS photoRevision
     FROM users u JOIN sign_in_identities i ON i.user_id = u.id
+    LEFT JOIN user_photos p ON p.user_id = u.id
     WHERE u.id = ? AND i.provider = 'local'
-  `).bind(userId).first<SessionUser>()
+  `).bind(userId).first<UserRow>()
+  return row ? userFromRow(row) : null
 }
 
 export function findUserByEmail(db: D1Database, email: string): Promise<{ id: string } | null> {

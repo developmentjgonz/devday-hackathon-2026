@@ -15,7 +15,7 @@ type WorkspaceHeaderProps = {
 /** The current breadcrumb is the workspace's single page heading. */
 export function WorkspaceHeader({ title, breadcrumbs = [], actions }: WorkspaceHeaderProps) {
   return (
-    <header aria-label="Workspace header" className="sticky top-0 z-20 flex min-h-14 items-center justify-between gap-3 border-b bg-background px-6 sm:px-10 lg:px-12">
+    <header aria-label="Workspace header" className="sticky top-[var(--workspace-header-offset,0px)] z-20 flex min-h-14 items-center justify-between gap-3 border-b bg-background px-6 sm:px-10 lg:px-12">
       <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
         <ol className="flex min-w-0 items-center gap-2">
           {breadcrumbs.map(({ label, to }) => (

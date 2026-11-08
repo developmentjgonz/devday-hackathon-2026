@@ -4,7 +4,7 @@ const story = (name: string) => `/iframe.html?id=pages-team--${name}&viewMode=st
 async function openStory(page: Page, name: string, dark: boolean) {
   await page.goto(story(name))
   await page.evaluate((enabled) => document.documentElement.classList.toggle('dark', enabled), dark)
-  await page.getByRole('navigation', { name: 'Workspace navigation' }).waitFor({ state: 'visible', timeout: 30000 })
+  await page.getByRole('banner', { name: 'Workspace header' }).waitFor({ state: 'visible', timeout: 30000 })
 }
 test.setTimeout(60000)
 

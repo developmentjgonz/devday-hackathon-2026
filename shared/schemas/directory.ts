@@ -1,22 +1,8 @@
 import { z } from 'zod'
+import { photoSchema } from './photo.ts'
 
 const name = z.string('Enter a name with 1 to 120 characters').trim()
   .min(1, 'Enter a name with 1 to 120 characters').max(120, 'Enter a name with 1 to 120 characters')
-
-export const catPhotoMaxBytes = 1024 * 1024
-const photoSchema = z.object({
-  mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
-  data: z.string().max(Math.ceil(catPhotoMaxBytes / 3) * 4),
-}).refine(({ mimeType, data }) => {
-  if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(data)) return false
-  try {
-    const bytes = atob(data)
-    if (!bytes.length || bytes.length > catPhotoMaxBytes) return false
-    if (mimeType === 'image/jpeg') return bytes.startsWith('\xff\xd8\xff')
-    if (mimeType === 'image/png') return bytes.startsWith('\x89PNG\r\n\x1a\n')
-    return bytes.startsWith('RIFF') && bytes.slice(8, 12) === 'WEBP'
-  } catch { return false }
-}, 'Choose a valid JPEG, PNG, or WebP image of 1 MB or less')
 
 const birthDate = z.string().refine((value) => {
   if (!value) return true

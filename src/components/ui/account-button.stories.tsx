@@ -5,7 +5,7 @@ const meta = {
   title: 'Actions/Account button', component: AccountButton,
   args: { name: 'Maya Rivera', description: 'Administrator', 'aria-label': 'Account options for Maya Rivera' },
   decorators: [(Story) => <div className="w-60"><Story /></div>],
-  parameters: { docs: { description: { component: 'The production account trigger. Avatar, typography, active state, focus ring, and spacing belong to this shared component. Compose it with PopoverTrigger for an account menu.' } } },
+  parameters: { docs: { description: { component: 'The production account trigger. Pass avatarUrl for a photo; initials appear when it is absent or unavailable. Avatar, typography, active state, focus ring, and spacing belong to this shared component. Compose it with PopoverTrigger for an account menu.' } } },
 } satisfies Meta<typeof AccountButton>
 export default meta
 type Story = StoryObj<typeof meta>

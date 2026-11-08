@@ -6,9 +6,10 @@ const meta = {
   title: 'Actions/Workspace navigation',
   component: WorkspaceNavigation,
   parameters: {
+    layout: 'fullscreen',
     docs: {
       description: {
-        component: 'The production workspace navigation. On phones, links form a horizontally scrollable row; wider screens use a vertical list. Pink marks the current route; gray marks hover on another link. Hover must not change the current route. Keyboard focus adds a ring to either state. Links remain usable, including the current link. These stories use an in-memory router and make no account requests. Check default, hover, current + hover, focus, current + focus, and navigation in light and dark themes.',
+        component: 'The production workspace navigation uses the same vertical rows in the desktop sidebar and phone menu. Pink marks the current route; gray marks hover or press on another link. Keyboard focus adds a ring to either state. These stories use an in-memory router and show the same width as the app shell.',
       },
     },
   },
@@ -20,7 +21,7 @@ type Story = StoryObj<typeof meta>
 export const OverviewCurrent: Story = {
   render: () => (
     <MemoryRouter initialEntries={['/app']}>
-      <div className="w-64 max-w-full bg-sidebar py-4"><WorkspaceNavigation /></div>
+      <div className="w-[min(20rem,calc(100%-3rem))] border-r bg-sidebar py-4 md:w-[248px]"><WorkspaceNavigation /></div>
     </MemoryRouter>
   ),
 }
@@ -28,7 +29,7 @@ export const OverviewCurrent: Story = {
 export const ReportsCurrent: Story = {
   render: () => (
     <MemoryRouter initialEntries={['/app/reports']}>
-      <div className="w-64 max-w-full bg-sidebar py-4"><WorkspaceNavigation /></div>
+      <div className="w-[min(20rem,calc(100%-3rem))] border-r bg-sidebar py-4 md:w-[248px]"><WorkspaceNavigation /></div>
     </MemoryRouter>
   ),
 }
@@ -36,7 +37,11 @@ export const ReportsCurrent: Story = {
 export const MyTasksCurrent: Story = {
   render: () => (
     <MemoryRouter initialEntries={['/app/tasks']}>
-      <div className="w-64 max-w-full bg-sidebar py-4"><WorkspaceNavigation /></div>
+      <div className="w-[min(20rem,calc(100%-3rem))] border-r bg-sidebar py-4 md:w-[248px]"><WorkspaceNavigation /></div>
     </MemoryRouter>
   ),
+}
+
+export const Administrator: Story = {
+  render: () => <MemoryRouter initialEntries={['/app/team']}><div className="w-[min(20rem,calc(100%-3rem))] border-r bg-sidebar py-4 md:w-[248px]"><WorkspaceNavigation showTeam /></div></MemoryRouter>,
 }

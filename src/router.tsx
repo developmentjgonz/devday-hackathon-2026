@@ -24,6 +24,7 @@ import { accountStatusLoader, signInLoader, signUpLoader, workspaceLoader } from
 import { SignInPage } from '@/features/auth/pages/sign-in-page'
 import { SignUpPage } from '@/features/auth/pages/sign-up-page'
 import { AccountStatusPage } from '@/features/auth/pages/account-status-page'
+import { ProfilePage } from '@/features/auth/pages/profile-page'
 
 export const router = createBrowserRouter([
   {
@@ -69,6 +70,7 @@ export const router = createBrowserRouter([
           { path: 'tasks', Component: MyTasksPage, handle: { breadcrumb: 'My Tasks' } },
           { path: 'reports', Component: InboxPage, handle: { breadcrumb: 'Reports' } },
           { path: 'team', Component: UsersPage, handle: { breadcrumb: 'Team' } },
+          { path: 'profile', Component: ProfilePage, handle: { breadcrumb: 'Profile' } },
           { path: '*', element: <NotFoundPage homePath="/app" /> },
         ],
       },

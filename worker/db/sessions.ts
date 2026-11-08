@@ -1,11 +1,14 @@
 import type { SessionUser } from '../../shared/types/auth.ts'
+import { userFromRow, type UserRow } from './user-profile.ts'
 
-export function findSessionUser(db: D1Database, tokenHash: string, now: number): Promise<SessionUser | null> {
-  return db.prepare(`
-    SELECT u.id, u.name, u.email, u.phone, u.role, u.status
+export async function findSessionUser(db: D1Database, tokenHash: string, now: number): Promise<SessionUser | null> {
+  const row = await db.prepare(`
+    SELECT u.id, u.name, u.email, u.phone, u.role, u.status, p.revision AS photoRevision
     FROM sessions s JOIN users u ON u.id = s.user_id
+    LEFT JOIN user_photos p ON p.user_id = u.id
     WHERE s.token_hash = ? AND s.expires_at > ?
-  `).bind(tokenHash, now).first<SessionUser>()
+  `).bind(tokenHash, now).first<UserRow>()
+  return row ? userFromRow(row) : null
 }
 
 export async function insertSession(db: D1Database, session: {

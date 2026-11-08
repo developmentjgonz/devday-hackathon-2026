@@ -15,10 +15,26 @@ export const requireLocalSignIn = createMiddleware<AppEnv>(async (c, next) => {
   await next()
 })
 
+function localAliasOriginMatches(request: Request, env: Bindings, origin: string | undefined): boolean {
+  if (!origin || !env.APP_ORIGIN || !localSignInEnabled(request, env)) return false
+  try {
+    const configured = new URL(env.APP_ORIGIN)
+    const incoming = new URL(origin)
+    const loopbackNames = ['localhost', '127.0.0.1']
+    return configured.origin === env.APP_ORIGIN && incoming.origin === origin
+      && configured.protocol === 'http:' && incoming.protocol === configured.protocol
+      && incoming.port === configured.port
+      && loopbackNames.includes(configured.hostname) && loopbackNames.includes(incoming.hostname)
+  } catch {
+    return false
+  }
+}
+
 export const requireSameOrigin = createMiddleware<AppEnv>(async (c, next) => {
   // Vite and Wrangler use separate local ports. Do not trust forwarded headers.
   const expectedOrigin = c.env.APP_ORIGIN ?? new URL(c.req.url).origin
-  if (c.req.header('Origin') !== expectedOrigin) {
+  const origin = c.req.header('Origin')
+  if (origin !== expectedOrigin && !localAliasOriginMatches(c.req.raw, c.env, origin)) {
     throw new HTTPException(403, { message: 'Request origin is not allowed' })
   }
   await next()

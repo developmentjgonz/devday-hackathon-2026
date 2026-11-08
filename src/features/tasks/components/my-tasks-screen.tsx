@@ -1,11 +1,13 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CheckCheck, LayoutGrid, List, Search } from 'lucide-react'
+import { useSearchParams } from 'react-router'
 import type { PaginationState } from '@tanstack/react-table'
 import { Card } from '@/components/ui/card'
 import { DataTable, DataTablePagination, useDataTable } from '@/components/ui/data-table'
 import { DataTableToolbar } from '@/components/ui/data-table-toolbar'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ViewSwitcher } from '@/components/ui/view-switcher'
+import { Text } from '@/components/ui/typography'
 import { useInbox } from '@/features/inbox/inbox-context'
 import type { TaskStatus } from '@/features/inbox/types'
 import { getAssignedTasks } from '../task-data'
@@ -28,6 +30,8 @@ const statuses = [
 
 export function MyTasksScreen({ currentUser, initialStatus = 'open' }: { currentUser: string; initialStatus?: TaskFilter }) {
   const { data, reports, tasks: allTasks } = useInbox()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedTask = searchParams.get('task')
   const [status, setStatus] = useState<TaskFilter>(initialStatus)
   const [view, setView] = useState<TaskView>(preferredView)
   const [search, setSearch] = useState('')
@@ -35,8 +39,23 @@ export function MyTasksScreen({ currentUser, initialStatus = 'open' }: { current
   const contentRef = useRef<HTMLDivElement>(null)
   const query = search.trim().toLocaleLowerCase()
   const tasks = useMemo(() => getAssignedTasks(allTasks, reports, data, currentUser), [allTasks, reports, data, currentUser])
-  const visibleTasks = useMemo(() => tasks.filter((task) => (status === 'all' || task.status === status)
-    && (!query || [task.title, task.reportTitle, ...task.related.map((item) => item.label)].join(' ').toLocaleLowerCase().includes(query))), [tasks, status, query])
+  const visibleTasks = useMemo(() => tasks.filter((task) => (!requestedTask || task.id === requestedTask)
+    && (status === 'all' || task.status === status)
+    && (!query || [task.title, task.reportTitle, ...task.related.map((item) => item.label)].join(' ').toLocaleLowerCase().includes(query))), [tasks, status, query, requestedTask])
+
+  useEffect(() => {
+    if (!requestedTask) return
+    setStatus('open')
+    setSearch('')
+    setPagination((current) => ({ ...current, pageIndex: 0 }))
+  }, [requestedTask])
+
+  function clearRequestedTask() {
+    if (!requestedTask) return
+    const next = new URLSearchParams(searchParams)
+    next.delete('task')
+    setSearchParams(next, { replace: true, preventScrollReset: true })
+  }
 
   const { changeTaskStatus, completionDialog } = useTaskActions(currentUser, contentRef)
   const columns = useTaskColumns(changeTaskStatus, currentUser)
@@ -55,21 +74,22 @@ export function MyTasksScreen({ currentUser, initialStatus = 'open' }: { current
 
   const emptyState = <EmptyState
         icon={query ? <Search /> : <CheckCheck />}
-        title={query ? 'No matching tasks' : status === 'completed' ? 'No completed tasks' : status === 'open' ? 'No open tasks' : 'No tasks assigned to you'}
-        description={query ? 'Try another task or related item.' : status === 'completed' ? 'Tasks you complete will appear here.' : 'Tasks assigned to you will appear here.'}
+        title={requestedTask ? 'Task unavailable' : query ? 'No matching tasks' : status === 'completed' ? 'No completed tasks' : status === 'open' ? 'No open tasks' : 'No tasks assigned to you'}
+        description={requestedTask ? 'This task may be complete or no longer assigned to you.' : query ? 'Try another task or related item.' : status === 'completed' ? 'Tasks you complete will appear here.' : 'Tasks assigned to you will appear here.'}
       />
 
   return <><div className="space-y-3">
     <DataTableToolbar
       label="Task controls"
-      search={{ label: 'Search my tasks', placeholder: 'Search tasks…', value: search, onValueChange: (value) => { setSearch(value); table.firstPage() } }}
-      filters={[{ id: 'status', label: 'Filter tasks by status', value: status, options: statuses, onValueChange: (value) => { setStatus(value as TaskFilter); table.firstPage() } }]}
-      onReset={query ? () => { setSearch(''); table.firstPage() } : undefined}
+      search={{ label: 'Search my tasks', placeholder: 'Search tasks…', value: search, onValueChange: (value) => { clearRequestedTask(); setSearch(value); table.firstPage() } }}
+      filters={[{ id: 'status', label: 'Filter tasks by status', value: status, options: statuses, onValueChange: (value) => { clearRequestedTask(); setStatus(value as TaskFilter); table.firstPage() } }]}
+      onReset={query || requestedTask ? () => { clearRequestedTask(); setSearch(''); table.firstPage() } : undefined}
       actions={<><ViewSwitcher label="Task view" value={view} onValueChange={changeView} options={[
         { value: 'cards', label: 'Cards', icon: <LayoutGrid aria-hidden="true" /> },
         { value: 'list', label: 'List', icon: <List aria-hidden="true" /> },
-      ]} /><TaskEditor currentUser={currentUser} onCreated={() => { setSearch(''); setStatus('open'); table.firstPage() }} /></>}
+      ]} /><TaskEditor currentUser={currentUser} onCreated={() => { clearRequestedTask(); setSearch(''); setStatus('open'); table.firstPage() }} /></>}
     />
+    {requestedTask ? <Text size="small" tone="muted">Showing selected task. Clear filters to see all your tasks.</Text> : null}
     {view === 'list' ? <DataTable ref={contentRef} table={table} label="My tasks" itemName="task" columnClassName={taskColumnClassName} emptyState={emptyState} /> :
       <div ref={contentRef} role="region" aria-label="My tasks" tabIndex={-1} className="rounded-control outline-none focus-visible:ring-2 focus-visible:ring-ring">
         {table.getRowModel().rows.length ? <TaskCards tasks={table.getRowModel().rows.map((row) => row.original)} onStatusChange={changeTaskStatus} currentUser={currentUser} /> : <Card>{emptyState}</Card>}

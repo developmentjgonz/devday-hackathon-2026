@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { openWorkspaceNavigation } from './state-helpers'
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/images.unsplash.com/**', (route) => route.abort())
@@ -86,7 +87,7 @@ test('a colony created within a cat draft can use the device location on a phone
   await expect(cat.getByLabel('Cat name')).toHaveValue('Poppy')
   await expect(cat.getByLabel('Colony', { exact: true }).locator('option:checked')).toHaveText('Garden')
   await cat.getByRole('button', { name: 'Add cat', exact: true }).click()
-  await page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('link', { name: 'Colonies', exact: true }).click()
+  await (await openWorkspaceNavigation(page)).getByRole('link', { name: 'Colonies', exact: true }).click()
   await page.getByRole('link', { name: 'Garden', exact: true }).click()
   await expect(page.getByRole('region', { name: 'Location' }).getByText('25.79000, -80.21000')).toBeVisible()
 })

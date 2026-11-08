@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { photoSchema } from './photo.ts'
 
 export const localSignInSchema = z.object({
   userId: z.string('Choose a test account').min(1, 'Choose a test account').max(100, 'Choose a test account'),
@@ -15,3 +16,9 @@ export const signUpSchema = z.object({
 })
 
 export type SignUpProfile = z.output<typeof signUpSchema>
+
+export const profileSchema = signUpSchema.extend({
+  photo: photoSchema.nullable().optional(),
+}).strict()
+export type ProfileInput = z.input<typeof profileSchema>
+export type ValidProfileInput = z.output<typeof profileSchema>

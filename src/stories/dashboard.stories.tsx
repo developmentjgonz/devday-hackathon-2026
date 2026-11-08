@@ -10,14 +10,32 @@ import { MyTasksPage } from '@/features/tasks/pages/my-tasks-page'
 import { NotFoundPage } from '@/pages/not-found-page'
 import type { SessionUser } from '../../shared/types/auth'
 import { localInboxData } from '@/features/inbox/data/local-inbox'
+import type { InboxData } from '@/features/inbox/types'
 import { storyDirectoryStore, storyWorkspace } from './fixtures/directory-store'
 import { storyWorkspaceStore } from './fixtures/workspace-store'
 import { storyPublicContent } from './fixtures/public-content'
 
 const user: SessionUser = { id: 'storybook-member', name: 'Maya Rivera', email: 'maya@mews.test', phone: null, role: 'member', status: 'active' }
+const completedTasks = [
+  ['Refresh water at Riverside', 'Alex Morgan'],
+  ['Clean feeding bowls at Canal', 'Alex Morgan'],
+  ['Check shelter bedding at Grove', 'Alex Morgan'],
+  ['Sort donated food supplies', 'Alex Morgan'],
+  ['Complete the morning feeding', 'Maya Rivera'],
+  ['Arrange evening feeding cover', 'Maya Rivera'],
+  ['Tidy the feeding station', 'Maya Rivera'],
+  ['Confirm a clinic visit', 'Sam Chen'],
+  ['Restock the food container', 'Sam Chen'],
+] as const
+const dashboardData: InboxData = {
+  ...localInboxData,
+  tasks: [...localInboxData.tasks, ...completedTasks.map(([title, owner], index) => ({
+    id: `dashboard-completed-${index}`, title, owner, ownerId: `story:${owner}`, due: '', status: 'completed' as const, associations: [],
+  }))],
+}
 function DashboardStory() {
   const [router] = useState(() => createMemoryRouter([
-    { path: '/app', id: 'workspace', loader: () => storyWorkspace(user, localInboxData), element: <AppLayout directoryStore={storyDirectoryStore} workspaceStore={storyWorkspaceStore(user, storyWorkspace(user, localInboxData).workspace)} />, children: [
+    { path: '/app', id: 'workspace', loader: () => storyWorkspace(user, dashboardData), element: <AppLayout directoryStore={storyDirectoryStore} workspaceStore={storyWorkspaceStore(user, storyWorkspace(user, dashboardData).workspace)} />, children: [
       { index: true, Component: OverviewPage, handle: { breadcrumb: 'Overview' } },
       { path: 'tasks', Component: MyTasksPage, handle: { breadcrumb: 'My Tasks' } },
       { path: 'reports', Component: InboxPage, handle: { breadcrumb: 'Reports' } },
@@ -30,7 +48,7 @@ function DashboardStory() {
 const meta = {
   title: 'Pages/Dashboard',
   component: DashboardStory,
-  parameters: { layout: 'fullscreen', docs: { description: { component: 'The workspace overview shows personal, team, and report completion progress. It links to My Tasks and Reports and keeps full lists on those pages. Storybook uses isolated fictional records.' } } },
+  parameters: { layout: 'fullscreen', docs: { description: { component: 'The workspace overview shows personal, team, and report completion progress, plus completed tasks by assignee. It links to My Tasks and Reports and keeps full lists on those pages. Storybook uses isolated fictional records.' } } },
 } satisfies Meta<typeof DashboardStory>
 export default meta
 type Story = StoryObj<typeof meta>

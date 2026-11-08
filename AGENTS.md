@@ -20,6 +20,10 @@ This is a greenfield application with no users yet. For now, there are no backwa
 - Every indeterminate loader uses the shared `LoadingIndicator` cat prints. Every loading action uses `Button loading`. Keep graphic size, color, timing, and motion in the shared components and tokens; do not add local spinners, loader icons, animations, or descendant overrides. Playback controls belong only in Storybook. Keep brand details relevant to cat care.
 - On the landing page, the public colony tracker is an in-page section. Tracker links scroll to `#tracker`; team-only views stay behind authentication.
 
+# Agent-led UI exploration
+
+Use `agent-browser` for exploratory browser checks of the app and Storybook. Use these checks alongside the appropriate automated tests.
+
 # Local browser security
 
 For local Chromium automation, use `/Users/admin/.local/bin/eday-secure-chrome` and Playwright `chromiumSandbox: true`. The launcher checks the browser security baseline and rejects sandbox-disabling flags. Playwright MCP/CLI defaults are in `/Users/admin/.config/eday-browser/playwright.json`; agent-browser has the same launcher configured globally. Direct Playwright library calls need explicit launch options. Do not reinstall or use the quarantined old bundled Chromium builds to work around launch failures. Use a patched browser with sandboxing enabled instead. These defaults are safeguards, not an OS-enforced isolation boundary.

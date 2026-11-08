@@ -4,6 +4,7 @@ import { cn } from 'cn'
 import type { ReactNode } from 'react'
 import { LoadingIndicator } from './loading-indicator'
 import { isValidElement } from 'react'
+import { navigationItemStyles } from './navigation-styles'
 
 const buttonVariants = cva(
   "group/button inline-flex shrink-0 items-center justify-center border border-transparent bg-clip-padding font-heading text-sm font-semibold tracking-[0.01em] whitespace-nowrap transition-[background-color,color,border-color,box-shadow,transform] duration-(--duration-fast) ease-(--ease-out) outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring active:not-aria-[haspopup]:scale-[0.97] motion-reduce:active:scale-100 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 aria-invalid:focus-visible:ring-ring dark:aria-invalid:focus-visible:ring-ring dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -25,6 +26,7 @@ const buttonVariants = cva(
         account: 'justify-start text-left font-sans font-normal hover:bg-muted aria-expanded:border-ring data-popup-open:border-ring data-popup-open:bg-muted',
         'table-header': 'justify-start rounded-sm font-sans font-medium text-muted-foreground hover:bg-muted hover:text-foreground',
         'view-switcher': 'bg-transparent hover:bg-card/60 aria-pressed:border-border aria-pressed:bg-card aria-pressed:hover:bg-card',
+        navigation: '',
       },
       size: {
         default:
@@ -46,6 +48,7 @@ const buttonVariants = cva(
         'dialog-close': 'size-(--control-height-sm) [--dialog-close-inset:calc(var(--spacing)*3)] rounded-[max(0px,calc(var(--surface-radius)-var(--dialog-close-inset)-1px))]',
       },
     },
+    compoundVariants: [{ variant: 'navigation', className: `${navigationItemStyles} border-0 active:not-aria-[haspopup]:scale-100` }],
     defaultVariants: {
       variant: 'default',
       size: 'default',

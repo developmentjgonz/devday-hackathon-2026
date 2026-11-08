@@ -8,6 +8,7 @@ import { hashToken } from '../../worker/services/session.ts';
 const migration = readFileSync(new URL('../../migrations/0001_accounts.sql', import.meta.url), 'utf8');
 const directoryMigration = readFileSync(new URL('../../migrations/0002_colonies_and_cats.sql', import.meta.url), 'utf8');
 const profilesMigration = readFileSync(new URL('../../migrations/0003_cat_profiles.sql', import.meta.url), 'utf8');
+const userPhotosMigration = readFileSync(new URL('../../migrations/0012_user_photos.sql', import.meta.url), 'utf8');
 const seeds = readFileSync(new URL('../../seeds/local.sql', import.meta.url), 'utf8');
 
 function fixture(t, overrides = {}) {
@@ -16,6 +17,7 @@ function fixture(t, overrides = {}) {
   sqlite.exec(migration);
   sqlite.exec(directoryMigration);
   sqlite.exec(profilesMigration);
+  sqlite.exec(userPhotosMigration);
   sqlite.exec(seeds);
   t.after(() => sqlite.close());
   // Run the actual SQL through SQLite with the D1 statement interface.
@@ -47,7 +49,7 @@ function fixture(t, overrides = {}) {
     return worker.fetch(new Request(`${base}${path}`, {
       method,
       headers: {
-        ...(method === 'POST' ? { Origin: origin, 'Content-Type': 'application/json' } : {}),
+        ...(['POST', 'PATCH'].includes(method) ? { Origin: origin, 'Content-Type': 'application/json' } : {}),
         ...(cookie ? { Cookie: cookie } : {}),
         ...headers,
       },
@@ -329,4 +331,70 @@ test('database failures return uncached JSON without internal details', async (t
   assert.equal(account.status, 503);
   assert.equal(account.headers.get('Cache-Control'), 'no-store');
   assert.deepEqual(await account.json(), { error: 'Account service is unavailable. Try again.' });
+});
+
+test('members can update their own profile and photo across sessions', async (t) => {
+  const { request, signIn, sqlite } = fixture(t);
+  const member = await signIn('local-member');
+  const admin = await signIn('local-admin');
+  const photo = { mimeType: 'image/png', data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=' };
+  const response = await request('/api/auth/profile', {
+    method: 'PATCH', cookie: member,
+    body: { name: '  Sam Updated ', email: 'SAM.NEW@MEWS.TEST', phone: '  +1 202 555 0100  ', photo },
+  });
+  assert.equal(response.status, 200);
+  const updated = (await response.json()).user;
+  assert.equal(updated.name, 'Sam Updated');
+  assert.equal(updated.email, 'sam.new@mews.test');
+  assert.equal(updated.phone, '+1 202 555 0100');
+  assert.match(updated.avatarUrl, /^\/api\/auth\/photos\/local-member\?v=/);
+  assert.equal(updated.role, 'member');
+  assert.equal(updated.status, 'active');
+  const image = await request(updated.avatarUrl, { cookie: admin });
+  assert.equal(image.status, 200);
+  assert.equal(image.headers.get('Content-Type'), 'image/png');
+  assert.equal(image.headers.get('Cache-Control'), 'no-store');
+  assert.equal(image.headers.get('X-Content-Type-Options'), 'nosniff');
+  assert.deepEqual(Buffer.from(await image.arrayBuffer()), Buffer.from(photo.data, 'base64'));
+  assert.equal((await request(updated.avatarUrl)).status, 401);
+  const users = (await (await request('/api/users', { cookie: admin })).json()).users;
+  assert.equal(users.find((user) => user.id === 'local-member').avatarUrl, updated.avatarUrl);
+  const access = await request('/api/users/local-member/access', { method: 'POST', cookie: admin, body: { role: 'member', status: 'active', expectedRole: 'member', expectedStatus: 'active' } });
+  assert.equal((await access.json()).user.avatarUrl, updated.avatarUrl);
+  assert.equal(sqlite.prepare("SELECT name FROM users WHERE id = 'local-admin'").get().name, 'Alex Morgan');
+  await request('/api/auth/sign-out', { method: 'POST', cookie: member });
+  const nextSession = await signIn('local-member');
+  assert.deepEqual((await (await request('/api/auth/session', { cookie: nextSession })).json()).user, updated);
+  const keep = await request('/api/auth/profile', { method: 'PATCH', cookie: nextSession, body: { name: 'Sam Updated', email: 'sam.new@mews.test', phone: '' } });
+  assert.equal((await keep.json()).user.avatarUrl, updated.avatarUrl);
+  const removed = await request('/api/auth/profile', { method: 'PATCH', cookie: nextSession, body: { name: 'Sam Updated', email: 'sam.new@mews.test', phone: '', photo: null } });
+  const user = (await removed.json()).user;
+  assert.equal(user.phone, null);
+  assert.equal(user.avatarUrl, undefined);
+  assert.equal((await request(updated.avatarUrl, { cookie: nextSession })).status, 404);
+});
+
+test('profile updates require an active session, same origin and valid own-account data', async (t) => {
+  const { request, signIn, sqlite } = fixture(t);
+  const member = await signIn('local-member');
+  const profile = { name: 'Member', email: 'member@mews.test', phone: '' };
+  assert.equal((await request('/api/auth/profile', { method: 'PATCH', body: profile })).status, 401);
+  for (const id of ['local-pending', 'local-suspended']) {
+    const cookie = await signIn(id);
+    assert.equal((await request('/api/auth/profile', { method: 'PATCH', cookie, body: profile })).status, 403);
+    assert.equal((await request('/api/auth/photos/local-member', { cookie })).status, 403);
+  }
+  assert.equal((await request('/api/auth/profile', { method: 'PATCH', cookie: member, origin: 'https://other.example', body: profile })).status, 403);
+  for (const body of [
+    { ...profile, name: '  ' },
+    { ...profile, email: 'bad email' },
+    { ...profile, phone: 'x'.repeat(41) },
+    { ...profile, role: 'administrator' },
+    { ...profile, id: 'local-admin' },
+    { ...profile, photo: { mimeType: 'image/png', data: 'SGVsbG8=' } },
+    { ...profile, photo: { mimeType: 'image/svg+xml', data: 'PHN2Zz4=' } },
+  ]) assert.equal((await request('/api/auth/profile', { method: 'PATCH', cookie: member, body })).status, 400);
+  const duplicate = await request('/api/auth/profile', { method: 'PATCH', cookie: member, body: { ...profile, name: 'Not saved', email: 'ADMIN@MEWS.TEST' } });
+  assert.equal(duplicate.status, 409);
+  assert.equal(sqlite.prepare("SELECT name FROM users WHERE id = 'local-member'").get().name, 'Sam Rivera');
 });

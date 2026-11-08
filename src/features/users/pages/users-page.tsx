@@ -87,7 +87,7 @@ function UsersScreen({ currentUser, store }: { currentUser: SessionUser; store: 
     column.accessor('name', {
       header: 'Person',
       cell: ({ row }) => <div className="flex min-w-0 items-start gap-3 py-1">
-        <UserAvatar name={row.original.name} size="sm" />
+        <UserAvatar name={row.original.name} src={row.original.avatarUrl} size="sm" />
         <div className="min-w-0 space-y-1">
           <Text size="small" weight="medium" className="wrap-anywhere">{row.original.name}{row.original.id === currentUser.id ? ' (you)' : ''}</Text>
           <Text size="caption" tone="muted" className="wrap-anywhere">{row.original.email}</Text>

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { openWorkspaceNavigation } from './state-helpers'
 
 test.beforeEach(async ({ page }) => {
   await page.route('**/images.unsplash.com/**', (route) => route.abort())
@@ -20,7 +21,7 @@ test('colony and cat map views follow filters and open the matching records', as
   await map.getByRole('link', { name: 'View colony' }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Canal' })).toBeVisible()
 
-  await page.getByRole('navigation', { name: 'Workspace navigation' }).getByRole('link', { name: 'Cats', exact: true }).click()
+  await (await openWorkspaceNavigation(page)).getByRole('link', { name: 'Cats', exact: true }).click()
   await page.getByRole('group', { name: 'Cat view' }).getByRole('button', { name: 'Map' }).click()
   const catMap = page.getByRole('region', { name: 'Cats by colony' })
   await expect(catMap.getByText('Markers show colony locations, not individual cat sightings.')).toBeVisible()
