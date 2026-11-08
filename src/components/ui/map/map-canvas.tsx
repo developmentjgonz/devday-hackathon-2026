@@ -15,6 +15,7 @@ import { Card } from '../card'
 import { EmptyState } from '../empty-state'
 import { areaCenter, type ColonyMapData, type MapInitialView } from './types'
 import { createMapSources } from './data'
+import { moveMapToSelection, type MapSelection } from './motion'
 
 setWorkerUrl(workerUrl)
 
@@ -65,19 +66,20 @@ function applyTheme(map: MapLibreMap, element: HTMLElement) {
 
 export default function MapCanvas({
   data,
-  selectedId,
+  selection,
   onSelect,
   styleUrl,
   initialView,
 }: {
   data: ColonyMapData
-  selectedId: string | null
+  selection: MapSelection | null
   onSelect: (id: string) => void
   styleUrl: string
   initialView?: MapInitialView
 }) {
   const container = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
+  const previousSelection = useRef<MapSelection | null>(null)
   const latest = useRef({ data, onSelect })
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [attempt, setAttempt] = useState(0)
@@ -273,7 +275,9 @@ export default function MapCanvas({
 
   useEffect(() => {
     const map = mapRef.current
-    if (status !== 'ready' || !map?.getLayer('selected-colony')) return
+    const element = container.current
+    if (status !== 'ready' || !map?.getLayer('selected-colony') || !element) return
+    const selectedId = selection?.id ?? null
     map.setFilter('selected-colony', ['==', ['get', 'id'], selectedId ?? ''])
     const opacity: ExpressionSpecification = selectedId
       ? ['case', ['==', ['get', 'id'], selectedId], 0.32, 0.1]
@@ -283,12 +287,21 @@ export default function MapCanvas({
       data.audience === 'public'
         ? data.areas.find((area) => area.id === selectedId)
         : data.colonies.find((colony) => colony.id === selectedId)
-    if (current)
-      map.jumpTo({
-        center:
-          'boundary' in current ? areaCenter(current) : current.coordinates,
+    const newSelection = selection !== previousSelection.current
+    previousSelection.current = selection
+    if (current && selection) {
+      const rect = element.getBoundingClientRect()
+      const visible = rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight && rect.right > 0 && rect.left < window.innerWidth
+      const styles = getComputedStyle(element)
+      moveMapToSelection(map, 'boundary' in current ? areaCenter(current) : current.coordinates, {
+        pointer: newSelection && selection.pointer,
+        visible,
+        reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+        duration: styles.getPropertyValue('--duration-normal'),
+        easing: styles.getPropertyValue('--ease-out'),
       })
-  }, [selectedId, data, status])
+    }
+  }, [selection, data, status])
 
   return (
     <div className="relative h-full w-full" data-map-status={status}>

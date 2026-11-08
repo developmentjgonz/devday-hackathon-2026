@@ -29,6 +29,7 @@ Storybook runs locally and is not deployed. Account migrations are available for
 - [Roadmap](docs/roadmap.md): planned work and current progress.
 - [Decision records](docs/decisions/README.md): significant choices and their reasons.
 - [Component library](docs/component-library.md): where components and theme tokens live, and how to extend the gallery.
+- [Map motion](docs/map-motion.md): how map selection handles pointer, keyboard, and reduced-motion input.
 - [Infrastructure](docs/infrastructure.md): dedicated Cloudflare resources, deployment, and health checks.
 - [Local accounts](docs/local-accounts.md): seeded users, signup, sessions, and approval checks.
 - [Local skills](.agents/skills/README.md): installed guidance and source revisions.

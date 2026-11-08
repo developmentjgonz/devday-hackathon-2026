@@ -17,7 +17,7 @@
     "preview": "vite preview --host 127.0.0.1 --port 4197 --strictPort",
     "storybook": "storybook dev --host 127.0.0.1 --port 6006 --no-open --ci",
     "build-storybook": "storybook build",
-    "test:map": "node --test tests/unit/map-data.test.ts",
+    "test:map": "node --test tests/unit/map-data.test.ts tests/unit/map-motion.test.ts",
     "test:ui": "playwright test",
     "validate:ui": "npm run typecheck && npm run test:ui"
   },
@@ -25,6 +25,7 @@
     "@base-ui/react": "^1.9.0",
     "@fontsource-variable/fredoka": "^5.3.0",
     "@fontsource-variable/geist": "^5.3.0",
+    "@mapbox/unitbezier": "^1.0.0",
     "@tanstack/react-table": "^9.3.1",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",

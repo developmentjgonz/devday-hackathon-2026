@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useId, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useId, useRef, useState } from 'react'
 import { CircleAlert, Layers } from 'lucide-react'
 import { cn } from 'cn'
 import { Button } from './button'
@@ -8,6 +8,7 @@ import { Card, CardHeader, CardFooter } from './card'
 import { EmptyState } from './empty-state'
 import { RecordButton } from './record-button'
 import type { ColonyMapData, MapInitialView } from './map/types'
+import type { MapSelection } from './map/motion'
 
 export type {
   ColonyMapData,
@@ -61,10 +62,11 @@ export function ColonyMap({
   const id = useId()
   const container = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selection, setSelection] = useState<MapSelection | null>(null)
+  const selectFromMap = useCallback((id: string) => setSelection({ id, pointer: true }), [])
   const publicView = data.audience === 'public'
   const entries = data.audience === 'public' ? data.areas : data.colonies
-  const selected = entries.find((entry) => entry.id === selectedId)
+  const selected = entries.find((entry) => entry.id === selection?.id)
   const empty = entries.length === 0
 
   useEffect(() => {
@@ -130,8 +132,8 @@ export function ColonyMap({
           <Suspense fallback={<LoadingMap />}>
             <MapCanvas
               data={data}
-              selectedId={selected?.id ?? null}
-              onSelect={setSelectedId}
+              selection={selected ? selection : null}
+              onSelect={selectFromMap}
               styleUrl={mapStyleUrl}
               initialView={initialView}
             />
@@ -193,7 +195,7 @@ export function ColonyMap({
                 <li key={entry.id} className="min-w-0">
                   <RecordButton
                     selected={selected?.id === entry.id}
-                    onClick={() => setSelectedId(entry.id)}
+                    onClick={(event) => setSelection({ id: entry.id, pointer: event.detail > 0 })}
                     className="w-full"
                     title={entry.name}
                     description={'colonyCountBand' in entry
