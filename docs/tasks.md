@@ -10,7 +10,7 @@ Each task stores its assignee by stable user ID. My Tasks shows tasks assigned t
 
 Each task has a shareable `/app/tasks/<id>` address. Opening a task from the workspace keeps the current page behind its drawer. A shared address or a refresh opens the task page directly. Any signed-in team member can view it; only the assignee or an administrator can edit or change its status.
 
-`TaskStatus` is `open | completed`. It is separate from `ReportStatus` (`pending | waiting | processed`). Completing or reopening a task does not change the report status, saved review fields, or other tasks. Processing or reopening a report does not change task completion. Completing or reopening a report-linked task saves a report history entry. The report drawer displays the task's actual open or completed status.
+`TaskStatus` is `open | completed`. Report status is Needs review, Waiting for details, In progress, Resolved, or Dismissed. Finishing a review moves the report to In progress if any linked task is open, or Resolved if none are open. Completing the last linked task resolves the report. Reopening a task or adding a new one returns a reviewed report to In progress. Pending, waiting, and dismissed reports keep their status when tasks change. Task changes keep the saved review fields and other tasks intact. Report history records the change. The stored `processed` value records a completed review; API reads derive In progress or Resolved from its current tasks, without a second stored work status.
 
 ## Behavior
 

@@ -1,8 +1,35 @@
 import { expect, test, type Page } from '@playwright/test'
 import { selectReportFilter } from './report-filters'
+import { confirmTaskCompletion } from './task-confirmation'
 
 const injury = 'Possible injury near the feeding station'
 const sighting = 'Orange cat by the Canal entrance'
+
+test('reviewed reports resolve only after every task is complete and return to In progress on reopen', async ({ page }, info) => {
+  await open(page, 'pages-reports--report-drawer', info.project.name === 'dark')
+  for (const title of ['Check Pepper', 'Refill the water']) {
+    await page.getByRole('button', { name: 'Create task', exact: true }).click()
+    const create = page.getByRole('dialog', { name: 'Create a care task', exact: true })
+    await create.getByLabel('What needs to happen?', { exact: true }).fill(title)
+    await create.getByLabel('Assign to', { exact: true }).selectOption({ label: 'Alex Morgan' })
+    await create.getByRole('button', { name: 'Create task', exact: true }).click()
+  }
+  await page.getByRole('button', { name: 'Save and finish', exact: true }).click()
+  await selectReportFilter(page, 'status', 'in_progress')
+  await page.getByRole('button', { name: `Review ${injury}`, exact: true }).click()
+  const report = page.getByRole('dialog', { name: 'Report', exact: true })
+  await expect(report.getByText('In progress', { exact: true })).toBeVisible()
+  await report.getByRole('button', { name: 'Mark complete: Check Pepper', exact: true }).click()
+  await confirmTaskCompletion(page)
+  await expect(report.getByText('In progress', { exact: true })).toBeVisible()
+  await report.getByRole('button', { name: 'Mark complete: Refill the water', exact: true }).click()
+  await confirmTaskCompletion(page)
+  await expect(report.getByText('Resolved', { exact: true })).toBeVisible()
+  await report.getByRole('button', { name: 'Reopen task: Check Pepper', exact: true }).click()
+  await expect(report.getByText('In progress', { exact: true })).toBeVisible()
+  await report.getByRole('button', { name: 'Close report', exact: true }).click()
+  await expect(page.getByRole('button', { name: `Review ${injury}`, exact: true })).toBeVisible()
+})
 async function careNote(page: Page) {
   const note = page.getByLabel('Care note', { exact: true })
   const toggle = page.getByText('Care note (optional)', { exact: true })
@@ -89,7 +116,7 @@ test('a task stays linked after saving and reopening the report', async ({ page 
   await page.getByRole('button', { name: 'Save and finish', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.locator('[aria-label="Reports"][tabindex="-1"]')).toBeFocused()
-  await selectReportFilter(page, 'status', 'processed')
+  await selectReportFilter(page, 'status', 'in_progress')
   await page.getByRole('button', { name: `Review ${injury}`, exact: true }).click()
   await expect(page.getByRole('region', { name: 'Reviewed details', exact: true })).toContainText('Pepper needs a check at the fence.')
   await expect(page.locator('[data-slot="drawer-content"]').getByRole('textbox')).toHaveCount(0)
@@ -114,8 +141,8 @@ for (const width of [390, 1440]) {
     await expect(page.locator('[data-sonner-toast]')).toHaveCount(0)
     await page.getByRole('button', { name: 'Save and finish', exact: true }).click()
     await expect(page.locator('[data-slot="drawer-content"]')).toHaveCount(0)
-    await expect(page.locator('[data-sonner-toast]')).toContainText('Find it under Reviewed. Linked care tasks remain open.')
-    await selectReportFilter(page, 'status', 'processed')
+    await expect(page.locator('[data-sonner-toast]')).toContainText('Find it under In progress. Linked care tasks remain open.')
+    await selectReportFilter(page, 'status', 'in_progress')
     await expect(page.getByRole('button', { name: `Review ${injury}`, exact: true })).toBeVisible()
   })
 }

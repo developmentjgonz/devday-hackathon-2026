@@ -1,8 +1,14 @@
 import type { PublicReportContact, PublicReportMapLocation } from '../schemas/public-report'
 
-export type ReportStatus = 'pending' | 'waiting' | 'processed' | 'dismissed'
+export type ReportStatus = 'pending' | 'waiting' | 'in_progress' | 'processed' | 'dismissed'
 export function isReportClosed(status: ReportStatus) {
   return status === 'processed' || status === 'dismissed'
+}
+export function isReportReviewComplete(status: ReportStatus) {
+  return status === 'in_progress' || isReportClosed(status)
+}
+export function reviewedReportStatus(hasOpenTasks: boolean): 'in_progress' | 'processed' {
+  return hasOpenTasks ? 'in_progress' : 'processed'
 }
 
 export type TaskStatus = 'open' | 'completed'

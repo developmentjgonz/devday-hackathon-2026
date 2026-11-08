@@ -10,4 +10,5 @@ export const FilteredStatus: Story = { args: { badge: null }, parameters: { docs
 export const Selected: Story = { args: { selected: true } }
 export const Urgent: Story = { args: { badge: <><Badge size="comfortable" variant="destructive">Urgent</Badge><Badge size="comfortable" variant="warning">Needs review</Badge></> } }
 export const Waiting: Story = { args: { badge: <Badge size="comfortable" variant="outline">Waiting for details</Badge> } }
-export const Reviewed: Story = { args: { badge: <Badge size="comfortable" variant="success">Reviewed</Badge> } }
+export const InProgress: Story = { args: { badge: <Badge size="comfortable" variant="warning">In progress</Badge> } }
+export const Reviewed: Story = { name: 'Resolved', args: { badge: <Badge size="comfortable" variant="success">Resolved</Badge> } }

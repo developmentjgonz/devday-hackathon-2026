@@ -304,3 +304,19 @@ test('pausing autopilot during planning prevents new human review proposals', as
   assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS count FROM automation_proposals').get().count, 0);
   assert.equal(f.sqlite.prepare('SELECT COUNT(*) AS count FROM tasks').get().count, 0);
 });
+
+test('autopilot continues through the report backlog in batches and skips reviewed work', async (t) => {
+  const f = fixture(t);
+  await f.enable({ requireHumanReview: false, assignTasks: false, updateRecords: false, mergeColonies: false });
+  const insert = f.sqlite.prepare("INSERT INTO reports (id, title, message, category, submitted_at, status) VALUES (?, ?, 'Care visit recorded.', 'Care', '2026-11-08T11:00:00Z', 'pending')");
+  for (let index = 0; index < 6; index++) insert.run(`backlog-${index}`, `Visit ${index}`);
+  f.provider({ ...f.plan, tasks: [], cats: [] });
+  await runAutopilot(f.env);
+  assert.equal(f.calls(), 5);
+  assert.equal(f.sqlite.prepare("SELECT COUNT(*) AS count FROM reports WHERE status = 'pending'").get().count, 2);
+  await runAutopilot(f.env);
+  assert.equal(f.calls(), 7);
+  assert.equal(f.sqlite.prepare("SELECT COUNT(*) AS count FROM reports WHERE status = 'pending'").get().count, 0);
+  await runAutopilot(f.env);
+  assert.equal(f.calls(), 7);
+});

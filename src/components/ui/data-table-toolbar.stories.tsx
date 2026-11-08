@@ -12,7 +12,7 @@ function ToolbarExample({ selected = false, filterPresentation = 'inline' }: { s
     search={{ label: 'Search reports', placeholder: 'Search reports…', value: search, onValueChange: setSearch }}
     filterPresentation={filterPresentation}
     filters={[
-      { id: 'status', label: 'Filter by status', displayLabel: 'Status', value: status, active: status !== 'all', width: 'wide', onValueChange: setStatus, options: [{ value: 'all', label: 'All reports' }, { value: 'pending', label: 'Needs review' }, { value: 'waiting', label: 'Waiting for details' }, { value: 'processed', label: 'Reviewed' }] },
+      { id: 'status', label: 'Filter by status', displayLabel: 'Status', value: status, active: status !== 'all', width: 'wide', onValueChange: setStatus, options: [{ value: 'all', label: 'All reports' }, { value: 'pending', label: 'Needs review' }, { value: 'waiting', label: 'Waiting for details' }, { value: 'in_progress', label: 'In progress' }, { value: 'processed', label: 'Resolved' }] },
       { id: 'colony', label: 'Filter by colony', displayLabel: 'Colony', value: colony, active: colony !== 'all', onValueChange: setColony, options: [{ value: 'all', label: 'All colonies' }, { value: 'canal', label: 'Canal' }, { value: 'riverside', label: 'Riverside' }] },
     ]}
     onReset={() => { if (filterPresentation === 'inline') setSearch(''); setColony('all'); setStatus('all') }}

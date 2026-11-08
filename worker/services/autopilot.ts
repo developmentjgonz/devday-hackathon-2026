@@ -126,7 +126,7 @@ async function applyReport(env: Bindings, runId: string, report: Report, plan: A
   const beforeFinish = (await listReports(db, report.id))[0]
   if (!beforeFinish || reportFingerprint(beforeFinish) !== reportFingerprint(report)) throw new HTTPException(409, { message: 'The report changed while autopilot was working. Review the current report.' })
   const actor = await verifyAction(env, runId, 'resolveReports', approved)
-  await finishReport(auditedDatabase(db, runId, { kind: 'report', title: `Report reviewed: ${report.title}`, detail: plan.summary, targetPath: reportPath, before: report, after: { status: 'processed', colonyId, catId } }), report.id, actor,
+  await finishReport(auditedDatabase(db, runId, { kind: 'report', title: `Report reviewed: ${report.title}`, detail: plan.summary, targetPath: reportPath, before: report, after: { reviewComplete: true, colonyId, catId } }), report.id, actor,
     { colonyId, catId, careNote: report.careNote, urgent: report.urgent })
 }
 

@@ -191,7 +191,7 @@ test('complete and reopen survive report navigation without changing report revi
   await taskRow(page, 'Restock the food container').getByRole('link', { name: /^Open report:/ }).click()
   const processedDrawer = page.getByRole('dialog', { name: 'Report', exact: true })
   await expect(processedDrawer).toBeVisible()
-  await expect(processedDrawer.getByText('Reviewed', { exact: true })).toBeVisible()
+  await expect(processedDrawer.getByText('Resolved', { exact: true })).toBeVisible()
   await expect(processedDrawer.getByText('Completed task assigned to Alex Morgan', { exact: true })).toBeVisible()
 })
 

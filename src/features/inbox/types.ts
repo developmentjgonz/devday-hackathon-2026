@@ -6,7 +6,8 @@ export type ReportStatus = Status
 export const reportStatusLabels: Record<ReportStatus, string> = {
   pending: 'Needs review',
   waiting: 'Waiting for details',
-  processed: 'Reviewed',
+  in_progress: 'In progress',
+  processed: 'Resolved',
   dismissed: 'Dismissed',
 }
 export type InboxColony = Colony

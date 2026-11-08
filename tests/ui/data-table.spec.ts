@@ -113,6 +113,29 @@ test('page size and last-page bounds remain correct', async ({ page }, info) => 
   await expect(page.locator('[data-slot="table"] tbody tr')).toHaveCount(6)
 })
 
+test('desktop report rows scroll while controls, column headings, and pagination stay on screen', async ({ page }, info) => {
+  await open(page, 'pages-reports--busy-inbox', info.project.name === 'dark')
+  const rows = page.getByRole('region', { name: 'Reports rows', exact: true })
+  const pagination = page.getByRole('navigation', { name: 'Reports pagination' })
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 1280, height: 600 }, { width: 768, height: 700 }]) {
+    await page.setViewportSize(viewport)
+    await expect(rows).toBeVisible()
+    await page.getByRole('combobox', { name: 'Rows per page', exact: true }).selectOption('25')
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true)
+    await expect(pagination).toBeInViewport({ ratio: 1 })
+    await expect(rows.evaluate((element) => element.scrollHeight > element.clientHeight)).resolves.toBe(true)
+    await rows.focus()
+    await page.keyboard.press('End')
+    await expect.poll(() => rows.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+    await expect(page.getByRole('columnheader', { name: 'Report', exact: true })).toBeInViewport({ ratio: 1 })
+    await expect(page.getByRole('searchbox', { name: 'Search reports', exact: true })).toBeInViewport({ ratio: 1 })
+    await expect(pagination).toBeInViewport({ ratio: 1 })
+    await page.getByRole('button', { name: 'Next page', exact: true }).click()
+    await expect.poll(() => rows.evaluate((element) => element.scrollTop)).toBe(0)
+    await page.getByRole('button', { name: 'Previous page', exact: true }).click()
+  }
+})
+
 test('delayed page changes retain existing rows and prevent stale interactions', async ({ page }, info) => {
   await open(page, 'display-data-table--delayed-pages', info.project.name === 'dark')
   await expect(page.locator('[data-slot="table"] tbody tr')).toHaveCount(10)

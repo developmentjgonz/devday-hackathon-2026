@@ -2,6 +2,7 @@ import type { DirectoryStore } from '@/features/colonies/directory-api'
 import type { InboxData } from '@/features/inbox/types'
 import type { SessionUser } from '../../../shared/types/auth'
 import type { WorkspaceData } from '../../../shared/types/directory'
+import { isReportReviewComplete, reviewedReportStatus } from '../../../shared/types/workspace'
 
 /** Storybook keeps its isolated examples in memory. */
 export const storyDirectoryStore: DirectoryStore = {
@@ -23,5 +24,7 @@ export function storyWorkspace(user: SessionUser, data: InboxData): WorkspaceDat
   const names = [...new Set([user.name, ...data.members, ...data.tasks.map((task) => task.owner)])]
   const members = names.map((name) => ({ id: name === user.name ? user.id : `story:${name}`, name }))
   const tasks = data.tasks.map((task) => ({ ...task, ownerId: members.find((member) => member.name === task.owner)!.id }))
-  return { user, directory: { colonies: data.colonies, cats: data.cats }, workspace: { reports: data.reports, tasks, members, careRules: [], aiAnalysisEnabled: false } }
+  const reports = data.reports.map((report) => report.status !== 'dismissed' && isReportReviewComplete(report.status)
+    ? { ...report, status: reviewedReportStatus(tasks.some((task) => task.reportId === report.id && task.status === 'open')) } : report)
+  return { user, directory: { colonies: data.colonies, cats: data.cats }, workspace: { reports, tasks, members, careRules: [], aiAnalysisEnabled: false } }
 }

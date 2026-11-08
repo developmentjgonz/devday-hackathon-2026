@@ -1,4 +1,4 @@
-import { isReportClosed } from '../../shared/types/workspace.ts'
+import { isReportReviewComplete, reviewedReportStatus } from '../../shared/types/workspace.ts'
 import { HTTPException } from 'hono/http-exception'
 import type { CreateReportInput, FinishReportInput, TaskInput } from '../../shared/schemas/workspace.ts'
 import type { Report, ReportAttachment, ReportEntry, Task, TaskAssociation, TaskStatus, WorkspaceMember, WorkspaceSnapshot } from '../../shared/types/workspace.ts'
@@ -6,6 +6,7 @@ import type { SessionUser } from '../../shared/types/auth.ts'
 import type { ActivityChange } from '../../shared/types/record-activity.ts'
 import { reportActivityStatement, taskActivityStatement } from './record-activity.ts'
 import { listCareRules } from './care-rules.ts'
+import { reportStatusSql, reportTaskLifecycleHistory } from './report-lifecycle.ts'
 
 type ReportRow = { id: string; title: string; message: string; category: string; reporter: string; anonymous: number; submittedAt: string; colonyId: string | null; catId: string | null; careNote: string; urgent: number; status: Report['status']; possibleDuplicateOf: string | null; duplicateOf: string | null; latitude: number | null; longitude: number | null; placeId: string | null; contactPhone: string | null; contactEmail: string | null; contactConsentedAt: string | null }
 type AttachmentRow = { id: string; reportId: string; name: string; mimeType: string; size: number }
@@ -24,7 +25,7 @@ function groupBy<T>(items: T[], key: (item: T) => string): Map<string, T[]> {
 export async function listReports(db: D1Database, reportId: string | null = null): Promise<Report[]> {
   const [reports, attachments, entries, history] = await Promise.all([
     db.prepare(`SELECT r.id, r.title, r.message, r.category, COALESCE(u.name, CASE WHEN r.public_contact_consented_at IS NOT NULL THEN 'Community sender' ELSE 'Anonymous' END) AS reporter, (r.reporter_id IS NULL) AS anonymous, r.submitted_at AS submittedAt,
-      r.colony_id AS colonyId, r.cat_id AS catId, r.care_note AS careNote, r.urgent, r.status,
+      r.colony_id AS colonyId, r.cat_id AS catId, r.care_note AS careNote, r.urgent, ${reportStatusSql} AS status,
       r.possible_duplicate_id AS possibleDuplicateOf, r.duplicate_of AS duplicateOf, r.public_latitude AS latitude, r.public_longitude AS longitude, r.public_google_place_id AS placeId,
       r.public_contact_phone AS contactPhone, r.public_contact_email AS contactEmail, r.public_contact_consented_at AS contactConsentedAt
       FROM reports r LEFT JOIN users u ON u.id = r.reporter_id
@@ -83,7 +84,7 @@ function historyStatement(db: D1Database, reportId: string, actor: SessionUser, 
 }
 
 async function requireReport(db: D1Database, id: string) {
-  const report = await db.prepare('SELECT id, title, status, colony_id AS colonyId, cat_id AS catId, care_note AS careNote, urgent, duplicate_of AS duplicateOf, reporter_id AS reporterId FROM reports WHERE id = ?')
+  const report = await db.prepare(`SELECT r.id, r.title, ${reportStatusSql} AS status, r.colony_id AS colonyId, r.cat_id AS catId, r.care_note AS careNote, r.urgent, r.duplicate_of AS duplicateOf, r.reporter_id AS reporterId FROM reports r WHERE r.id = ?`)
     .bind(id).first<{ id: string; title: string; status: Report['status']; colonyId: string | null; catId: string | null; careNote: string; urgent: number; duplicateOf: string | null; reporterId: string | null }>()
   if (!report) throw new HTTPException(404, { message: 'Report not found.' })
   return report
@@ -106,10 +107,11 @@ export async function insertReport(db: D1Database, id: string, actor: SessionUse
 
 export async function finishReport(db: D1Database, id: string, actor: SessionUser, input: FinishReportInput): Promise<Report> {
   const report = await requireReport(db, id)
-  if (isReportClosed(report.status)) throw new HTTPException(409, { message: 'This report has already been reviewed.' })
+  if (isReportReviewComplete(report.status)) throw new HTTPException(409, { message: 'This report has already been reviewed.' })
   const originalCat = (report.catId ?? '') === input.catId
   await validateLocation(db, input.colonyId, originalCat ? '' : input.catId)
-  const changes: ActivityChange[] = [{ field: 'Status', before: report.status === 'waiting' ? 'Waiting for details' : 'Needs review', after: 'Reviewed' }]
+  const hasOpenTasks = Boolean(await db.prepare("SELECT id FROM tasks WHERE report_id = ? AND status = 'open' LIMIT 1").bind(id).first())
+  const changes: ActivityChange[] = [{ field: 'Status', before: report.status === 'waiting' ? 'Waiting for details' : 'Needs review', after: reviewedReportStatus(hasOpenTasks) === 'in_progress' ? 'In progress' : 'Resolved' }]
   async function recordName(table: 'cats' | 'colonies', recordId: string | null) {
     if (!recordId) return ''
     return (await db.prepare(`SELECT name FROM ${table} WHERE id = ?`).bind(recordId).first<{ name: string }>())?.name ?? recordId
@@ -124,14 +126,14 @@ export async function finishReport(db: D1Database, id: string, actor: SessionUse
     db.prepare("UPDATE reports SET colony_id = ?, cat_id = ?, care_note = ?, urgent = ?, status = 'processed' WHERE id = ?")
       .bind(input.colonyId || null, input.catId || null, input.careNote, Number(input.urgent), id),
     reportActivityStatement(db, id, event),
-    historyStatement(db, id, actor, 'saved the confirmed report details and finished the review.'),
+    historyStatement(db, id, actor, `finished the review. ${hasOpenTasks ? 'The report is In progress while linked tasks are open.' : 'The report is Resolved because no linked tasks are open.'}`),
   ])
   return (await listReports(db, id))[0]!
 }
 
 export async function dismissReport(db: D1Database, id: string, actor: SessionUser): Promise<Report> {
   const report = await requireReport(db, id)
-  if (isReportClosed(report.status)) throw new HTTPException(409, { message: 'Reopen this report before dismissing it.' })
+  if (isReportReviewComplete(report.status)) throw new HTTPException(409, { message: 'Reopen this report before dismissing it.' })
   await db.batch([
     db.prepare("UPDATE reports SET status = 'dismissed' WHERE id = ?").bind(id),
     historyStatement(db, id, actor, 'dismissed the report. No further action is needed.'),
@@ -142,18 +144,18 @@ export async function dismissReport(db: D1Database, id: string, actor: SessionUs
 
 export async function reopenReport(db: D1Database, id: string, actor: SessionUser): Promise<Report> {
   const report = await requireReport(db, id)
-  if (!isReportClosed(report.status)) throw new HTTPException(409, { message: 'This report is already open.' })
+  if (!isReportReviewComplete(report.status)) throw new HTTPException(409, { message: 'This report is already open.' })
   await db.batch([
     db.prepare("UPDATE reports SET status = 'pending', duplicate_of = NULL WHERE id = ?").bind(id),
     historyStatement(db, id, actor, 'reopened the report for review.'),
-    reportActivityStatement(db, id, { operationId: crypto.randomUUID(), actor, kind: 'report', summary: `Report reopened: ${report.title}`, changes: [{ field: 'Status', before: report.status === 'dismissed' ? 'Dismissed' : 'Reviewed', after: 'Needs review' }], occurredAt: new Date().toISOString(), reportId: id }),
+    reportActivityStatement(db, id, { operationId: crypto.randomUUID(), actor, kind: 'report', summary: `Report reopened: ${report.title}`, changes: [{ field: 'Status', before: report.status === 'dismissed' ? 'Dismissed' : report.status === 'in_progress' ? 'In progress' : 'Resolved', after: 'Needs review' }], occurredAt: new Date().toISOString(), reportId: id }),
   ])
   return (await listReports(db, id))[0]!
 }
 
 export async function addQuestion(db: D1Database, id: string, actor: SessionUser, text: string): Promise<Report> {
   const report = await requireReport(db, id)
-  if (isReportClosed(report.status)) throw new HTTPException(409, { message: 'Reopen this report before asking for details.' })
+  if (isReportReviewComplete(report.status)) throw new HTTPException(409, { message: 'Reopen this report before asking for details.' })
   if (!report.reporterId) throw new HTTPException(409, { message: 'Anonymous reports cannot receive questions.' })
   await db.batch([
     db.prepare("UPDATE reports SET status = 'waiting' WHERE id = ?").bind(id),
@@ -166,7 +168,7 @@ export async function addQuestion(db: D1Database, id: string, actor: SessionUser
 
 export async function linkDuplicate(db: D1Database, id: string, targetId: string, actor: SessionUser): Promise<Report> {
   const [report, target] = await Promise.all([requireReport(db, id), requireReport(db, targetId)])
-  if (id === targetId || !report.colonyId || report.colonyId !== target.colonyId || isReportClosed(report.status) || target.duplicateOf || target.status === 'dismissed') {
+  if (id === targetId || !report.colonyId || report.colonyId !== target.colonyId || isReportReviewComplete(report.status) || target.duplicateOf || target.status === 'dismissed') {
     throw new HTTPException(400, { message: 'Choose an existing report in the same colony.' })
   }
   const incoming = await db.prepare('SELECT id FROM reports WHERE duplicate_of = ? LIMIT 1').bind(id).first()
@@ -222,7 +224,7 @@ export async function createTask(db: D1Database, actor: SessionUser, input: Task
     ...(related ? [{ field: 'Related items', before: '', after: related }] : [])]
   const statements = [db.prepare('INSERT INTO tasks (id, title, owner_id, report_id, due, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
     .bind(id, input.title, input.ownerId, input.reportId ?? null, input.due, actor.id, new Date().toISOString()), ...associationStatements(db, id, input.associations)]
-  if (input.reportId) statements.push(historyStatement(db, input.reportId, actor, `created a task: ${input.title}.`))
+  if (input.reportId) statements.push(historyStatement(db, input.reportId, actor, `created a task: ${input.title}.`), reportTaskLifecycleHistory(db, input.reportId, actor, 'open'))
   statements.push(taskActivityStatement(db, id, { operationId: crypto.randomUUID(), actor, kind: 'task', summary: `Task created: ${input.title}`, changes, occurredAt: new Date().toISOString(), reportId: input.reportId }))
   await db.batch(statements)
   return (await listTasks(db, id))[0]!
@@ -259,7 +261,7 @@ export async function changeTaskStatus(db: D1Database, id: string, actor: Sessio
   const occurredAt = new Date().toISOString()
   await db.batch([
     db.prepare('UPDATE tasks SET status = ?, completed_at = ?, completion_note = ? WHERE id = ?').bind(status, status === 'completed' ? occurredAt : null, status === 'completed' ? completionNote || null : task.completionNote ?? null, id),
-    ...(existing.reportId ? [historyStatement(db, existing.reportId, actor, `${status === 'completed' ? 'completed' : 'reopened'} task: ${task.title}.`)] : []),
+    ...(existing.reportId ? [historyStatement(db, existing.reportId, actor, `${status === 'completed' ? 'completed' : 'reopened'} task: ${task.title}.`), reportTaskLifecycleHistory(db, existing.reportId, actor, status)] : []),
     taskActivityStatement(db, id, { operationId: crypto.randomUUID(), actor, kind: 'task', summary: `Task ${status === 'completed' ? 'completed' : 'reopened'}: ${task.title}`, changes: [{ field: 'Status', before: task.status === 'open' ? 'Open' : 'Completed', after: status === 'open' ? 'Open' : 'Completed' }, ...(status === 'completed' && completionNote ? [{ field: 'Completion note', before: '', after: completionNote }] : [])], occurredAt, reportId: existing.reportId ?? undefined }),
   ])
   return (await listTasks(db, id))[0]!

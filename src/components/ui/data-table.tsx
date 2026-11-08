@@ -1,4 +1,4 @@
-import { useId, useRef, type MouseEvent, type ReactNode, type Ref } from 'react'
+import { useId, useLayoutEffect, useRef, type MouseEvent, type ReactNode, type Ref } from 'react'
 import {
   columnVisibilityFeature, createPaginatedRowModel, createSortedRowModel,
   createTableHook, rowPaginationFeature, rowSelectionFeature, rowSortingFeature,
@@ -55,22 +55,42 @@ type DataTableProps<T extends RowData> = {
   mobileListKey?: string
   selection?: { getLabel: (row: T) => string; actions: (rows: T[]) => ReactNode; busy?: boolean }
   columnClassName?: (columnId: string) => string | undefined
-  /** Let the page scroll naturally, or keep the table in a bounded viewport. */
+  /** Let the page scroll naturally, or fit rows above the visible pagination. */
   scrollMode?: 'contained' | 'page'
   ref?: Ref<HTMLDivElement>
   toolbar?: Omit<DataTableToolbarProps, 'selection'>
 }
 
 export function DataTable<T extends RowData>({ table, label, itemName = 'record', emptyState, request, activeRowId, onOpenRow, renderMobileRow, mobileListKey = '', selection, columnClassName, scrollMode = 'page', ref, toolbar }: DataTableProps<T>) {
+  const container = useRef<HTMLDivElement>(null)
   const viewport = useRef<HTMLDivElement>(null)
+  const pagination = useRef<HTMLDivElement>(null)
   const rows = table.getRowModel().rows
   const selected = table.getSelectedRowModel().rows
   const busy = request?.status === 'loading' || request?.status === 'refreshing'
-  const pages = Math.max(1, table.getPageCount())
   const mobileRows = selection || table.options.manualPagination ? undefined : renderMobileRow
 
+  useLayoutEffect(() => {
+    const scrollArea = viewport.current
+    const footer = pagination.current
+    const parent = container.current?.parentElement
+    if (scrollMode !== 'contained' || !scrollArea || !footer || !parent) return
+
+    const fitRows = () => {
+      // Reserve the actual toolbar/header offset, footer, card border, and bottom space.
+      const reserved = Math.ceil(scrollArea.getBoundingClientRect().top + window.scrollY + footer.getBoundingClientRect().height + 25)
+      scrollArea.style.setProperty('--table-reserved-space', `${reserved}px`)
+    }
+    fitRows()
+    const observer = new ResizeObserver(fitRows)
+    observer.observe(parent)
+    observer.observe(footer)
+    window.addEventListener('resize', fitRows)
+    return () => { observer.disconnect(); window.removeEventListener('resize', fitRows) }
+  }, [scrollMode, request?.status])
+
   return (
-    <div className="space-y-3">
+    <div ref={container} className="space-y-3">
       {toolbar || (selection && selected.length) ? <DataTableToolbar {...toolbar} selection={selection ? { count: selected.length, actions: selection.actions(selected.map((row) => row.original)), onClear: () => table.resetRowSelection(), busy: selection.busy } : undefined} /> : null}
       <div ref={mobileRows ? ref : undefined} tabIndex={mobileRows ? -1 : undefined} role={mobileRows ? "region" : undefined} aria-label={mobileRows ? label : undefined}>
       <Card ref={mobileRows ? undefined : ref} padding="none" tabIndex={mobileRows ? undefined : -1} aria-label={mobileRows ? undefined : label} className={mobileRows ? 'hidden md:flex' : undefined}>
@@ -82,7 +102,7 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
           <LoadingIndicator label={`Loading ${label.toLowerCase()}`} />
           <Text size="small" tone="muted">Loading {label.toLowerCase()}…</Text>
         </div> : <>
-          <div ref={viewport} className={cn('mews-table-scroll overflow-auto overscroll-contain', scrollMode === 'contained' && (pages > 1 ? 'h-[65svh]' : 'max-h-[65svh]'))} inert={busy || undefined}>
+          <div ref={viewport} role={scrollMode === 'contained' ? 'region' : undefined} aria-label={scrollMode === 'contained' ? `${label} rows` : undefined} tabIndex={scrollMode === 'contained' ? 0 : undefined} className={cn('mews-table-scroll overflow-auto overscroll-contain', scrollMode === 'contained' && 'max-h-[max(8rem,calc(100dvh-var(--table-reserved-space,16rem)))] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring')} inert={busy || undefined}>
             <Table aria-label={label} density="compact">
               <caption className="sr-only">{label}{onOpenRow ? '. Activate a row title to open its details.' : ''}</caption>
               <thead className="sticky top-0 z-10 bg-card">
@@ -131,7 +151,7 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
           </div> : null}
         </>}
       </div>
-      <DataTablePagination table={table} label={label} itemName={itemName} request={request} onPageChange={() => viewport.current?.scrollTo({ top: 0 })} />
+      <DataTablePagination ref={pagination} table={table} label={label} itemName={itemName} request={request} onPageChange={() => viewport.current?.scrollTo({ top: 0 })} />
       </Card>
       {mobileRows ? <div className="md:hidden" aria-busy={busy || undefined}>
         {request?.status === 'error' ? <EmptyState
@@ -160,13 +180,14 @@ export function DataTable<T extends RowData>({ table, label, itemName = 'record'
 }
 
 /** Shared count and pagination for table and card presentations of the same data. */
-export function DataTablePagination<T extends RowData>({ table, label, itemName = 'record', request, onPageChange, presentation = 'table' }: {
+export function DataTablePagination<T extends RowData>({ table, label, itemName = 'record', request, onPageChange, presentation = 'table', ref }: {
   table: DataTableInstance<T>
   label: string
   itemName?: string
   request?: DataTableRequest
   onPageChange?: () => void
   presentation?: 'table' | 'cards'
+  ref?: Ref<HTMLDivElement>
 }) {
   const pageSizeId = useId()
   const total = table.getRowCount()
@@ -179,7 +200,7 @@ export function DataTablePagination<T extends RowData>({ table, label, itemName 
     else table.nextPage()
     onPageChange?.()
   }
-  return <div className={cn('flex flex-wrap items-center justify-between gap-3 py-3', presentation === 'table' ? 'border-t px-4' : 'px-1')}>
+  return <div ref={ref} className={cn('flex flex-wrap items-center justify-between gap-3 py-3', presentation === 'table' ? 'border-t px-4' : 'px-1')}>
     <div className="flex flex-wrap items-center gap-2" aria-live="polite">
       <Text size="caption" tone="muted">{total > pageSize ? `${pageIndex * pageSize + 1}–${Math.min((pageIndex + 1) * pageSize, total)} of ${total}` : total} {itemName}{total === 1 ? '' : 's'}</Text>
     </div>

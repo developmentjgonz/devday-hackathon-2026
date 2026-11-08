@@ -1,4 +1,4 @@
-import { isReportClosed } from '../../shared/types/workspace.ts'
+import { isReportReviewComplete } from '../../shared/types/workspace.ts'
 import { HTTPException } from 'hono/http-exception'
 import type { DuplicateReport, DuplicateSearchResult } from '../../shared/types/workspace.ts'
 
@@ -25,7 +25,7 @@ const joins = 'LEFT JOIN users u ON u.id = r.reporter_id LEFT JOIN cats c ON c.i
 
 export async function searchDuplicateReports(db: D1Database, id: string, query: string, offset: number): Promise<DuplicateSearchResult> {
   const source = await sourceReport(db, id)
-  if (!source.colonyId || isReportClosed(source.status) || source.hasIncoming) return { reports: [], hasMore: false }
+  if (!source.colonyId || isReportReviewComplete(source.status) || source.hasIncoming) return { reports: [], hasMore: false }
   const term = searchTerms(query, ' AND ', 12)
   if (query.trim() && !term) return { reports: [], hasMore: false }
   const result = term
@@ -40,7 +40,7 @@ export async function searchDuplicateReports(db: D1Database, id: string, query: 
 
 export async function analysisDuplicateCandidates(db: D1Database, id: string): Promise<DuplicateReport[]> {
   const source = await sourceReport(db, id)
-  if (!source.colonyId || isReportClosed(source.status) || source.hasIncoming) return []
+  if (!source.colonyId || isReportReviewComplete(source.status) || source.hasIncoming) return []
   const term = searchTerms(`${source.title} ${source.message}`, ' OR ', 16)
   const textMatches = term ? db.prepare(`SELECT ${columns} FROM report_search JOIN reports r ON r.rowid = report_search.rowid ${joins}
     WHERE report_search MATCH ? AND r.colony_id = ? AND r.id <> ? AND r.duplicate_of IS NULL AND r.status <> 'dismissed'

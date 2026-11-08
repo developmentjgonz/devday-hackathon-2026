@@ -1,4 +1,4 @@
-import { isReportClosed } from '../../../../shared/types/workspace'
+import { isReportReviewComplete } from '../../../../shared/types/workspace'
 import { useMemo, useRef, useState } from 'react'
 import { CheckCheck, Search } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -20,7 +20,7 @@ import { NewReportButton } from './report-composer'
 type StatusFilter = ReportStatus | 'all'
 const statuses: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'All reports' },
-  ...(['pending', 'waiting', 'processed', 'dismissed'] as const).map((value) => ({ value, label: reportStatusLabels[value] })),
+  ...(['pending', 'waiting', 'in_progress', 'processed', 'dismissed'] as const).map((value) => ({ value, label: reportStatusLabels[value] })),
 ]
 const sortOptions = [
   { value: 'received-desc', label: 'Sort: newest first', sorting: [{ id: 'received', desc: true }] },
@@ -101,7 +101,7 @@ export function InboxScreen({ initialStatus = 'pending' }: {
   const hasActiveFilters = colonyFilter !== 'all' || statusFilter !== 'all'
   const emptyState = <EmptyState
     icon={query || colonyFilter !== 'all' ? <Search /> : <CheckCheck />}
-    title={query || colonyFilter !== 'all' ? 'No matching reports' : statusFilter === 'pending' ? 'No reports need review' : statusFilter === 'waiting' ? 'No reports waiting' : statusFilter === 'processed' ? 'No reviewed reports' : statusFilter === 'dismissed' ? 'No dismissed reports' : 'No reports'}
+    title={query || colonyFilter !== 'all' ? 'No matching reports' : statusFilter === 'pending' ? 'No reports need review' : statusFilter === 'waiting' ? 'No reports waiting' : statusFilter === 'in_progress' ? 'No reports in progress' : statusFilter === 'processed' ? 'No resolved reports' : statusFilter === 'dismissed' ? 'No dismissed reports' : 'No reports'}
     description={query || colonyFilter !== 'all' ? 'Try another search or change the filters.' : statusFilter === 'pending' ? 'Reports that need review will appear here.' : undefined}
     action={query || colonyFilter !== 'all' ? <Button variant="outline" onClick={() => {
       setSearch('')
@@ -139,12 +139,13 @@ export function InboxScreen({ initialStatus = 'pending' }: {
         <DataTable
           ref={listRef} table={table} label="Reports" itemName="report"
           columnClassName={inboxColumnClassName}
+          scrollMode="contained"
           activeRowId={drawerOpen ? selected?.id : undefined}
           onOpenRow={openReport} emptyState={emptyState}
           mobileListKey={`${query}:${statusFilter}:${colonyFilter}`}
           renderMobileRow={(report, { selected, onOpen }) => {
             const colony = initialData.colonies.find((item) => item.id === report.colonyId)?.name ?? 'Colony unknown'
-            const duplicate = Boolean(report.possibleDuplicateOf && !report.duplicateOf && !isReportClosed(report.status))
+            const duplicate = Boolean(report.possibleDuplicateOf && !report.duplicateOf && !isReportReviewComplete(report.status))
             return <RecordListItem title={report.title} description={reportPreview(report.message)}
               meta={<>{colony} · {report.category} · <time dateTime={report.submittedAt}>{formatReceivedDate(report.submittedAt)}</time></>}
               aria-description={`${report.urgent ? 'Urgent. ' : ''}${reportStatusLabels[report.status]}. ${colony}. ${report.category}. Received ${formatReceivedDate(report.submittedAt)}.${duplicate ? ' Possible duplicate.' : ''} ${reportPreview(report.message)}`}

@@ -204,7 +204,7 @@ The shared Button `table-header` variant supplies sorting controls with body typ
 
 ## Report status and feedback
 
-Reports use the status field with pending, waiting, and processed values, presented as Needs review, Waiting for details, and Reviewed. `reportStatusLabels` supplies the same labels in the table, toolbar filter, and drawer. The canonical page is `/app/reports`; its single top-bar title and navigation label are Reports. New report belongs to the table toolbar.
+Reports show Needs review, Waiting for details, In progress, Resolved, and Dismissed. A completed review stays In progress while linked tasks are open and resolves when all are complete. `reportStatusLabels` supplies the same labels in the table, toolbar filter, and drawer. The canonical page is `/app/reports`; its single top-bar title and navigation label are Reports. New report belongs to the table toolbar.
 
 `Feedback → Notifications` documents the shared Sonner host and toast API in `src/components/ui/toaster.tsx`. Completed report actions use brief notifications without moving the page content. Field errors remain next to fields. The report drawer uses the shared compact header density and card-sized DialogTitle, with a compact title header and colony and cat fields in the scrolling review details.
 

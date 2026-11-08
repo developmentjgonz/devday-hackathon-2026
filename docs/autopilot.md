@@ -2,11 +2,11 @@
 
 Administrators configure autopilot in **Configuration → AI analysis**. Autopilot is off by default. A saved, readable OpenAI key is required to enable it. Removing the key pauses autopilot. Ordinary demo members cannot enable or run it; the demo administrator can.
 
-The Worker checks for work every five minutes. The Automation page also has a **Run now** action. Runs use a database lease to prevent overlap. A run checks up to five reports, with urgent reports first. Failed or unresolved reports wait one hour before another attempt. Changed report evidence can be checked sooner. Provider requests share the existing workspace AI rate limit.
+The Worker checks for work every five minutes. The Automation page also has a **Run now** action. Runs use a database lease to prevent overlap. A run checks up to five eligible Needs review or Waiting for details reports, with urgent reports first and older reports next. Later runs continue through the remaining queue. Reports awaiting human approval are skipped. In progress reports have already been reviewed; their resolution follows task completion without another AI call. Failed or unresolved reports wait one hour before another attempt. Changed report evidence can be checked sooner. Provider requests share the existing workspace AI rate limit.
 
 The feature switches control these actions:
 
-- **Review reports:** review reports and link confirmed duplicate reports. Reports stay open when evidence or a required feature is missing. Report review does not complete physical care tasks.
+- **Review reports:** review reports and link confirmed duplicate reports. Reports stay open when evidence or a required feature is missing. Review completion moves reports with open tasks to In progress. Reports resolve when all linked tasks are complete. Reports without open tasks resolve during review. Report review does not complete physical care tasks.
 - **Assign tasks:** create tasks from reports and choose an active, assignable member with the fewest open tasks. Reassign open tasks whose owner is suspended or no longer accepts tasks. Existing valid assignments stay in place.
 - **Update cats and colonies:** create supported records, append report observations to known cats, and fill missing colony locations from the report's confirmed map location. Existing names, birth dates, photos, and observations are preserved.
 - **Merge duplicate colonies:** match normalized colony names and corroborating location evidence: the same Google place, coordinates within 100 metres, or the same nonempty address. Similar names alone do not qualify. The merge moves cats, reports, task associations, care rules, and record history in one transaction.

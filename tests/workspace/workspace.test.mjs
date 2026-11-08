@@ -55,6 +55,53 @@ function fixture(t) {
   return { sqlite, objects, request, signIn, reportForm };
 }
 
+test('reviewed reports follow their own linked tasks through In progress and Resolved', async (t) => {
+  const { request, signIn, reportForm } = fixture(t);
+  const cookie = await signIn('local-admin');
+  const created = await request('/api/reports', { method: 'POST', cookie, form: reportForm({ title: 'Care follow-up', message: 'Check the cats and refill water.', colonyId: 'riverside', catId: 'pepper', urgent: false }) });
+  const { report } = await created.json();
+  const create = async (title, reportId = report.id) => {
+    const response = await request('/api/tasks', { method: 'POST', cookie, body: { title, ownerId: 'local-admin', due: '', reportId, associations: [] } });
+    assert.equal(response.status, 201);
+    return response.json();
+  };
+  const first = await create('Check the cats');
+  const second = await create('Refill water');
+  assert.equal(first.report.status, 'pending');
+  const reviewed = await request(`/api/reports/${report.id}/finish`, { method: 'POST', cookie, body: { colonyId: 'riverside', catId: 'pepper', careNote: 'Care work assigned.', urgent: false } });
+  assert.equal((await reviewed.json()).report.status, 'in_progress');
+  const status = async (id, value) => {
+    const response = await request(`/api/tasks/${id}/status`, { method: 'POST', cookie, body: { status: value } });
+    assert.equal(response.status, 200);
+    return (await response.json()).report;
+  };
+  assert.equal((await status(first.task.id, 'completed')).status, 'in_progress');
+  const resolved = await status(second.task.id, 'completed');
+  assert.equal(resolved.status, 'processed');
+  assert.equal(resolved.careNote, 'Care work assigned.');
+  assert.match(resolved.history.at(-1), /resolved the report/);
+  assert.equal((await status(second.task.id, 'completed')).history.length, resolved.history.length);
+  const shared = await (await request('/api/workspace-data', { cookie: await signIn('local-member') })).json();
+  assert.equal(shared.reports.find((item) => item.id === report.id).status, 'processed');
+  assert.equal((await status(first.task.id, 'open')).status, 'in_progress');
+  assert.equal((await status(first.task.id, 'completed')).status, 'processed');
+  const added = await create('Follow-up observation');
+  assert.equal(added.report.status, 'in_progress');
+  assert.equal((await status(added.task.id, 'completed')).status, 'processed');
+  assert.equal((await request(`/api/reports/${report.id}/finish`, { method: 'POST', cookie, body: { colonyId: 'riverside', catId: 'pepper', careNote: '', urgent: false } })).status, 409);
+});
+
+test('tasks completed before review do not close an unreviewed or waiting report', async (t) => {
+  const { request, signIn } = fixture(t);
+  const cookie = await signIn('local-admin');
+  for (const [reportId, expected] of [['report-injury', 'pending'], ['report-waiting', 'waiting']]) {
+    const created = await request('/api/tasks', { method: 'POST', cookie, body: { title: 'Verify the observation', ownerId: 'local-admin', reportId, due: '', associations: [] } });
+    const { task } = await created.json();
+    const response = await request(`/api/tasks/${task.id}/status`, { method: 'POST', cookie, body: { status: 'completed' } });
+    assert.equal((await response.json()).report.status, expected);
+  }
+});
+
 test('local completed task examples survive re-seeding without overwriting changes', (t) => {
   const { sqlite } = fixture(t);
   const rows = sqlite.prepare("SELECT owner_id, COUNT(*) AS count FROM tasks WHERE id LIKE 'sample-complete-%' AND status = 'completed' GROUP BY owner_id ORDER BY owner_id").all();
