@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { composeStories, type Meta, type StoryObj } from '@storybook/react-vite'
 import { ArrowUpRight, Moon, Sun } from 'lucide-react'
 import preview from '../../.storybook/preview'
-import { Button } from '@/components/ui/button'
+import { Button, ButtonLabel } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
 import { LoadingStagesDemo } from './examples/loading-stages-demo'
 import { LoadingIndicatorDemo } from './examples/loading-indicator-demo'
@@ -103,7 +103,7 @@ function ComponentGallery() {
             aria-label={dark ? 'Use light theme' : 'Use dark theme'}
           >
             {dark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
-            {dark ? 'Dark' : 'Light'}
+            <ButtonLabel labels={['Dark', 'Light']}>{dark ? 'Dark' : 'Light'}</ButtonLabel>
           </Button>
         </header>
 
@@ -160,11 +160,11 @@ function ComponentGallery() {
                   LoadingIndicator
                 </Heading>
                 <a
-                  href="./?path=/story/feedback-loading-indicator--fire"
+                  href="./?path=/story/feedback-loading-indicator--cat-prints"
                   target="_top"
                   className="text-xs text-primary-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
                 >
-                  Open fire story{' '}
+                  Open cat-print story{' '}
                   <ArrowUpRight className="inline size-3" aria-hidden="true" />
                 </a>
               </div>

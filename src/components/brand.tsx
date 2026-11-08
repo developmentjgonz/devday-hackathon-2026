@@ -8,7 +8,7 @@ export function Brand({ to }: { to: string }) {
       aria-label="Mews home"
       className="inline-flex w-fit items-center gap-2.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4"
     >
-      <MewsWordmark className="text-xl" />
+      <MewsWordmark size="sm" />
     </Link>
   )
 }

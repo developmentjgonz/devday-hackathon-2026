@@ -1,27 +1,24 @@
-import { ChevronRight } from 'lucide-react'
 import { Outlet, useLoaderData } from 'react-router'
 import { AppSidebar } from './app-sidebar'
 import type { SessionUser } from '../../../shared/types/auth'
+import { InboxProvider } from '@/features/inbox/inbox-context'
+import { localInboxData } from '@/features/inbox/data/local-inbox'
+import { WorkspaceToolbar } from '@/features/inbox/components/workspace-toolbar'
+import type { InboxData } from '@/features/inbox/types'
 
-export function AppLayout() {
+export function AppLayout({ inboxData = localInboxData }: { inboxData?: InboxData }) {
   const user = useLoaderData() as SessionUser
   return (
+    <InboxProvider data={inboxData}>
     <div className="min-h-svh bg-background text-foreground md:grid md:grid-cols-[248px_minmax(0,1fr)]">
       <AppSidebar user={user} />
       <div className="min-w-0">
-        <header className="flex min-h-16 items-center border-b px-6 sm:px-10 lg:px-12">
-          <nav aria-label="Breadcrumb">
-            <ol className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <li>Mews</li>
-              <li aria-hidden="true"><ChevronRight className="size-3.5 text-muted-foreground/60" /></li>
-              <li className="font-medium text-foreground" aria-current="page">Workspace</li>
-            </ol>
-          </nav>
-        </header>
-        <main id="main-content" tabIndex={-1} className="mx-auto max-w-[1240px] px-6 py-9 outline-none sm:px-10 sm:py-12 lg:px-12 lg:py-14">
+        <WorkspaceToolbar currentUser={user.name} />
+        <main id="main-content" tabIndex={-1} className="mx-auto max-w-[1240px] px-6 py-6 outline-none sm:px-10 lg:px-12">
           <Outlet />
         </main>
       </div>
     </div>
+    </InboxProvider>
   )
 }

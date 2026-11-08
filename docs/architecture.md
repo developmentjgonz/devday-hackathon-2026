@@ -13,10 +13,14 @@ The frontend uses Vite, React, TypeScript, React Router in Data Mode, Tailwind C
 | Route | Layout | Current content |
 | --- | --- | --- |
 | `/` | `SiteLayout` | Landing placeholder with links to the workspace |
-| `/sign-in` | `SiteLayout` | Local test account picker |
-| `/sign-up` | `SiteLayout` | Local signup with optional phone; creates a pending member |
-| `/account-status` | `SiteLayout` | Pending approval or suspended access |
-| `/app` | `AppLayout` | Colony care overview |
+| `/community` | `SiteLayout` | Three sample volunteer openings and three sample news posts; fictional content in `src/features/community/data/sample-posts.ts`, with no live feed or publishing workflow |
+| `/privacy` | `SiteLayout` | Privacy Policy page shell; policy text is not yet supplied |
+| `/terms` | `SiteLayout` | Terms page shell; terms text is not yet supplied |
+| `/sign-in` | `AccountLayout` | Local test account picker |
+| `/sign-up` | `AccountLayout` | Local signup with optional phone; creates a pending member |
+| `/account-status` | `AccountLayout` | Pending approval or suspended access |
+| `/app` | `AppLayout` | Personal overview greeting |
+| `/app/inbox` | `AppLayout` | Interactive local inbox with fictional reports; review, questions, duplicates, and linked care tasks remain in component memory. See [inbox scope](inbox.md). |
 | `/app/*` when unmatched | `AppLayout` | Not-found page with a link to `/app` |
 | Other unmatched paths | `SiteLayout` | Not-found page with a link to `/` |
 

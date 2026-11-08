@@ -2,6 +2,7 @@ import { useState, type ComponentProps } from 'react'
 import { LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
+import { Alert } from '@/components/ui/alert'
 import { authRequest } from '../auth'
 
 export function SignOutButton({ variant = 'outline', className }: Pick<ComponentProps<typeof Button>, 'variant' | 'className'>) {
@@ -28,7 +29,7 @@ export function SignOutButton({ variant = 'outline', className }: Pick<Component
         {variant === 'ghost' ? <LogOut aria-hidden="true" /> : null}
         Sign out
       </Button>
-      {error ? <p role="alert" className="max-w-56 text-sm text-destructive">{error}</p> : null}
+      {error ? <Alert>{error}</Alert> : null}
     </div>
   )
 }

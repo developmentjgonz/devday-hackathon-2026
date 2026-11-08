@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { Heading, Text } from './typography'
+import { Heading, HeadingAccent, Text } from './typography'
 
 const meta = {
   title: 'Foundations/Typography',
@@ -8,7 +8,7 @@ const meta = {
   argTypes: {
     size: {
       control: 'select',
-      options: ['display', 'title', 'section', 'card'],
+      options: ['display', 'title', 'section', 'card', 'compact', 'label'],
     },
     level: { control: 'select', options: [1, 2, 3, 4, 5, 6] },
   },
@@ -21,10 +21,12 @@ export const Headings: Story = {
     <div className="w-full space-y-7">
       {(
         [
-          ['display', 'Every cat counts.', '48 → 72 px · line height 1.02'],
+          ['display', 'Every cat counts.', '44 → 72 px · line height 1.02'],
           ['title', 'Care for your colony', '30 → 36 px · line height 1.25'],
           ['section', 'Today’s visits', '24 px · line height 1.2'],
           ['card', 'Canal colony', '18 px · line height 1.35'],
+          ['compact', 'North service area', '16 px · line height 1.5'],
+          ['label', 'Browse colonies', '12 px · line height 1.67'],
         ] as const
       ).map(([size, label, detail]) => (
         <div key={size} className="space-y-2">
@@ -42,11 +44,15 @@ export const Headings: Story = {
 export const Display: Story = {
   args: { children: 'Every cat counts.', size: 'display' },
 }
+export const Accent: Story = {
+  render: () => <Heading level={1} size="display">Track cat colonies.<br /><HeadingAccent>Care together.</HeadingAccent></Heading>,
+}
 export const Body: Story = {
   render: () => (
     <div className="w-full space-y-6">
       {(
         [
+          ['lead', 'Feeding visits, cat records, and care needs in one shared place.', '18 px / 32 px'],
           [
             'body',
             'Miso and Pepper joined the morning feeding. All 8 cats were seen.',
@@ -54,6 +60,7 @@ export const Body: Story = {
           ],
           ['small', 'Last visit today at 8:15 am', '14 px / 24 px'],
           ['label', 'Next feeding', '12 px / 20 px · semibold'],
+          ['caption', 'Member · Last seen today', '12 px / 20 px'],
         ] as const
       ).map(([size, label, detail]) => (
         <div key={size} className="space-y-2">
@@ -70,3 +77,6 @@ export const Body: Story = {
   ),
 }
 export const Playground: Story = {}
+export const InlineText: Story = {
+  render: () => <Text size="small">Reviewed by <Text render={<span />} size="small" weight="semibold">Maya Rivera</Text>.</Text>,
+}

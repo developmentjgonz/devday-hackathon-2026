@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Pause, Play, RotateCcw } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, ButtonLabel } from '@/components/ui/button'
 import { LoadingStages } from '@/components/ui/loading-stages'
 
 export const careSteps = [
@@ -61,19 +61,20 @@ export function LoadingStagesDemo() {
       <div className="flex flex-wrap items-center gap-2 border-t pt-4">
         <Button
           size="sm"
-          className="min-w-24"
           onClick={running ? () => setRunning(false) : play}
         >
           {running ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
-          {running
-            ? 'Pause'
-            : error
-              ? 'Retry'
-              : complete
-                ? 'Replay'
-                : stage > 0
-                  ? 'Resume'
-                  : 'Save visit'}
+          <ButtonLabel labels={['Save visit', 'Pause', 'Retry', 'Replay', 'Resume']}>
+            {running
+              ? 'Pause'
+              : error
+                ? 'Retry'
+                : complete
+                  ? 'Replay'
+                  : stage > 0
+                    ? 'Resume'
+                    : 'Save visit'}
+          </ButtonLabel>
         </Button>
         <Button
           size="sm"

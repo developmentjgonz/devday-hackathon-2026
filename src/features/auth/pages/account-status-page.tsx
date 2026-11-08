@@ -11,13 +11,14 @@ export function AccountStatusPage() {
   const user = useLoaderData() as SessionUser
   const revalidator = useRevalidator()
   const pending = user.status === 'pending'
+  const title = pending ? 'Waiting for approval' : 'Access suspended'
   const Icon = pending ? Clock3 : LockKeyhole
 
   return (
     <div className="mx-auto w-full max-w-lg px-6 py-16 sm:py-24">
-      <title>{pending ? 'Waiting for approval' : 'Access suspended'} · Mews</title>
+      <title>{`${title} · Mews`}</title>
       <Badge variant={pending ? 'warning' : 'destructive'}><Icon aria-hidden="true" />{pending ? 'Pending approval' : 'Suspended'}</Badge>
-      <Heading level={1} size="title" className="mt-6">{pending ? 'You’re on the list' : 'Your access is suspended'}</Heading>
+      <Heading level={1} size="title" className="mt-6">{title}</Heading>
       <Text size="small" tone="muted" className="mt-4">
         {pending
           ? 'Your account is waiting for administrator approval. Once approved, you can join your team in the workspace.'

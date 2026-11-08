@@ -1,5 +1,6 @@
 .mews-loader[data-size='sm'] {
   --loader-size: 1rem;
+  --loader-rest-opacity: 0.65;
 }
 .mews-loader[data-size='md'] {
   --loader-size: 1.5rem;
@@ -7,78 +8,39 @@
 .mews-loader[data-size='lg'] {
   --loader-size: 2.5rem;
 }
-.mews-spinner,
-.mews-paw,
-.mews-flame {
+.mews-paw {
   width: var(--loader-size);
   height: var(--loader-size);
 }
-.mews-paw svg,
-.mews-flame svg {
+.mews-paw svg {
   width: 100%;
   height: 100%;
-}
-.mews-spinner {
-  animation: mews-spin var(--loader-playback-duration, var(--duration-loading)) linear infinite;
 }
 .mews-paw {
   animation: mews-paw var(--loader-playback-duration, var(--duration-loading)) var(--ease-in-out) infinite;
 }
 .mews-paw:nth-child(2) {
-  animation-delay: 160ms;
+  animation-delay: calc(var(--loader-playback-duration, var(--duration-loading)) * -2 / 3);
 }
 .mews-paw:nth-child(3) {
-  animation-delay: 320ms;
+  animation-delay: calc(var(--loader-playback-duration, var(--duration-loading)) / -3);
 }
-.mews-flame-shell {
-  animation: mews-flame var(--loader-playback-duration, var(--duration-loading)) var(--ease-in-out) infinite;
+.mews-paw {
+  animation-play-state: var(--loader-play-state, running);
 }
-.mews-flame-core {
-  animation: mews-flame-core var(--loader-playback-duration, var(--duration-loading)) var(--ease-in-out) infinite;
-}
-.mews-loader[data-paused] .mews-spinner,
-.mews-loader[data-paused] .mews-paw,
-.mews-loader[data-paused] .mews-flame-shell,
-.mews-loader[data-paused] .mews-flame-core {
+.mews-loader[data-paused] .mews-paw {
   animation-play-state: paused;
 }
 .mews-skeleton {
   animation: mews-breathe 1800ms var(--ease-in-out) infinite;
 }
-@keyframes mews-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 @keyframes mews-paw {
   0%,
   65%,
   100% {
-    opacity: 0.35;
-    transform: translateY(0);
+    opacity: var(--loader-rest-opacity, 0.4);
   }
   30% {
-    opacity: 1;
-    transform: translateY(-15%);
-  }
-}
-@keyframes mews-flame {
-  0%,
-  100% {
-    transform: scaleY(0.97);
-  }
-  50% {
-    transform: scaleY(1.025);
-  }
-}
-@keyframes mews-flame-core {
-  0%,
-  100% {
-    transform: scaleY(0.94);
-    opacity: 0.85;
-  }
-  50% {
-    transform: scaleY(1.04);
     opacity: 1;
   }
 }
@@ -92,10 +54,7 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mews-spinner,
   .mews-paw,
-  .mews-flame-shell,
-  .mews-flame-core,
   .mews-skeleton {
     animation: none;
   }

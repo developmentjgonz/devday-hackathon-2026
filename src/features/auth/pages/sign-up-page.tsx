@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -36,8 +35,7 @@ export function SignUpPage() {
   return (
     <div className="mx-auto w-full max-w-lg px-6 py-12 sm:py-16">
       <title>Request access · Mews</title>
-      <Badge variant="secondary">Local sign-in</Badge>
-      <Heading level={1} size="title" className="mt-5">Request access</Heading>
+      <Heading level={1} size="title">Request access</Heading>
       <Text size="small" tone="muted" className="mt-3">Join your rescue team. An administrator will review your request.</Text>
       <form onSubmit={submit} className="mt-8 space-y-6">
         <div className="space-y-2">

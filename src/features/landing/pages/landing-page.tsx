@@ -1,7 +1,6 @@
-import { PawPrint } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Heading, HeadingAccent, Text } from '@/components/ui/typography'
-import { CareSticker } from '@/components/brand-assets'
+import { CareSticker, CatPawPrint } from '@/components/brand-assets'
 import { CommunityCat } from '@/components/illustrations/community-cat'
 import { CommunityTracker } from '../components/community-tracker'
 import '@/styles/landing.css'
@@ -16,7 +15,7 @@ export function LandingPage() {
           <Heading level={1} size="display" id="landing-title">Track cat colonies.<br /><HeadingAccent>Care together.</HeadingAccent></Heading>
           <Text size="lead" tone="muted" className="mt-6 max-w-sm">Feeding visits, cat records, and care needs in one shared place.</Text>
           <div className="landing-hero-actions">
-            <Button size="lg" render={<a href="#tracker" />}>View colony activity <PawPrint aria-hidden="true" /></Button>
+            <Button size="lg" render={<a href="#tracker" />}>View colony activity <CatPawPrint /></Button>
           </div>
         </div>
         <div className="landing-illustration">

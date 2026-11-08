@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { ColonyMap } from './colony-map'
-import { Button } from './button'
+import { Button, ButtonLabel } from './button'
 import { publicMapData } from '@/stories/fixtures/public-map-data'
 import { teamMapData } from '@/stories/fixtures/team-map-data'
 
@@ -21,7 +21,9 @@ function UpdatesPreview() {
         variant="outline"
         onClick={() => setUpdated((previous) => !previous)}
       >
-        {updated ? 'Reset sample update' : 'Simulate care update'}
+        <ButtonLabel labels={['Reset sample update', 'Simulate care update']}>
+          {updated ? 'Reset sample update' : 'Simulate care update'}
+        </ButtonLabel>
       </Button>
       <ColonyMap data={data} />
     </div>

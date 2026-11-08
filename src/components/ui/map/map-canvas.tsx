@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   Map as MapLibreMap,
-  NavigationControl,
   setWorkerUrl,
   type GeoJSONSource,
   type ExpressionSpecification,
 } from 'maplibre-gl'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import { CircleAlert } from 'lucide-react'
+import { CircleAlert, Plus, Minus } from 'lucide-react'
 import { Button } from '../button'
 import { LoadingIndicator } from '../loading-indicator'
+import { Text } from '../typography'
+import { Card } from '../card'
+import { EmptyState } from '../empty-state'
 import { areaCenter, type ColonyMapData, type MapInitialView } from './types'
 import { createMapSources } from './data'
 
@@ -79,6 +81,7 @@ export default function MapCanvas({
   const latest = useRef({ data, onSelect })
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
   const [attempt, setAttempt] = useState(0)
+  const [zoom, setZoom] = useState(0)
   const initialLng = initialView?.center[0]
   const initialLat = initialView?.center[1]
   const initialZoom = initialView?.zoom
@@ -126,7 +129,7 @@ export default function MapCanvas({
       })
       mapRef.current = map
       map.touchZoomRotate.disableRotation()
-      map.addControl(new NavigationControl({ showCompass: false }), 'top-right')
+      map.on('zoomend', () => { if (!disposed && map) setZoom(map.getZoom()) })
       map
         .getCanvas()
         .setAttribute(
@@ -250,6 +253,7 @@ export default function MapCanvas({
           attributeFilter: ['class'],
         })
         setStatus('ready')
+        setZoom(map.getZoom())
       })
       resize = new ResizeObserver(() => map?.resize())
       resize.observe(element)
@@ -289,13 +293,19 @@ export default function MapCanvas({
   return (
     <div className="relative h-full w-full" data-map-status={status}>
       <div ref={container} className="h-full w-full" />
+      {status === 'ready' ? (
+        <Card padding="none" role="group" aria-label="Map zoom" className="absolute top-3 right-3 w-fit">
+          <Button variant="ghost" size="icon" aria-label="Zoom in" disabled={zoom >= (data.audience === 'public' ? 11 : 18)} onClick={() => mapRef.current?.zoomIn({ duration: 0 })}><Plus aria-hidden="true" /></Button>
+          <Button variant="ghost" size="icon" aria-label="Zoom out" disabled={zoom <= 0} onClick={() => mapRef.current?.zoomOut({ duration: 0 })}><Minus aria-hidden="true" /></Button>
+        </Card>
+      ) : null}
       {status === 'loading' ? (
         <div
           role="status"
           className="absolute inset-0 flex items-center justify-center gap-3 bg-card/90"
         >
           <LoadingIndicator decorative />
-          <span className="text-sm">Loading map…</span>
+          <Text size="small" tone="muted">Loading map…</Text>
         </div>
       ) : null}
       {status === 'error' ? (
@@ -303,19 +313,13 @@ export default function MapCanvas({
           role="alert"
           className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-card/95 px-6 text-center"
         >
-          <CircleAlert className="size-6 text-destructive" aria-hidden="true" />
-          <p className="text-sm font-medium">Map background unavailable</p>
-          <p className="max-w-xs text-xs leading-5 text-muted-foreground">
-            Check your connection and retry. You can still use the location list
-            below.
-          </p>
-          <Button
+          <EmptyState tone="danger" title="Map background unavailable" description="Check your connection and retry. You can still use the location list below." icon={<CircleAlert />} action={<Button
             size="sm"
             variant="outline"
             onClick={() => setAttempt((previous) => previous + 1)}
           >
             Retry map
-          </Button>
+          </Button>} />
         </div>
       ) : null}
     </div>

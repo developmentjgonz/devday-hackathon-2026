@@ -9,8 +9,11 @@ Use an active local test account to open `/app`; see `docs/local-accounts.md`. T
 ## Implemented behavior
 
 - `/` shows the public layout with a landing placeholder and workspace links.
-- `/app` shows the workspace layout with an active Overview link and a personal greeting. There is no action that sends users to the public community tracker.
+- `/app` shows the workspace layout with an active Overview link and a personal greeting. There are no public-site actions, marketing illustrations, or placeholder data cards.
+- Sign-in, access requests, and account status use `AccountLayout`. Its brand link points to `/app`; it has no public navigation or promotional footer.
+- Workspace not-found and error recovery return to `/app`. Public errors retain their public home link.
 - Workspace navigation uses real links. Browser back, forward, and direct reload keep the requested page.
+- `WorkspaceNavigation` owns sidebar interaction styles. The current route stays pink while another hovered link uses gray. Keyboard focus adds a visible ring. Hover does not select a route.
 - The first keyboard link skips to the main content. A path change moves focus to that region. Pages have distinct document titles.
 - The sidebar becomes a compact header and navigation on narrow screens; there is no menu drawer.
 - Unknown URLs outside `/app` use the public layout and return to `/`.
@@ -27,5 +30,9 @@ Use an active local test account to open `/app`; see `docs/local-accounts.md`. T
 6. Navigate between layouts with the keyboard. Confirm focus moves to the new main region.
 7. Check `/` and `/app` at 320px, 390px, 768px, and 1440px widths. Confirm no horizontal overflow.
 8. Check the browser console for uncaught errors.
+
+## Automated navigation check
+
+Run `npm run test:ui`. It opens the production navigation in Storybook and checks current + hover, hover on another item, click, keyboard focus and Enter, pointer leave, and simulated touch in light and dark themes. Width checks use 390 px and 1440 px. The tests assert both `aria-current` and rendered colors, so two links with the same current-page fill fail validation. Real browser history and account access still need the manual checks above.
 
 The production preview returns the SPA document for unknown frontend paths; the client renders the not-found page. Cloudflare already uses single-page application fallback for frontend URLs. API routing remains separate in the Worker.

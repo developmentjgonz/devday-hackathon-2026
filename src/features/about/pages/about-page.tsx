@@ -1,4 +1,4 @@
-import { PawPrint } from 'lucide-react'
+import { CatPawPrint } from '@/components/brand-assets'
 import { Link } from 'react-router'
 import { CommunityCat } from '@/components/illustrations/community-cat'
 import { Heading, HeadingAccent, Text } from '@/components/ui/typography'
@@ -24,7 +24,7 @@ export function AboutPage() {
           <Text tone="muted">Mews is built around those everyday moments: helping volunteers and rescue coordinators share a clearer picture of each colony and the care it needs.</Text>
           <Heading level={3} size="section" className="mt-6">A community to see. Locations to protect.</Heading>
           <Text tone="muted">Our public map shows activity across broad areas. Individual colony locations and volunteer contact details stay out of the public view.</Text>
-          <Button size="lg" className="mt-3" render={<Link to="/#tracker" />}>View colony activity <PawPrint aria-hidden="true" /></Button>
+          <Button size="lg" className="mt-3" render={<Link to="/#tracker" />}>View colony activity <CatPawPrint /></Button>
         </div>
       </section>
     </div>

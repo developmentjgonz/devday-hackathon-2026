@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react'
 import { Check, CircleAlert } from 'lucide-react'
 import { cn } from 'cn'
 import { LoadingIndicator } from './loading-indicator'
+import { Heading, Text } from './typography'
 
 export type LoadingStep = { id: string; label: string }
 export type LoadingStagesProps = Omit<ComponentProps<'div'>, 'children'> & {
@@ -53,13 +54,13 @@ export function LoadingStages({
       className={cn('w-full space-y-5', className)}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-heading text-base leading-snug font-semibold">
+        <Heading level={2} size="compact">
           {label}
-        </p>
-        <span className="text-xs tabular-nums text-muted-foreground">
+        </Heading>
+        <Text render={<span />} size="caption" tone="muted" className="tabular-nums">
           {finished ? steps.length : steps.length ? active + 1 : 0} /{' '}
           {steps.length}
-        </span>
+        </Text>
       </div>
       <div
         role="progressbar"
@@ -140,20 +141,16 @@ export function LoadingStages({
           )
         })}
       </ol>
-      <p
+      <Text size="caption" tone={status === 'error' ? 'danger' : 'muted'}
         role="status"
         aria-live="polite"
         aria-atomic="true"
         className={cn(
-          status === 'error'
-            ? 'text-xs leading-5 text-destructive'
-            : steps.length === 0
-              ? 'text-xs leading-5 text-muted-foreground'
-              : 'sr-only',
+          status !== 'error' && steps.length > 0 && 'sr-only',
         )}
       >
         {announcement}
-      </p>
+      </Text>
     </div>
   )
 }

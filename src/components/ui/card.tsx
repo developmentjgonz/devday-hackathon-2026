@@ -1,23 +1,25 @@
 import * as React from 'react'
 import { cn } from 'cn'
 import { headingVariants } from './typography'
+import { useRender } from '@base-ui/react/use-render'
+import { mergeProps } from '@base-ui/react/merge-props'
 
 function Card({
   className,
   size = 'default',
+  padding = 'default',
+  render,
   ...props
-}: React.ComponentProps<'div'> & { size?: 'default' | 'sm' }) {
-  return (
-    <div
-      data-slot="card"
-      data-size={size}
-      className={cn(
-        'group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-surface border border-border bg-card py-(--card-spacing) text-sm leading-6 text-card-foreground [--card-spacing:--spacing(6)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(4)] data-[size=sm]:has-data-[slot=card-footer]:pb-0',
-        className,
-      )}
-      {...props}
-    />
-  )
+}: useRender.ComponentProps<'div'> & { size?: 'default' | 'sm'; padding?: 'default' | 'none' }) {
+  return useRender({
+    defaultTagName: 'div', render,
+    props: { ...mergeProps<'div'>({
+      className: cn(
+        'group/card flex flex-col overflow-hidden rounded-surface border border-border bg-card text-sm leading-6 text-card-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring [--card-spacing:--spacing(6)] data-[size=sm]:[--card-spacing:--spacing(4)]',
+        padding === 'none' ? 'gap-0 py-0' : 'gap-(--card-spacing) py-(--card-spacing) has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0', className,
+      ),
+    }, props), 'data-slot': 'card', 'data-size': size },
+  })
 }
 
 function CardHeader({ className, ...props }: React.ComponentProps<'div'>) {
@@ -80,6 +82,10 @@ function CardContent({ className, ...props }: React.ComponentProps<'div'>) {
   )
 }
 
+function CardList({ className, ...props }: React.ComponentProps<'ul'>) {
+  return <ul data-slot="card-list" className={cn('divide-y divide-border', className)} {...props} />
+}
+
 function CardFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
@@ -101,4 +107,5 @@ export {
   CardAction,
   CardDescription,
   CardContent,
+  CardList,
 }

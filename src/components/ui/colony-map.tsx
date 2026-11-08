@@ -1,12 +1,13 @@
 import { lazy, Suspense, useEffect, useId, useRef, useState } from 'react'
-import { CircleAlert, Layers, MapPin, ShieldCheck } from 'lucide-react'
+import { CircleAlert, Layers } from 'lucide-react'
 import { cn } from 'cn'
-import { Badge } from './badge'
 import { Button } from './button'
 import { LoadingIndicator } from './loading-indicator'
-import { Heading } from './typography'
+import { Heading, Text } from './typography'
+import { Card, CardHeader, CardFooter } from './card'
+import { EmptyState } from './empty-state'
+import { RecordButton } from './record-button'
 import type { ColonyMapData, MapInitialView } from './map/types'
-import '@/styles/map.css'
 
 export type {
   ColonyMapData,
@@ -40,8 +41,8 @@ function LoadingMap() {
       role="status"
       className="flex h-full min-h-80 flex-col items-center justify-center gap-3 bg-muted/30"
     >
-      <LoadingIndicator decorative variant="paws" />
-      <span className="text-sm text-muted-foreground">Loading map…</span>
+      <LoadingIndicator decorative />
+      <Text size="small" tone="muted">Loading map…</Text>
     </div>
   )
 }
@@ -83,33 +84,27 @@ export function ColonyMap({
   }, [visible, state, empty])
 
   return (
-    <section
+    <Card
+      render={<section />}
+      padding="none"
       aria-labelledby={`${id}-title`}
       className={cn(
-        'mews-colony-map w-full min-w-0 overflow-hidden rounded-surface border bg-card text-card-foreground',
+        'mews-colony-map w-full min-w-0',
         className,
       )}
     >
-      <header className="flex flex-wrap items-start justify-between gap-3 border-b px-5 py-4">
+      <CardHeader className="py-6">
         <div>
           <Heading level={2} size="card" id={`${id}-title`}>
             {title}
           </Heading>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          <Text size="caption" tone="muted" className="mt-1">
             {publicView
               ? 'Area activity · Approximate locations'
               : 'Colony locations'}
-          </p>
+          </Text>
         </div>
-        <Badge variant={publicView ? 'success' : 'secondary'}>
-          {publicView ? (
-            <ShieldCheck aria-hidden="true" />
-          ) : (
-            <MapPin aria-hidden="true" />
-          )}
-          {publicView ? 'Public areas' : 'Team view'}
-        </Badge>
-      </header>
+      </CardHeader>
       <div
         ref={container}
         className="relative h-96 min-w-0 overflow-hidden bg-muted/30"
@@ -122,42 +117,15 @@ export function ColonyMap({
         {state === 'loading' ? (
           <LoadingMap />
         ) : state === 'error' ? (
-          <div
-            role="alert"
-            className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center"
-          >
-            <CircleAlert
-              className="size-6 text-destructive"
-              aria-hidden="true"
-            />
-            <p className="text-sm font-medium">Could not load the map</p>
-            <p className="text-xs text-muted-foreground">
-              The location list is still available below.
-            </p>
-            {onRetry ? (
+          <EmptyState role="alert" tone="danger" className="h-full" icon={<CircleAlert />} title="Could not load the map" description="The location list is still available below." action={onRetry ? (
               <Button variant="outline" size="sm" onClick={onRetry}>
                 Retry map
               </Button>
-            ) : null}
-          </div>
+            ) : undefined} />
         ) : empty ? (
-          <div
-            role="status"
-            className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center"
-          >
-            <Layers
-              className="size-7 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <p className="text-sm font-medium">
-              {publicView ? 'No public areas to show' : 'No colonies to show'}
-            </p>
-            <p className="max-w-xs text-xs leading-5 text-muted-foreground">
-              {publicView
+          <EmptyState role="status" className="h-full" icon={<Layers />} title={publicView ? 'No public areas to show' : 'No colonies to show'} description={publicView
                 ? 'Areas will appear when an approved summary is available.'
-                : 'Colony markers will appear when records are available.'}
-            </p>
-          </div>
+                : 'Colony markers will appear when records are available.'} />
         ) : visible ? (
           <Suspense fallback={<LoadingMap />}>
             <MapCanvas
@@ -172,14 +140,14 @@ export function ColonyMap({
           <LoadingMap />
         )}
       </div>
-      <div className="space-y-4 border-t p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+      <CardFooter className="block space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           {publicView ? (
             <div
               className="flex items-center gap-2"
               aria-label="Area activity: low to high"
             >
-              <span>Lower activity</span>
+              <Text render={<span />} size="caption" tone="muted">Lower activity</Text>
               <span
                 aria-hidden="true"
                 className="h-2 w-16 rounded-full"
@@ -188,7 +156,7 @@ export function ColonyMap({
                     'linear-gradient(to right, var(--secondary), var(--primary))',
                 }}
               />
-              <span>Higher</span>
+              <Text render={<span />} size="caption" tone="muted">Higher</Text>
             </div>
           ) : (
             <div
@@ -196,7 +164,7 @@ export function ColonyMap({
               aria-label="Care status legend"
             >
               {(['routine', 'needs-visit', 'urgent'] as const).map((status) => (
-                <span key={status} className="inline-flex items-center gap-1.5">
+                <Text render={<span />} size="caption" tone="muted" key={status} className="inline-flex items-center gap-1.5">
                   <span
                     aria-hidden="true"
                     className={cn(
@@ -209,57 +177,49 @@ export function ColonyMap({
                     )}
                   />
                   {statusLabels[status]}
-                </span>
+                </Text>
               ))}
             </div>
           )}
-          {snapshotLabel ? <span>{snapshotLabel}</span> : null}
+          {snapshotLabel ? <Text render={<span />} size="caption" tone="muted">{snapshotLabel}</Text> : null}
         </div>
         {entries.length > 0 ? (
           <div>
-            <h3 className="mb-2 text-xs font-semibold">
+            <Heading level={3} size="label" className="mb-2">
               {publicView ? 'Browse areas' : 'Browse colonies'}
-            </h3>
+            </Heading>
             <ul className="grid gap-2 sm:grid-cols-2">
               {entries.map((entry) => (
                 <li key={entry.id} className="min-w-0">
-                  <button
-                    type="button"
-                    aria-pressed={selected?.id === entry.id}
+                  <RecordButton
+                    selected={selected?.id === entry.id}
                     onClick={() => setSelectedId(entry.id)}
-                    className="flex min-h-14 w-full items-center justify-between gap-3 rounded-control border px-4 py-3 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring aria-pressed:border-ring aria-pressed:bg-secondary/40"
-                  >
-                    <span className="min-w-0">
-                      <span className="block break-words font-heading text-base font-semibold">
-                        {entry.name}
-                      </span>
-                      <span className="mt-0.5 block text-xs text-muted-foreground">
-                        {'colonyCountBand' in entry
+                    className="w-full"
+                    title={entry.name}
+                    description={'colonyCountBand' in entry
                           ? `${entry.colonyCountBand} colonies · ${entry.activity} activity`
                           : `${entry.catCount} cats · ${statusLabels[entry.status]}`}
-                      </span>
-                    </span>
-                    {'boundary' in entry ? (
+                    icon={'boundary' in entry ? (
                       <Layers
                         className="size-4 shrink-0 text-muted-foreground"
                         aria-hidden="true"
                       />
-                    ) : null}
-                  </button>
+                    ) : undefined}
+                  />
                 </li>
               ))}
             </ul>
           </div>
         ) : null}
-        <p
+        <Text
           role="status"
           aria-live="polite"
           aria-atomic="true"
           className="sr-only"
         >
           {selected ? `${selected.name} selected.` : ''}
-        </p>
-      </div>
-    </section>
+        </Text>
+      </CardFooter>
+    </Card>
   )
 }
