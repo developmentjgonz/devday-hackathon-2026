@@ -8,7 +8,7 @@ The following was observed locally on November 8, 2026 by the implementation own
 
 | Check | Observed result | Boundary |
 | --- | --- | --- |
-| Build and unit suite | `npm run build` passed; `npm test` passed with 13 tests. | It does not exercise a remote deployment or every browser/device. |
+| Build and unit suite | `npm run build` passed; `npm test` passed with 16 tests after feature pass 6. | It does not exercise a remote deployment or every browser/device. |
 | Repository build checks | Storybook built successfully. The pinned Wrangler 4.158.0 Worker dry run bundled successfully. CI now uses Node 24 and runs the synthetic test suite before deployment. | A dry run does not deploy or provision resources. The current Worker configuration binds D1/assets; hosted R2 still needs configuration. |
 | Google map | A real Google Maps Miami Beach basemap loaded, with the labelled simulated Skipper marker and broad weather cells. | Rescue markers/radii are fictional and approximate; a Maps key, billing/quota, and referrer restrictions are still required. |
 | Intake/census/dedupe | The original 12-message shift was delivered; one human duplicate merge reduced the active count from 4 to 3 before the live shift added further fixture records. | This proves only local synthetic persistence and human review, not real chat ingestion or identity evidence. |
@@ -17,6 +17,9 @@ The following was observed locally on November 8, 2026 by the implementation own
 | Expanded replay | All 28 follow-up messages completed in the browser, in addition to the original 12-message scenario. | Scripted fictional delivery, not a live messaging service. |
 | Delivery recovery | A phone submission remained queued while the backend was stopped, then cleared after delivery when the backend returned. | Browser-local retry while the app is open; no service-worker background sync. |
 | Live OpenAI pipeline | An authenticated fictional phone report passed through the running app, persisted its source trace and assessment with mode `agent`, and was classified urgent. A separate direct SDK check also returned agent mode. | This verifies live triage for synthetic data. It does not validate visual identity, movement prediction, real animal outcomes, or every agent path. |
+| Confidence review | The browser/API flow preserved an original 0–3 / 54% count, stored an assigned volunteer reply, and added a separate human-verified 3–3 / 95% count. Tests check threshold changes preserve human confirmations. | Confidence values are synthetic evidence labels, not calibrated statistics. A count confirmation does not resolve an urgent-care review. |
+| Persistent missing case | Tux was marked missing only after a manager decision; a live agent plan was saved. Unsafe feedback immediately hid one zone and made the plan stale; a second live agent run saved two remaining zones. | Zones are unverified heuristics. Field feedback never automatically confirms identity or reunion. |
+| Internal search map and mobile | Stored Tux zones appeared internally and were absent from public preview. The 320 px operations board had no horizontal overflow. | Desktop DOM width was checked, but full desktop visual inspection and physical-device testing remain incomplete. |
 
 Not verified: a remote Worker/D1/R2 deployment, live WhatsApp/SMS/Facebook integration, real vision matching, or production privacy/security controls. The running local server has OpenAI explicitly enabled; a plain future `npm run dev:full` remains deterministic unless the enable flag is set.
 
@@ -131,7 +134,7 @@ This feature is not a complete production photo-safety solution. It does not dem
 ### G. Demonstrate schedule, lost cat, and agent boundaries
 
 1. In **Feeding schedule**, create a synthetic assignment as coordinator, then complete/reassign it. Volunteer interaction should be limited to their assigned work.
-2. In **Lost cat navigator**, use Tux and explain that output zones are ranked probabilities and safe public-access guidance—not location claims or a tracker integration.
+2. In **Lost cat navigator**, use Tux and explain that output zones are heuristic priorities with access-check reminders, not calibrated probabilities, verified safe sites, or a tracker integration. Use **Missing-cat cases** for a persisted case, saved plan, and field-feedback loop.
 3. In **Agent evaluation**, run the eight synthetic urgency cases. Read the returned mode column.
 4. If the mode is deterministic/demo/fallback, say that the local run did not use a model. If agent mode is configured explicitly, say it is bounded to synthetic context/tools and still cannot approve a merge or medical action.
 
@@ -146,6 +149,9 @@ These are subjective engineering estimates, not judge scores, benchmarks, or a p
 | 3 — Photos and offline reports | 8.0 | 7.5 | 6.5 | 7.5 | 8.0 | Private fictional JPEG re-encode/upload/review, dedicated Photo match review, plus browser-local raw and phone-report retry queues. |
 | 4 — Search and care outcomes | 8.5 | 8.0 | 7.0 | 8.0 | 8.0 | Stored-census lost-cat planner, guarded field tasks, Cat profiles & visits, care outcomes with explicit medical/TNR result and CSV. |
 | 5 — Final demo and documentation | 8.5 | 8.0 | 7.0 | 8.0 | 8.5 | 12-report and 28-report stable replays, public aggregate census, six-layer map, formal local verification, and a truthful runbook/data inventory. |
+| 6 — Shared operations and feedback | 9.0 | 8.0 | 8.5 | 8.0 | 8.5 | Today’s operations, enforced 0.75 routing threshold, source-preserving human verification, persistent missing cases, two verified live-agent plan runs, unsafe-zone exclusion, and an internal saved-search map layer. |
+
+The current post-pass estimate is **8.4/10**, compared with **8.2/10** immediately before pass 6. See [feature-pass-6.md](feature-pass-6.md) for the concrete browser evidence and new walkthrough. These scores describe a synthetic local hackathon demo, not production readiness.
 
 Remaining gaps are intentional or pre-pilot: remote D1/R2 deployment, production identity/audit/retention, real consented data, provider integrations, real vision/telemetry, robust background sync, and evaluation/observability for opt-in agent calls.
 

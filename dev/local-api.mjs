@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync, readdirSync, writeFileSync, existsSync, unlink
 import { resolve, join } from "node:path";
 import worker from "../worker/index.js";
 import { provisionUser } from "../worker/auth.js";
+import { materializeCanonicalCensus } from "../worker/census.js";
 
 /** Explicit loopback-only synthetic runtime. Production uses Worker D1/R2 bindings. */
 export async function createLocalApi(root, config = {}) {
@@ -53,6 +54,8 @@ export async function createLocalApi(root, config = {}) {
     const email = role + "@mangrovemews.demo";
     if (!sqlite.prepare("SELECT id FROM users WHERE email=?").get(email)) await provisionUser(env, { email, password: "SyntheticMiami2026!", role });
   }
+  // Apply routing migrations to the existing synthetic workspace immediately.
+  await materializeCanonicalCensus(DB);
   async function middleware(incoming, outgoing, next) {
     if (!incoming.url?.startsWith("/api/")) return next();
     if (incoming.headers.host !== "127.0.0.1:5197" || !["127.0.0.1", "::ffff:127.0.0.1", "::1"].includes(incoming.socket.remoteAddress)) {

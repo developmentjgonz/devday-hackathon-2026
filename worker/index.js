@@ -3,6 +3,8 @@ import { planStoredCatSearch } from "./search-planner.js";
 import { listCareCases, createCareCase, resolveCareCase, getOutcomeReport, outcomeReportCsv } from "./reports.js";
 import { listSearchTasks, createSearchTask, updateSearchTask } from "./search-tasks.js";
 import { listCommunityReviews, createCommunityReview, updateCommunityReview } from "./community-review.js";
+import { getRoutingSettings, setRoutingSettings, listIntakeReview, requestClarification, replyClarification, confirmObservation } from "./confirmations.js";
+import { listMissingCases, createMissingCase, decideMissingCase, appendMissingCaseFeedback, saveCaseSearchPlan, getMissingCaseForPlanning } from "./missing-cases.js";
 import { allowLoginAttempt, getSession, loginWithPassword, requireRole, requireSameOrigin, revokeCurrentSession, sessionHeaders } from "./auth.js";
 import { readPrivatePhoto, reviewPrivatePhoto, uploadPrivatePhoto } from "./photos.js";
 import { importSyntheticFixture, validateSyntheticFixtureBatch } from "./intake.js";
@@ -66,6 +68,47 @@ export default {
       const auth = await requireRole(request, env, ["admin", "coordinator", "volunteer", "sponsor"], { csrf: true });
       if (!auth.ok) return auth.response;
       return Response.json({ ok: true }, { headers: await revokeCurrentSession(request, env) });
+    }
+
+    if (["/api/private/intake-review", "/api/private/routing-settings", "/api/private/clarifications", "/api/private/clarifications/reply", "/api/private/observations/confirm"].includes(pathname)) {
+      const read = request.method === "GET" && ["/api/private/intake-review", "/api/private/routing-settings"].includes(pathname);
+      if (!read && request.method !== "POST") return json({ error: "Method not allowed" }, 405);
+      if (pathname === "/api/private/intake-review" && !read) return json({ error: "Method not allowed" }, 405);
+      const auth = await requireRole(request, env, read || pathname.endsWith("/reply") ? ["admin", "coordinator", "volunteer"] : ["admin", "coordinator"], { csrf: !read });
+      if (!auth.ok) return auth.response;
+      try {
+        const common = { db: env.DB, session: auth.session };
+        if (read) return json(pathname.endsWith("routing-settings") ? await getRoutingSettings(common) : await listIntakeReview(common));
+        const input = await readLimitedJson(request, 8000);
+        const action = pathname.endsWith("routing-settings") ? setRoutingSettings : pathname.endsWith("/reply") ? replyClarification : pathname.endsWith("/confirm") ? confirmObservation : requestClarification;
+        const result = await action({ ...common, input });
+        await materializeCanonicalCensus(env.DB);
+        return json(result);
+      } catch (error) { return json({ error: String(error?.message ?? "Intake review unavailable").slice(0, 240) }, Number(error?.status) || 400); }
+    }
+
+    if (["/api/private/missing-cases", "/api/private/missing-cases/decision", "/api/private/missing-cases/feedback", "/api/private/missing-cases/plan"].includes(pathname)) {
+      const read = request.method === "GET" && pathname === "/api/private/missing-cases";
+      if (!read && request.method !== "POST") return json({ error: "Method not allowed" }, 405);
+      const manager = pathname.endsWith("/decision") || pathname.endsWith("/plan");
+      const auth = await requireRole(request, env, manager ? ["admin", "coordinator"] : ["admin", "coordinator", "volunteer"], { csrf: !read });
+      if (!auth.ok) return auth.response;
+      try {
+        const common = { db: env.DB, session: auth.session };
+        if (read) return json(await listMissingCases(common));
+        const input = await readLimitedJson(request, 10000);
+        if (pathname.endsWith("/plan")) {
+          const record = await getMissingCaseForPlanning({ ...common, id: input.caseId });
+          const plan = await planStoredCatSearch({ ...record.case, searchFeedback: record.feedback }, env);
+          const stored = { ...plan, appliedFeedbackIds: record.feedback.map((entry) => entry.id), zones: plan.zones.map((zone) => ({ id: zone.id, label: zone.title, position: zone.position, confidence: zone.confidence, priority: Math.round(zone.confidence * 100), radiusM: zone.internalRadiusMeters, safeGuide: zone.detail + " " + zone.feedbackSummary })) };
+          await saveCaseSearchPlan({ ...common, input: { caseId: record.case.id, plan: stored } });
+          return json({ plan: stored });
+        }
+        const action = pathname.endsWith("/decision") ? decideMissingCase : pathname.endsWith("/feedback") ? appendMissingCaseFeedback : createMissingCase;
+        const result = await action({ ...common, input });
+        if (pathname.endsWith("/decision")) await materializeCanonicalCensus(env.DB);
+        return json(result, pathname === "/api/private/missing-cases" ? 201 : 200);
+      } catch (error) { return json({ error: String(error?.message ?? "Missing-case action unavailable").slice(0, 240) }, Number(error?.status) || 400); }
     }
 
     if (["/api/private/care-cases", "/api/private/care-cases/resolve", "/api/private/reports/outcomes", "/api/private/reports/outcomes.csv"].includes(pathname)) {
@@ -239,9 +282,9 @@ export default {
       if (request.method !== "GET") return json({ error: "Method not allowed" }, 405, { Allow: "GET" });
       const auth = await requireRole(request, env, ["admin", "coordinator", "volunteer"]);
       if (!auth.ok) return auth.response;
-      const reports = await env.DB.prepare("SELECT m.trace_id, m.source_kind, m.volunteer_alias, m.body_redacted, m.broad_area, m.received_at, m.attachment_manifest_json, o.id AS observation_id, o.proposed_cat_key, o.proposed_colony_key, o.colony_confidence, o.duplicate_group, o.urgency, o.uncertainty_note, a.mode AS assessment_mode, a.evidence_json AS match_evidence_json FROM intake_source_messages m JOIN intake_observations o ON o.source_message_id = m.id LEFT JOIN intake_assessments a ON a.observation_id=o.id ORDER BY m.received_at DESC LIMIT 100").all();
+      const reports = await env.DB.prepare("SELECT m.trace_id,m.source_kind,m.volunteer_alias,m.body_redacted,m.broad_area,m.received_at,m.attachment_manifest_json,o.id AS observation_id,o.proposed_cat_key,o.proposed_colony_key,o.assigned_colony_key,o.assignment_state,o.source_count_low,o.source_count_high,o.source_count_confidence,o.verified_count_low,o.verified_count_high,o.verified_count_confidence,o.colony_confidence,o.duplicate_group,o.urgency,o.uncertainty_note,c.canonical_cat_key,a.mode AS assessment_mode,a.evidence_json AS match_evidence_json FROM intake_source_messages m JOIN intake_observations o ON o.source_message_id=m.id LEFT JOIN canonical_cats c ON c.cat_key=o.proposed_cat_key LEFT JOIN intake_assessments a ON a.observation_id=o.id ORDER BY julianday(m.received_at) DESC LIMIT 200").all();
       const reviews = await env.DB.prepare("SELECT id, review_kind, status, explanation, observation_id FROM intake_review_queue ORDER BY created_at DESC LIMIT 100").all();
-      const feedings = await env.DB.prepare("SELECT colony_key, feeder_alias, headcount, visited_at FROM feeder_visit_log ORDER BY visited_at DESC LIMIT 100").all();
+      const feedings = await env.DB.prepare("SELECT o.assigned_colony_key AS colony_key,m.volunteer_alias AS feeder_alias,COALESCE(o.verified_count_high,o.source_count_high) AS headcount,m.received_at AS visited_at,m.trace_id FROM intake_observations o JOIN intake_source_messages m ON m.id=o.source_message_id WHERE o.source_feeding_confirmed=1 AND o.assigned_colony_key IS NOT NULL ORDER BY julianday(m.received_at) DESC LIMIT 200").all();
       return json({ synthetic: true, reports: reports.results ?? [], reviews: reviews.results ?? [], feedings: feedings.results ?? [] });
     }
 
@@ -271,7 +314,7 @@ export default {
       const start = query.get("start") ?? "";
       const end = query.get("end") ?? "";
       if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || start > end || !Number.isFinite(Date.parse(`${start}T00:00:00Z`)) || !Number.isFinite(Date.parse(`${end}T00:00:00Z`))) return json({ error: "Use a valid start and end date" }, 400);
-      const result = await env.DB.prepare("SELECT m.broad_area, COUNT(*) AS reports, SUM(CASE WHEN o.urgency = 'urgent' THEN 1 ELSE 0 END) AS urgent_reports, SUM(CASE WHEN f.id IS NOT NULL THEN 1 ELSE 0 END) AS feeding_visits FROM intake_source_messages m JOIN intake_observations o ON o.source_message_id = m.id LEFT JOIN feeder_visit_log f ON f.source_message_id = m.id WHERE substr(m.received_at, 1, 10) BETWEEN ? AND ? GROUP BY m.broad_area ORDER BY m.broad_area").bind(start, end).all();
+      const result = await env.DB.prepare("SELECT m.broad_area, COUNT(*) AS reports, SUM(CASE WHEN o.urgency = 'urgent' THEN 1 ELSE 0 END) AS urgent_reports, SUM(CASE WHEN o.source_feeding_confirmed=1 AND o.assigned_colony_key IS NOT NULL THEN 1 ELSE 0 END) AS feeding_visits FROM intake_source_messages m JOIN intake_observations o ON o.source_message_id = m.id WHERE substr(m.received_at, 1, 10) BETWEEN ? AND ? GROUP BY m.broad_area ORDER BY m.broad_area").bind(start, end).all();
       const escape = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
       const rows = ["broad_area,reports,urgent_reports,feeding_visits", ...(result.results ?? []).map((row) => [escape(row.broad_area), Number(row.reports), Number(row.urgent_reports), Number(row.feeding_visits)].join(","))];
       return new Response(rows.join("\r\n") + "\r\n", { headers: { "Content-Type": "text/csv; charset=utf-8", "Cache-Control": "private, no-store", "Content-Disposition": 'attachment; filename="synthetic-community-report.csv"', "X-Content-Type-Options": "nosniff" } });
@@ -364,7 +407,7 @@ export default {
       const auth = await requireRole(request, env, ["admin", "coordinator", "volunteer"], { csrf: true });
       if (!auth.ok) return auth.response;
       if (!(request.headers.get("content-type") ?? "").includes("application/json")) return json({ error: "Expected application/json" }, 415);
-      try { const input = await readLimitedJson(request, 8000); if (!input || typeof input !== "object" || typeof input.description !== "string" || input.description.length > 2_000) return json({ error: "Invalid lost-cat report" }, 400); return json(await planStoredCatSearch(input, env)); }
+      try { const input = await readLimitedJson(request, 8000); if (!input || typeof input !== "object" || typeof input.description !== "string" || input.description.length > 2_000) return json({ error: "Invalid lost-cat report" }, 400); return json(await planStoredCatSearch({ ...input, searchFeedback: [] }, env)); }
       catch { return json({ error: "Choose a supported demo area and a valid past last-seen time." }, 400); }
     }
 

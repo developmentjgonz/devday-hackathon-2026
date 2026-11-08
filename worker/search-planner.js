@@ -26,8 +26,24 @@ export function searchZones(input, now = Date.now()) {
   ].map((zone) => ({ ...zone, area: input.lastSeenArea, layer: "searches", locationSignal: "last-seen", status: "Unverified search suggestion", observedAt: "Last seen " + new Date(seen).toISOString() }));
 }
 
+export function applySearchFeedback(zones, feedback = []) {
+  const records = Array.isArray(feedback) ? feedback.slice(0, 50).filter((row) => ["seen", "not_seen", "unsafe"].includes(row.outcome)) : [];
+  const zoneId = (row) => row.zoneId ?? row.zone_id;
+  const blockedZones = zones.filter((zone) => records.some((row) => zoneId(row) === zone.id && row.outcome === "unsafe")).map((zone) => ({ ...zone, status: "Access blocked · human review needed", detail: "A team report marked access unsafe. This area is withheld from the proposed search; absence of the cat is not inferred." }));
+  const blocked = new Set(blockedZones.map((zone) => zone.id));
+  const ranked = zones.filter((zone) => !blocked.has(zone.id)).map((zone) => {
+    const matching = records.filter((row) => zoneId(row) === zone.id);
+    const negative = matching.filter((row) => row.outcome === "not_seen").length;
+    const sighting = matching.some((row) => row.outcome === "seen");
+    const confidence = Math.min(.8, Math.max(.1, zone.confidence * Math.pow(.85, Math.min(negative, 3)) + (sighting ? .1 : 0)));
+    return { ...zone, confidence: Math.round(confidence * 100) / 100, feedbackSummary: (sighting ? "Unverified sighting reported; identity still needs human confirmation. " : "") + (negative ? negative + " search report(s) did not see a cat; this does not establish absence." : "No negative search feedback recorded.") };
+  }).sort((a, b) => b.confidence - a.confidence);
+  return { zones: ranked, blockedZones, feedbackCount: records.length };
+}
+
 export async function planStoredCatSearch(input, env) {
-  const zones = searchZones(input);
+  const feedback = applySearchFeedback(searchZones(input), input.searchFeedback);
+  const zones = feedback.zones;
   const workspace = await getCanonicalWorkspace(env.DB);
   const words = `${input.name ?? ""} ${input.description ?? ""}`.toLowerCase().split(/\W+/).filter((word) => word.length > 2);
   const matches = workspace.cats.filter((cat) => cat.status !== "merged").map((cat) => {
@@ -36,6 +52,8 @@ export async function planStoredCatSearch(input, env) {
     const hits = words.filter((word) => terms.includes(word)).length;
     return { catKey: cat.cat_key, name: cat.name, score: nameMatch ? .85 : Math.min(.65, hits / Math.max(words.length, 1)), lastSeenAt: cat.last_seen_at, colonies: cat.colonies };
   }).filter((cat) => cat.score > .2).sort((a, b) => b.score - a.score).slice(0, 3);
-  const result = await predictLostCatLocation({ ...input, storedMatches: matches }, env);
-  return { ...result, matchedCatName: matches[0]?.name ?? null, identityConfidence: matches[0]?.score ?? 0, matches, zones, photoAnalysis: "Photos stay in the separate private evidence desk; this search uses text and stored records, not visual identity recognition.", radiusBasis: "Illustrative radius grows with time since last sighting. A tracker checkbox cannot prove a current GPS fix. Zone scores are heuristic priorities, not calibrated probabilities." };
+  const feedbackForAgent = (input.searchFeedback ?? []).slice(0, 50).map((row) => ({ zoneId: row.zoneId ?? row.zone_id ?? null, outcome: row.outcome, observedAt: row.observedAt ?? row.observed_at ?? row.created_at ?? null }));
+  const result = zones.length ? await predictLostCatLocation({ ...input, storedMatches: matches, searchFeedback: feedbackForAgent }, env) : { mode: "demo", summary: "All suggested zones have an unsafe-access report. Pause field dispatch and ask a coordinator to review conditions.", volunteerGuidance: ["Do not enter an area marked unsafe. No animal location or absence has been established."], clarification: "Can a coordinator verify a different safe observation area?" };
+  const newerSource = matches[0]?.lastSeenAt && Date.parse(matches[0].lastSeenAt) > Date.parse(input.lastSeenAt) + 3_600_000;
+  return { ...result, matchedCatName: matches[0]?.name ?? null, identityConfidence: matches[0]?.score ?? 0, matches, ...feedback, safetyBlocked: !zones.length, clarification: newerSource ? "The census has a newer source report for this candidate. Compare that evidence before updating its last-seen time or marking the cat found." : result.clarification, photoAnalysis: "Photos stay in the separate private evidence desk; this search uses text and stored records, not visual identity recognition.", radiusBasis: "Illustrative radius grows with time since last sighting. Zone scores are heuristic priorities, not calibrated probabilities. Negative checks modestly lower priority; unsafe zones are withheld. A sighting report never confirms identity or reunion automatically." };
 }

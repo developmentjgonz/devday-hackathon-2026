@@ -6,6 +6,7 @@
  * behind an authenticated coordinator-only route when an API route is added.
  */
 
+import { readRoutingThreshold } from "./confirmations.js";
 const SOURCE_KINDS = new Set(["whatsapp_export", "sms_relay", "phone_report"]);
 const BROAD_AREAS = new Set([
   "Little Havana", "Little River", "North Miami", "Fort Lauderdale",
@@ -96,6 +97,7 @@ export function validateSyntheticFixtureBatch(input) {
       high: Math.max(0, Math.floor(number(raw.count.high, 0))),
       confidence: confidence(raw.count.confidence, .5),
     } : null;
+    if (raw.count && (![raw.count.low, raw.count.high].every((value) => typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 200))) error("reported counts must be whole numbers between 0 and 200");
     if (count && count.high < count.low) error("count.high must not be below count.low");
     return {
       id, sourceKind: recordSource, volunteerAlias: string(raw.volunteerAlias, 100, "record.volunteerAlias"),
@@ -110,7 +112,7 @@ export function validateSyntheticFixtureBatch(input) {
   return { schemaVersion: Number(input.schemaVersion) || 1, synthetic: true, batchId, sourceKind, provenance, records };
 }
 
-export function prepareSyntheticImport(input, { now = new Date().toISOString() } = {}) {
+export function prepareSyntheticImport(input, { now = new Date().toISOString(), colonyMatchThreshold = .75 } = {}) {
   const batch = validateSyntheticFixtureBatch(input);
   const checksum = stableChecksum(batch);
   const messages = batch.records.map((record) => {
@@ -127,6 +129,8 @@ export function prepareSyntheticImport(input, { now = new Date().toISOString() }
     }));
     return {
       ...record, traceId, messageId: `MSG:${traceId}`, observationId, urgency, review,
+      assignedColonyKey: record.proposedColonyKey && record.colonyConfidence >= colonyMatchThreshold ? record.proposedColonyKey : null,
+      assignmentState: record.proposedColonyKey && record.colonyConfidence >= colonyMatchThreshold ? "auto" : "unmatched",
       uncertaintyNote: record.count && record.count.low !== record.count.high ? `Reported range: ${record.count.low}-${record.count.high}; confidence ${record.count.confidence}.` : null,
     };
   });
@@ -142,8 +146,8 @@ export async function persistSyntheticImport(db, prepared) {
   for (const message of prepared.messages) {
     statements.push(db.prepare("INSERT INTO intake_source_messages (id, batch_id, source_message_id, trace_id, source_kind, volunteer_alias, body_redacted, broad_area, attachment_manifest_json, received_at, raw_fixture_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
       .bind(message.messageId, prepared.batch.batchId, message.id, message.traceId, message.sourceKind, message.volunteerAlias, message.text, message.broadArea, JSON.stringify(message.attachments), message.receivedAt, JSON.stringify({ synthetic: true, flags: message.flags, fixturePathOnly: true })));
-    statements.push(db.prepare("INSERT INTO intake_observations (id, source_message_id, proposed_cat_key, proposed_colony_key, colony_confidence, duplicate_group, urgency, uncertainty_note, requires_human_confirmation, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)")
-      .bind(message.observationId, message.messageId, message.proposedCatKey, message.proposedColonyKey, message.colonyConfidence, message.duplicateGroup, message.urgency, message.uncertaintyNote, prepared.batch.importedAt));
+    statements.push(db.prepare("INSERT INTO intake_observations (id, source_message_id, proposed_cat_key, proposed_colony_key, colony_confidence, duplicate_group, urgency, uncertainty_note, requires_human_confirmation, created_at, assigned_colony_key, assignment_state, source_count_low, source_count_high, source_count_confidence, source_feeding_confirmed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?)")
+      .bind(message.observationId, message.messageId, message.proposedCatKey, message.proposedColonyKey, message.colonyConfidence, message.duplicateGroup, message.urgency, message.uncertaintyNote, prepared.batch.importedAt, message.assignedColonyKey, message.assignmentState, message.count?.low ?? null, message.count?.high ?? null, message.count?.confidence ?? null, message.feedingConfirmed ? 1 : 0));
     const assessment = prepared.assessments?.[message.id];
     if (assessment) statements.push(db.prepare("INSERT INTO intake_assessments (observation_id, mode, summary, evidence_json, created_at) VALUES (?, ?, ?, ?, ?)")
       .bind(message.observationId, assessment.mode ?? "unknown", assessment.summary ?? "", JSON.stringify(assessment.matchEvidence ?? {}), prepared.batch.importedAt));
@@ -160,7 +164,8 @@ export async function persistSyntheticImport(db, prepared) {
 
 /** Validate, transform and optionally persist a synthetic fixture. */
 export async function importSyntheticFixture({ db, fixture, now, assessments, sourceDigest } = {}) {
-  const prepared = prepareSyntheticImport(fixture, { now });
+  const colonyMatchThreshold = db ? await readRoutingThreshold(db) : .75;
+  const prepared = prepareSyntheticImport(fixture, { now, colonyMatchThreshold });
   prepared.assessments = assessments;
   prepared.batch.sourceDigest = sourceDigest;
   const persistence = db ? await persistSyntheticImport(db, prepared) : { persisted: false, reason: "No D1 binding supplied; prepared only." };

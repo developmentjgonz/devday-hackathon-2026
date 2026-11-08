@@ -22,6 +22,10 @@ This is a local-demo roadmap. A checked item means the relevant code is present 
 - [x] A separate Photo match review surface; matching can recommend candidates but requires human confirmation before records change.
 - [x] Community-signal review leads stored for coordinator review without automatic creation of cats, sightings, or downstream field tasks.
 - [x] Current demo runbook, data inventory, and formal local verification record.
+- [x] Today’s operations: grouped open urgent reviews, overdue feeding confirmations, care cases, and uncertain/unmatched reports.
+- [x] Configurable confidence-gated colony assignment, assigned volunteer clarifications, and separate human-verified counts with source evidence preserved.
+- [x] Persistent missing-cat cases, manager-confirmed missing/reunion events, saved live-agent plans, timestamped field feedback, stale-plan handling, and immediate unsafe-zone exclusion.
+- [x] Internal-only saved missing-case search layer on Field map; public/sponsor views omit private case plans.
 
 ## Before any real pilot or deployment
 

@@ -4,6 +4,8 @@ This is a six-to-seven-minute, judge-ready demonstration of a **fictional** Sout
 
 For a precise account of what is implemented, simulated, and still needed, read [Judge Readiness Review](judge-readiness-review.md).
 
+**Latest pass:** [Feature pass 6](feature-pass-6.md) adds Today’s operations, Clarifications & routing, and persistent Missing-cat cases. The current local demo estimate is **8.4/10**. Use the extension below for an additional three-to-five-minute walkthrough.
+
 ## Before the demo
 
 ```sh
@@ -124,7 +126,7 @@ Open **Photo match review** for the side-by-side fictional evidence packet. The 
 
 Open **Lost cat navigator**. Use Tux’s default fictional report, or choose Miami Beach, Hialeah, Homestead, or Hollywood / Broward from the broad-area selector. Supply last-seen time and description/markings, then choose **Find likely search areas**.
 
-The result is a ranked set of probability zones—not a claimed cat location. It asks a clarification when useful and reminds volunteers about public access, traffic, canals, construction, heat, and flooding. The larger Field map contains the separate fictional tracker demonstration.
+The result is a ranked set of unverified heuristic search zones. Scores are not calibrated probabilities or claimed cat locations. It asks a clarification when useful and reminds volunteers to verify access and avoid traffic, canals, construction, heat, and flooding. The larger Field map contains the separate fictional tracker demonstration.
 
 Say: “The agent can recommend what to check and why; a coordinator assigns the task, and nobody is sent onto private or unsafe property.”
 
@@ -153,6 +155,38 @@ Open **Care outcomes & reports**. Create a fictional medical or TNR case, then d
 Open **Agent evaluation** and run the eight fictional urgency cases. The UI reports whether the returned urgency matches its fixed expected label and whether the deterministic fallback or agent mode ran. A pass is not a medical diagnosis or an identity match.
 
 Optionally show **Community signals** with its redacted sample. The page intentionally does not fetch the URL, scrape a platform, or create a real case. It produces a review-first, broad-area suggestion only.
+
+## Feature pass 6 extension — shared decisions and search feedback
+
+The currently prepared local database already contains imported fixture reports, one resolved clarification, and an active Tux case with a saved plan. These are useful inspection records; do not expect a new import to reset them.
+
+### 12. Work the same-day queue
+
+1. Sign in as admin/coordinator and open **Care workspace**.
+2. Show **Today’s operations** above Team census. It groups open urgent reviews and shows overdue feeding confirmations, open medical cases, and uncertain/unmatched reports from the protected local API. A missing data source displays unknown, not zero.
+3. Select an item in **Needs clarification** to open **Clarifications & routing** focused on that report. A count already confirmed by a person no longer appears in this uncertainty shortcut.
+
+### 13. Clarify a count without replacing the message
+
+1. In **Clarifications & routing**, choose an unverified report with a range such as “maybe three kittens.” Show the original source range and route confidence.
+2. As manager, type a focused fictional question, choose the volunteer from the dropdown, and select **Request clarification**.
+3. Sign out in Care workspace, sign in as `volunteer@mangrovemews.demo`, return to **Clarifications & routing**, and submit a reply plus fictional evidence. Volunteers can reply only to their assigned clarification; they cannot confirm the count.
+4. Sign back in as admin/coordinator. Select the report, choose its colony, enter verified low/high counts and confidence, and add evidence. Select **Confirm colony and count**. Show original and verified values side by side and the resolved clarification.
+5. Explain that automatic routing defaults to **0.75**. If you demonstrate a threshold change, use a value between 0.50 and 0.95, then restore 0.75. Confirmed human assignments remain unchanged. Urgent-care reviews remain open until separately resolved.
+
+The prepared example is the North Miami phone report “Maybe three kittens heard behind a fence.” It retained **0–3 / 54%** and separately records **3–3 / 95%** following a fictional volunteer reply and admin review.
+
+### 14. Close the search-feedback loop
+
+1. Open **Missing-cat cases**. Inspect the prepared active Tux case, or create a new fictional case with an unclaimed canonical cat, fixture photo, supported broad area, description, and past last-seen time.
+2. A new case begins pending and does not change the linked cat. Enter a human review reason, check the acknowledgement, then select **Confirm missing case** as admin/coordinator.
+3. Select **Generate and save search plan**. Read the saved mode badge. The current running server has OpenAI enabled; a future default `npm run dev:full` is deterministic. To opt in again with the ignored server key configured, start `MEWS_ENABLE_OPENAI=1 npm run dev:full`.
+4. In field feedback, enter a fictional observation, its time, and a related zone; select **Log unsafe**. The affected zone disappears immediately, the old plan is marked stale, and creating a task from it is disabled. A **not seen** report reduces priority modestly and never proves absence; **seen** remains an unverified sighting.
+5. Select **Update search plan with feedback**. Show its remaining unverified zones and mode, then open **Field map** and enable **Active missing-cat search plans**. Private saved zones appear only to internal users; the public preview and sponsor session omit them.
+6. On the case, **Create safe field task** prepares a draft for **Field-search tasks**. Complete the existing legal-access, weather, and safety checks before dispatch. The suggested zone itself is never proof of safe access.
+7. To demonstrate closure on a disposable fictional case, enter a reason, acknowledge human review, and select **Confirm reunited**. This human action closes the case and restores the linked canonical cat to active. Do not close the prepared Tux case if you want its map zones to remain available for the next demo.
+
+The prepared Tux plan has two remaining zones after a fictional unsafe-access report. The raw feedback and mode remain visible. Map anchors and radii are invented planning context, not inspected hiding spots, telemetry, or movement predictions.
 
 ## Acceptance-criteria evidence table
 

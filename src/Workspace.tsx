@@ -14,16 +14,21 @@ import { PhoneReport } from "./components/PhoneReport";
 import { PhotoMatchReview } from "./components/PhotoMatchReview";
 import { CatDirectory } from "./components/CatDirectory";
 import { deliverFieldOutbox } from "./lib/field-outbox";
+import { TodayBoard } from "./components/TodayBoard";
+import { IntakeReview } from "./components/IntakeReview";
+import { MissingCases } from "./components/MissingCases";
 
-type View = "overview" | "map" | "lost" | "imports" | "photos" | "evaluation" | "community" | "schedule" | "search-tasks" | "outcomes" | "report" | "matches" | "cats";
+type View = "overview" | "map" | "lost" | "imports" | "photos" | "evaluation" | "community" | "schedule" | "search-tasks" | "outcomes" | "report" | "matches" | "cats" | "intake-review" | "missing";
 const views = [
   ["overview", "Care workspace", Database],
   ["report", "New field report", PawPrint],
+  ["intake-review", "Clarifications & routing", MessageSquare],
   ["imports", "Chat imports & outbox", Upload],
   ["map", "Field map", Compass],
   ["cats", "Cat profiles & visits", PawPrint],
   ["matches", "Photo match review", Image],
   ["lost", "Lost cat navigator", Crosshair],
+  ["missing", "Missing-cat cases", Crosshair],
   ["photos", "Private photo review", Image],
   ["schedule", "Feeding schedule", CalendarDays],
   ["search-tasks", "Field-search tasks", Crosshair],
@@ -99,7 +104,7 @@ export function Workspace({ photos }: { photos?: React.ReactNode }) {
     {settings && <section className="workspace-popover"><header><b>Appearance preferences</b><button className="icon-button" aria-label="Close settings" onClick={() => setSettings(false)}><X size={16}/></button></header><label><span>Compact layout</span><input type="checkbox" checked={compact} onChange={() => setCompact(!compact)}/></label><label><span>High contrast</span><input type="checkbox" checked={contrast} onChange={() => setContrast(!contrast)}/></label><label><span>Larger text and controls</span><input type="checkbox" checked={largeText} onChange={() => setLargeText(!largeText)}/></label><label><span>Reduce interface motion</span><input type="checkbox" checked={reduceMotion} onChange={() => setReduceMotion(!reduceMotion)}/></label><p>Saved on this device. Your team role is set by the server.</p></section>}
     {notifications && <section className="workspace-popover"><header><b>Review notifications</b><button className="icon-button" aria-label="Close notifications" onClick={() => setNotifications(false)}><X size={16}/></button></header><p>{user ? unread.length + " unread of " + alerts.length + " open reviews" : "Sign in to see team notifications."}</p>{alerts.slice(0, 20).map((item) => <button key={item.id} className="workspace-alert" onClick={() => { setRead((current) => [...current, item.id]); go(item.id.startsWith("feeding:") ? "schedule" : "overview"); setNotifications(false); }}><b>{item.review_kind.replaceAll("_", " ")}</b><span>{item.explanation}</span></button>)}{alerts.length > 0 && <button className="secondary-button" onClick={() => setRead(alerts.map((item) => item.id))}>Mark all read</button>}</section>}
     <div className="content">
-      {view === "overview" && <><section className="page-heading"><div><p className="eyebrow">Fictional data · persistent care records</p><h1>Care, before it gets missed.</h1></div></section><SharedIntake/></>}
+      {view === "overview" && <><section className="page-heading"><div><p className="eyebrow">Fictional data · persistent care records</p><h1>Care, before it gets missed.</h1></div></section><TodayBoard/><SharedIntake/></>}
       {view === "imports" && <><section className="page-heading"><div><p className="eyebrow">Intentional exports and messages</p><h1>Import a field shift</h1></div></section><LiveShift/><DurableOutbox/></>}
       {view === "map" && <ConnectedFieldMap/>}
       {view === "lost" && <StoredCatNavigator/>}
@@ -112,6 +117,8 @@ export function Workspace({ photos }: { photos?: React.ReactNode }) {
       {view === "report" && <PhoneReport/>}
       {view === "matches" && <PhotoMatchReview/>}
       {view === "cats" && <CatDirectory/>}
+      {view === "intake-review" && <IntakeReview/>}
+      {view === "missing" && <MissingCases/>}
     </div></main>
   </div>;
 }

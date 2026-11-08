@@ -11,10 +11,12 @@ Mangrove Mews helps a small rescue turn intentional field reports, exported chat
 - A responsive Workspace for Founder/Admin, Coordinator, and Volunteer roles, with server-backed local demo sign-in and route permissions.
 - Intentional web, SMS-relay, and WhatsApp **Export chat** intake. The raw synthetic messages are parsed into traceable reports and a stored canonical census; the app never automates a live WhatsApp chat.
 - Human-controlled duplicate review: candidate evidence is scored, but a person selects the canonical cat and records the merge rationale.
+- Today’s operations board groups open urgent reviews and shows missing feeding confirmations, care cases, and uncertain intake. A configurable 0.75 routing threshold holds weak colony matches for clarification; assigned volunteers reply and managers verify counts without replacing source evidence.
 - A private, stored-census Miami-Dade/Broward field map with Google Maps support, layer/radius controls, approximate anchors, hazards, and a fallback preview if Maps is unavailable.
 - A clearly labeled fictional tracker animation, planning weather, feeding schedules, durable browser outbox/retry, and fictional chat/SMS/photo fixtures for the demo.
 - Private-photo upload and review for fictional demo images: the browser re-encodes selected images to strip metadata before upload, and access is role/uploader scoped in the local demo.
 - A bounded Agents SDK triage/search experience. It is deterministic by default; an API key is opt-in for local testing. It recommends rather than merges records, changes sensitive statuses, or claims to locate an animal.
+- Persistent missing-cat cases with manager-confirmed status changes, saved agent/search plans, timestamped field feedback, immediate unsafe-zone exclusion, and an internal map layer. Task dispatch still requires a human access/safety review.
 - Community-signal review UI that accepts only deliberate, redacted text; it does not scrape social platforms, fetch arbitrary URLs, or automatically create animal records.
 
 ## Deployment status
@@ -34,6 +36,7 @@ The Worker code and migrations are designed for D1/R2-style bindings, but remote
 - [Local skills](.agents/skills/README.md): installed guidance and source revisions.
 - [Feature map](.agents/skills/verify-mews/references/features/README.md): implemented user-visible behavior and verification notes.
 - [Demo runbook](docs/demo-runbook.md): a guided judge-ready walkthrough with the synthetic chats and SMS relays.
+- [Feature pass 6](docs/feature-pass-6.md): current rating, new review/search workflows, and local verification evidence.
 
 ## Directory boundaries
 

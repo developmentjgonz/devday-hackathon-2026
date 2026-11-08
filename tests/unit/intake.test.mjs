@@ -29,7 +29,7 @@ test("live-looking or precise fixture input is rejected", () => {
 
 test("prepared fixture can persist using a D1-shaped batch binding", async () => {
   const calls = [];
-  const db = { prepare(sql) { return { bind(...values) { return { sql, values, run: async () => calls.push({ sql, values }) }; } }; }, async batch(statements) { for (const statement of statements) await statement.run(); } };
+  const db = { prepare(sql) { return { bind(...values) { return { sql, values, first: async () => null, run: async () => calls.push({ sql, values }) }; } }; }, async batch(statements) { for (const statement of statements) await statement.run(); } };
   const result = await importSyntheticFixture({ db, fixture, now: "2026-11-07T20:00:00.000Z" });
   assert.equal(result.persisted, true);
   assert.ok(result.statementCount > 5);
