@@ -1,5 +1,7 @@
 # Mews — Team JS
 
+Licensed under the [MIT License](LICENSE). Third-party code and assets retain their own licenses and notices.
+
 Mews is Team JS's project for the [DevDay Exchange Community Hackathon](https://deepstation.ai/hackathons/vtl7ctbeihnikitvjwl3941h). We have chosen the **Mangrove Mews cat colony tracking challenge**.
 
 The project aims to help cat rescue coordinators and volunteers track colonies, cats, feeding visits, and care needs in one place. The project direction is confirmed; the first user flow and MVP scope still need to be agreed. Mews remains the working name.
