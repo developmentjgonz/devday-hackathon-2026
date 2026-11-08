@@ -210,7 +210,9 @@ test('an unresolved area or failed place search asks for details without inventi
     assert.equal(result.ready, false);
     assert.deepEqual(result.locations, []);
     assert.equal(searches, 1, 'An unknown area must not trigger a worldwide landmark search');
-    assert.match(result.reply, unavailable ? /couldn’t look up/ : /landmark/);
+    assert.match(result.reply, unavailable ? /map lookup is unavailable/ : /couldn’t match/);
+    assert.equal(result.locationFallback, 'McDonald’s, Unknown town');
+    assert.equal(result.lastLocationSearch.outcome, unavailable ? 'unavailable' : 'not-found');
   }
 });
 
@@ -380,4 +382,52 @@ test('chat rejects invalid files before calling the provider and keeps unreadabl
   assert.equal(response.status, 200);
   assert.deepEqual((await response.json()).skippedAttachments, [{ name: 'voice.wav', reason: 'The recording could not be transcribed.' }]);
   assert.equal(objects.size, 0);
+});
+
+test('Dominos in Surfside rejects a fuzzy building match and does not repeat a failed search', async (t) => {
+  const { request } = await enableChat(t);
+  let searches = 0;
+  let query = 'Dominos';
+  globalThis.fetch = async (url) => {
+    if (String(url).startsWith('https://api.openai.com/')) return functionCall('findLocation', { reply: 'I’ll check near that shop.', query, area: 'Surfside' });
+    searches++;
+    if (new URL(url).searchParams.get('q') === 'Surfside') return places([['Surfside', -80.1256, 25.8784]], [-80.138, 25.888, -80.115, 25.871]);
+    // A similar name inside the search bounds is not the requested business.
+    return places([['Domino One Condominium', -80.1258, 25.875]]);
+  };
+  const messages = [{ role: 'user', text: 'A cat is limping by Dominos in Surfside.' }];
+  const result = await (await request('/api/public-reports/chat', { body: { messages } })).json();
+  assert.deepEqual(result.locations, []);
+  assert.equal(result.locationFallback, 'Dominos, Surfside');
+  assert.equal(searches, 2);
+  query = 'Domino’s';
+  const repeated = await (await request('/api/public-reports/chat', { body: {
+    messages: [...messages, { role: 'assistant', text: result.reply }, { role: 'user', text: 'Dominos in surfside' }],
+    lastLocationSearch: result.lastLocationSearch,
+  } })).json();
+  assert.equal(searches, 2, 'Repeating the same failed place must not call the map service again');
+  assert.match(repeated.reply, /You don’t need to repeat it/);
+  assert.equal(repeated.locationFallback, 'Domino’s, Surfside');
+});
+
+test('a chosen location description can finish a report without a map pin or another lookup', async (t) => {
+  const { request } = await enableChat(t);
+  const label = 'Dominos, Surfside';
+  globalThis.fetch = async (url, init) => {
+    assert.equal(url, 'https://api.openai.com/v1/responses');
+    const payload = JSON.parse(init.body);
+    assert.match(JSON.stringify(payload), /written location description chosen by the visitor is a usable location/);
+    assert.match(payload.input.at(-1).content[0].text, /Dominos, Surfside/);
+    return functionCall('prepareReport', { reply: 'Please check these details.', location: label, details: 'A cat was limping by Dominos.', urgent: false });
+  };
+  const response = await request('/api/public-reports/chat', { body: {
+    messages: [{ role: 'user', text: 'A cat was limping by Dominos in Surfside.' }, { role: 'assistant', text: 'We can use that description.' }, { role: 'user', text: `Use this location description: ${label}` }],
+    locationDescription: label,
+    lastLocationSearch: { query: 'Dominos', area: 'Surfside', outcome: 'not-found' },
+  } });
+  assert.equal(response.status, 200);
+  const draft = await response.json();
+  assert.equal(draft.ready, true);
+  assert.equal(draft.location, label);
+  assert.equal(draft.mapLocation, undefined);
 });

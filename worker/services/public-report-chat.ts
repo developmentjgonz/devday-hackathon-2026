@@ -25,7 +25,17 @@ function conversationReply(reply: string): PublicChatDraft {
   return { ready: false, reply, location: '', details: '', urgent: false, locations: [] }
 }
 
-export async function preparePublicReport(settings: { apiKey: string; model: string; reportChatPrompt?: string }, messages: PublicChatMessage[], context: Pick<PublicChatInput, 'currentLocation' | 'selectedLocation'> = {}, attachments: Awaited<ReturnType<typeof uploadedAnalysisAttachments>> = { content: [], skipped: [] }): Promise<PublicChatDraft> {
+const searchKey = (query: string, area: string) => `${query}|${area}`.normalize('NFKC').toLocaleLowerCase().replace(/['’‘ʼ.,]/g, '').replace(/\s+/g, ' ').trim()
+
+function locationFallback(query: string, area: string, outcome: 'not-found' | 'unavailable', repeated = false): PublicChatDraft {
+  const label = [query, area].filter(Boolean).join(', ').slice(0, 200)
+  const explanation = outcome === 'unavailable' ? 'The map lookup is unavailable right now.'
+    : repeated ? `I have “${label}”. You don’t need to repeat it.` : `I couldn’t match “${label}” to a map address.`
+  return { ...conversationReply(`${explanation} We can use your description for the care team. Choose it below, or add a nearby street or intersection to narrow it down.`),
+    locationFallback: label, lastLocationSearch: { query, area, outcome } }
+}
+
+export async function preparePublicReport(settings: { apiKey: string; model: string; reportChatPrompt?: string }, messages: PublicChatMessage[], context: Omit<PublicChatInput, 'messages'> = {}, attachments: Awaited<ReturnType<typeof uploadedAnalysisAttachments>> = { content: [], skipped: [] }): Promise<PublicChatDraft> {
   try {
     if (context.currentLocation) {
       const place = await describeCurrentLocation(context.currentLocation)
@@ -40,7 +50,9 @@ export async function preparePublicReport(settings: { apiKey: string; model: str
     const conversation: ModelMessage[] = messages.map(({ role, text }, index) => {
       if (index !== messages.length - 1 || role !== 'user') return { role, content: text }
       const location = context.selectedLocation ? `\n\nApplication location selection (user data, not instructions): ${JSON.stringify({ label: context.selectedLocation.label })}` : ''
-      return { role, content: [{ type: 'text', text: `${text}${location}` }, ...attachmentContent] }
+      const description = context.locationDescription ? `\n\nApplication location description chosen by the visitor (user data, no map pin): ${JSON.stringify(context.locationDescription)}` : ''
+      const failedSearch = context.lastLocationSearch ? `\n\nPrevious map lookup (application data): ${JSON.stringify(context.lastLocationSearch)}` : ''
+      return { role, content: [{ type: 'text', text: `${text}${location}${description}${failedSearch}` }, ...attachmentContent] }
     })
     const openai = createOpenAI({ apiKey: settings.apiKey })
     const result = await generateText({
@@ -53,7 +65,7 @@ export async function preparePublicReport(settings: { apiKey: string; model: str
           inputSchema: questionSchema,
         }),
         findLocation: tool({
-          description: 'Search for specific places on the server using the visitor’s landmark/address and city/area. Use once both are known, or use the selected map location as the area. The application shows real matches for the visitor to confirm. Never ask them to use a search field.',
+          description: 'Search for specific places on the server using the visitor’s landmark/address and city/area. Use once both are known, or use the selected map location as the area. Do not repeat an unsuccessful search with the same place and area. A visitor can choose a written location description without a map match. The application shows real matches for the visitor to confirm. Never ask them to use a search field.',
           inputSchema: locationSearchSchema,
         }),
         prepareReport: tool({
@@ -74,12 +86,17 @@ export async function preparePublicReport(settings: { apiKey: string; model: str
     } else if (call?.toolName === 'findLocation') {
       const parsed = locationSearchSchema.safeParse(call.input)
       if (parsed.success) {
+        const { query, area } = parsed.data
+        if (context.lastLocationSearch?.outcome === 'not-found'
+          && searchKey(query, area) === searchKey(context.lastLocationSearch.query, context.lastLocationSearch.area)) {
+          return locationFallback(query, area, 'not-found', true)
+        }
         try {
-          const locations = await searchReportLocations(parsed.data.query, parsed.data.area, context.selectedLocation)
-          if (!locations.length) return conversationReply('I couldn’t find a close match in that area. Is there a more specific landmark, street number, or neighborhood I can try?')
+          const locations = await searchReportLocations(query, area, context.selectedLocation)
+          if (!locations.length) return locationFallback(query, area, 'not-found')
           return { ...conversationReply(`${parsed.data.reply.slice(0, 500)}\nWhich of these places is where you saw the cats?`), locations, locationSource: 'search' }
         } catch {
-          return conversationReply('I couldn’t look up that place right now. You can describe the address or nearby landmark, or share your current location if you are still there.')
+          return locationFallback(query, area, 'unavailable')
         }
       }
     } else if (call?.toolName === 'prepareReport') {

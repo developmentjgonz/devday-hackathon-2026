@@ -43,6 +43,9 @@ export function PublicReportChat({ busy, error, attachments, onAttachmentsChange
   const [sending, setSending] = useState(false)
   const [places, setPlaces] = useState<{ index: number; locations: ChatPlace[]; source?: 'search' | 'device' } | null>(null)
   const [selectedLocation, setSelectedLocation] = useState<ChatLocation | null>(null)
+  const [locationDescription, setLocationDescription] = useState('')
+  const [locationFallback, setLocationFallback] = useState<{ index: number; label: string } | null>(null)
+  const [lastLocationSearch, setLastLocationSearch] = useState<PublicChatDraft['lastLocationSearch']>()
   const [locating, setLocating] = useState(false)
   const [chatError, setChatError] = useState('')
   const [reviewedAttachments, setReviewedAttachments] = useState<File[]>([])
@@ -73,7 +76,7 @@ export function PublicReportChat({ busy, error, attachments, onAttachmentsChange
     return () => observer.disconnect()
   }, [])
 
-  async function sendText(text: string, selection?: ChatLocation | null, currentLocation?: ChatCoordinates) {
+  async function sendText(text: string, selection?: ChatLocation | null, currentLocation?: ChatCoordinates, description?: string) {
     text = text.trim()
     if (!text && attachmentsChanged) text = 'I updated the attachments. Please use the current files to help prepare my cat report.'
     if (!text || text.length > 300 || inFlight.current || phase === 'filed') return
@@ -82,6 +85,7 @@ export function PublicReportChat({ busy, error, attachments, onAttachmentsChange
     follow.current = true
     setMessage('')
     setPlaces(null)
+    setLocationFallback(null)
     setChatError('')
 
     if (!currentLocation && !selection && phase === 'confirming' && draft && isNo(text)) {
@@ -108,18 +112,23 @@ export function PublicReportChat({ busy, error, attachments, onAttachmentsChange
     }
     if (limitReached) {
       setPlaces(places)
+      setLocationFallback(locationFallback)
       setMessage(text)
       setChatError('The conversation is full. Use the report form to finish your report.')
       return
     }
 
     inFlight.current = true
-    if (selection !== undefined) setSelectedLocation(selection)
+    const nextLocation = currentLocation || description !== undefined ? null : selection === undefined ? selectedLocation : selection
+    const nextDescription = currentLocation || selection !== undefined ? '' : description ?? locationDescription
+    setSelectedLocation(nextLocation)
+    setLocationDescription(nextDescription)
     setMessages(next)
     setSending(true)
     try {
       const data = JSON.stringify({ messages: next,
-        ...(currentLocation ? { currentLocation } : selection === null ? {} : selection || selectedLocation ? { selectedLocation: selection ?? selectedLocation } : {}),
+        ...(currentLocation ? { currentLocation } : nextLocation ? { selectedLocation: nextLocation } : nextDescription ? { locationDescription: nextDescription } : {}),
+        ...(lastLocationSearch ? { lastLocationSearch } : {}),
       })
       const form = new FormData()
       form.set('data', data)
@@ -131,11 +140,17 @@ export function PublicReportChat({ busy, error, attachments, onAttachmentsChange
       if (!response.ok || !result) throw new Error(result?.error ?? 'The assistant is unavailable. Try again or use the report form.')
       setReviewedAttachments(attachments)
       setSkippedAttachments(result.skippedAttachments ?? [])
-      if (currentLocation) setSelectedLocation(null)
-      if (result.locations?.length) setPlaces({ index: next.length, locations: result.locations, source: result.locationSource })
+      if (result.lastLocationSearch) setLastLocationSearch(result.lastLocationSearch)
+      if (result.locationFallback) setLocationFallback({ index: next.length, label: result.locationFallback })
+      if (result.locations?.length) {
+        setPlaces({ index: next.length, locations: result.locations, source: result.locationSource })
+        setLastLocationSearch(undefined)
+        setLocationDescription('')
+      }
       if (result.ready) {
         setDraft(result)
         if (!result.mapLocation) setSelectedLocation(null)
+        if (result.location !== nextDescription) setLocationDescription('')
         addReply(result.reply)
         setPhase('confirming')
       } else {
@@ -146,6 +161,7 @@ export function PublicReportChat({ busy, error, attachments, onAttachmentsChange
     } catch (cause) {
       setMessages(messages)
       setPlaces(places)
+      setLocationFallback(locationFallback)
       setMessage(text)
       setChatError(cause instanceof Error ? cause.message : 'The assistant is unavailable. Try again or use the report form.')
     } finally {
@@ -163,13 +179,15 @@ export function PublicReportChat({ busy, error, attachments, onAttachmentsChange
     const conversation = pending ? [...messages, { role: 'user' as const, text: pending }] : messages
     onUseForm(conversation, draft ? { location: draft.location, details: `${draft.details}${pending ? `\n\n${pending}` : ''}`, urgent: draft.urgent, ...(draft.mapLocation ? { mapLocation: draft.mapLocation } : {}) }
       : selectedLocation ? { location: selectedLocation.label, details: conversation.filter((item) => item.role === 'user').map((item) => item.text).join('\n\n').slice(0, 3700), urgent: false,
-        mapLocation: { type: 'pin', latitude: selectedLocation.latitude, longitude: selectedLocation.longitude } } : undefined)
+        mapLocation: { type: 'pin', latitude: selectedLocation.latitude, longitude: selectedLocation.longitude } }
+        : locationDescription || locationFallback ? { location: locationDescription || locationFallback!.label, details: conversation.filter((item) => item.role === 'user').map((item) => item.text).join('\n\n').slice(0, 3700), urgent: false } : undefined)
   }
   function startAgain() {
     follow.current = true
     onAttachmentsChange([])
     setReviewedAttachments([]); setSkippedAttachments([]); setFiledAttachmentCount(0)
     setMessages([]); setMessage(''); setDraft(null); setPhase('collecting'); setChatError(''); setPlaces(null); setSelectedLocation(null)
+    setLocationDescription(''); setLocationFallback(null); setLastLocationSearch(undefined)
   }
 
   return <div className="flex h-dvh min-h-0 flex-col">
@@ -214,6 +232,11 @@ export function PublicReportChat({ busy, error, attachments, onAttachmentsChange
                 </li>)}</CardList></Card>
                 <Button type="button" variant="link" size="sm" disabled={sending || busy || locating || Boolean(message.trim())} onClick={() => void sendText(places.source === 'device' ? 'The cats were somewhere else, not at my current location.' : 'None of these places is correct.', null)}>{places.source === 'device' ? 'The cats were somewhere else' : 'None of these places'}</Button>
                 <Text size="caption" tone="muted">Address lookup: <TextLink size="sm" href="https://photon.komoot.io/" target="_blank" rel="noreferrer">Photon</TextLink> · <TextLink size="sm" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors</TextLink></Text>
+              </div> : null}
+              {locationFallback?.index === index - 1 ? <div className="space-y-3 pt-4">
+                <Text size="small" weight="semibold" className="wrap-anywhere">{locationFallback.label}</Text>
+                <Button type="button" variant="outline" size="sm" disabled={sending || busy || locating || Boolean(message.trim())}
+                  onClick={() => void sendText(`Use this location description: ${locationFallback.label}`, undefined, undefined, locationFallback.label)}>Use this location description</Button>
               </div> : null}
             </div>
           </div> : <div className="flex justify-end"><Card size="sm" tone="message" className="max-w-[85%]"><CardContent><Text size="small" className="whitespace-pre-wrap wrap-anywhere"><Text render={<span />} className="sr-only">You: </Text>{item.text}</Text></CardContent></Card></div>}

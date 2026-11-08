@@ -3,6 +3,14 @@ import type { ChatCoordinates, ChatLocation, ChatPlace } from '../../shared/sche
 
 const endpoint = 'https://photon.komoot.io/'
 const areaName = (value: string) => value.toLocaleLowerCase().trim().replace(/^(city|town|village|borough) of /, '')
+const words = (value: string) => value.normalize('NFKC').toLocaleLowerCase().replace(/['’‘ʼ]/g, '').match(/[\p{L}\p{N}]+/gu) ?? []
+
+/** Photon can return fuzzy matches such as Domino One for Domino's. */
+function matchesLandmark(query: string, result: AddressResult) {
+  const actual = new Set(words(addressLabel(result)))
+  const expected = words(query)
+  return expected.length > 0 && expected.every((word) => actual.has(word))
+}
 
 function distance(a: ChatCoordinates, b: ChatCoordinates) {
   const radians = Math.PI / 180
@@ -44,6 +52,7 @@ export async function searchReportLocations(query: string, area: string, selecte
   const results = await lookup('api', { ...params, q: searchQuery }, signal)
   const seen = new Set<string>()
   return results.flatMap((result): ChatPlace[] => {
+    if (!matchesLandmark(query, result)) return []
     const [longitude, latitude] = result.coordinates
     const label = addressLabel(result).slice(0, 200)
     const key = `${label.toLowerCase()}:${latitude.toFixed(5)}:${longitude.toFixed(5)}`

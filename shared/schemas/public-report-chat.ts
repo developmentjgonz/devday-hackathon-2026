@@ -12,6 +12,12 @@ export const chatLocationSchema = z.strictObject({
   longitude: z.number().min(-180).max(180),
 })
 
+const locationSearchSchema = z.strictObject({
+  query: z.string().trim().min(2).max(160),
+  area: z.string().trim().max(120),
+  outcome: z.enum(['not-found', 'unavailable']),
+})
+
 export const publicChatMessageSchema = z.discriminatedUnion('role', [
   z.strictObject({ role: z.literal('user'), text: z.string().trim().min(1).max(300) }),
   z.strictObject({ role: z.literal('assistant'), text: z.string().trim().min(1).max(1200) }),
@@ -21,6 +27,8 @@ export const publicReportChatSchema = z.strictObject({
   messages: z.array(publicChatMessageSchema).min(1).max(15),
   currentLocation: chatCoordinatesSchema.optional(),
   selectedLocation: chatLocationSchema.optional(),
+  locationDescription: z.string().trim().min(1).max(200).optional(),
+  lastLocationSearch: locationSearchSchema.optional(),
 }).refine(({ messages }) => messages.every((message, index) => message.role === (index % 2 === 0 ? 'user' : 'assistant')),
   'The conversation is invalid.')
   .refine(({ messages }) => messages.at(-1)?.role === 'user', 'The conversation must end with a message.')
@@ -36,4 +44,6 @@ export type PublicChatDraft = {
   locationSource?: 'search' | 'device'
   mapLocation?: PublicReportMapLocation
   skippedAttachments?: { name: string; reason: string }[]
+  locationFallback?: string
+  lastLocationSearch?: z.output<typeof locationSearchSchema>
 }

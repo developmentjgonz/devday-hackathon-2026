@@ -445,3 +445,57 @@ test('files can be sent without text and changed files need a new review before 
   expect(submissions[0]).toContain('filename="cat.avif"')
   expect(submissions[0]).not.toContain('filename="notes.txt"')
 })
+
+test('a failed location search preserves the place and offers a description through retry and confirmation', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.route('**/api/public-reports/contact', (route) => route.fulfill({ json: enabled }))
+  const lastLocationSearch = { query: 'Dominos', area: 'Surfside', outcome: 'not-found' }
+  const requests: Array<Record<string, unknown>> = []
+  await page.route('**/api/public-reports/chat', (route) => {
+    const input = route.request().postDataJSON()
+    requests.push(input)
+    if (requests.length === 3) return route.fulfill({ status: 503, json: { error: 'Mews cannot reply right now.' } })
+    if (input.locationDescription) return route.fulfill({ json: { ready: true, reply: 'Please check these details.', location: input.locationDescription, details: 'A cat was limping by Dominos.', urgent: false, locations: [] } })
+    return route.fulfill({ json: { ready: false, reply: 'I couldn’t match “Dominos, Surfside” to a map address. We can use your description for the care team.', location: '', details: '', urgent: false, locations: [], locationFallback: 'Dominos, Surfside', lastLocationSearch } })
+  })
+  let submitted: unknown
+  await page.route('**/api/public-reports', (route) => {
+    submitted = route.request().postDataJSON()
+    return route.fulfill({ status: 201, json: { submitted: true } })
+  })
+  await page.goto(story)
+  await page.getByLabel('Your message').fill('A cat is limping by Dominos in Surfside.')
+  await page.getByRole('button', { name: 'Send message', exact: true }).click()
+  const useDescription = page.getByRole('button', { name: 'Use this location description', exact: true })
+  await expect(useDescription).toBeVisible()
+  await page.getByLabel('Your message').fill('Dominos in Surfside')
+  await page.getByRole('button', { name: 'Send message', exact: true }).click()
+  await expect(useDescription).toBeVisible()
+  expect(requests[1].lastLocationSearch).toEqual(lastLocationSearch)
+  await useDescription.click()
+  await expect(page.getByText('Mews cannot reply right now.', { exact: true })).toBeVisible()
+  await expect(useDescription).toBeVisible()
+  expect(requests[2].locationDescription).toBe('Dominos, Surfside')
+  await page.getByRole('button', { name: 'Send message', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Yes, send report' })).toBeVisible()
+  expect(requests[3].locationDescription).toBe('Dominos, Surfside')
+  expect(requests[3].selectedLocation).toBeUndefined()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.getByRole('button', { name: 'Yes, send report' }).click()
+  await expect(page.getByRole('link', { name: 'Back to home' })).toBeVisible()
+  expect(submitted).toEqual({ location: 'Dominos, Surfside', details: 'A cat was limping by Dominos.', urgent: false })
+})
+
+test('switching to the form after a failed search keeps the location description', async ({ page }) => {
+  await page.route('**/api/public-reports/contact', (route) => route.fulfill({ json: enabled }))
+  await page.route('**/api/public-reports/chat', (route) => route.fulfill({ json: {
+    ready: false, reply: 'We can use your description for the care team.', location: '', details: '', urgent: false, locations: [], locationFallback: 'Dominos, Surfside',
+  } }))
+  await page.goto(story)
+  await page.getByLabel('Your message').fill('A cat is limping by Dominos in Surfside.')
+  await page.getByRole('button', { name: 'Send message', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Use this location description' })).toBeVisible()
+  await page.getByRole('button', { name: 'Use the report form instead' }).click()
+  await expect(page.getByLabel('Where did you see the cat?')).toHaveValue('Dominos, Surfside')
+  await expect(page.getByLabel('What did you notice?')).toHaveValue('A cat is limping by Dominos in Surfside.')
+})
