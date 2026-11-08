@@ -18,6 +18,9 @@ Mangrove Mews helps a small rescue turn intentional field reports, exported chat
 - A bounded Agents SDK triage/search experience. It is deterministic by default; an API key is opt-in for local testing. It recommends rather than merges records, changes sensitive statuses, or claims to locate an animal.
 - Persistent missing-cat cases with manager-confirmed status changes, saved agent/search plans, timestamped field feedback, immediate unsafe-zone exclusion, and an internal map layer. Task dispatch still requires a human access/safety review.
 - Community-signal review UI that accepts only deliberate, redacted text; it does not scrape social platforms, fetch arbitrary URLs, or automatically create animal records.
+- Actual OpenAI image comparison with two photo inputs, saved visible-feature evidence, caching, and a separate human decision. It never merges cats automatically.
+- Global record search, a personal My shift agenda, care appointments, bounded supply pledges, and acknowledged daily handoffs.
+- A 72-report multilingual weekend scenario spanning 18 fictional colonies and 31 additional named cats, plus two duplicate candidates and an alternate generated Marmalade photo.
 
 ## Deployment status
 
@@ -37,6 +40,8 @@ The Worker code and migrations are designed for D1/R2-style bindings, but remote
 - [Feature map](.agents/skills/verify-mews/references/features/README.md): implemented user-visible behavior and verification notes.
 - [Demo runbook](docs/demo-runbook.md): a guided judge-ready walkthrough with the synthetic chats and SMS relays.
 - [Feature pass 6](docs/feature-pass-6.md): current rating, new review/search workflows, and local verification evidence.
+- [Feature pass 7](docs/feature-pass-7.md): real image analysis, five practical field tools, the expanded scenario, and current verification.
+- [Hosted demo setup](docs/hosted-demo-setup.md): the isolated D1/R2 deployment path and the current account-permission blocker.
 
 ## Directory boundaries
 

@@ -6,6 +6,8 @@ For a precise account of what is implemented, simulated, and still needed, read 
 
 **Latest pass:** [Feature pass 6](feature-pass-6.md) adds Today’s operations, Clarifications & routing, and persistent Missing-cat cases. The current local demo estimate is **8.4/10**. Use the extension below for an additional three-to-five-minute walkthrough.
 
+**Newer pass 7:** [Image comparison and field tools](feature-pass-7.md) gives the step-by-step walkthrough for actual photo analysis, the 72-report weekend scenario, global search, My shift, care appointments, supplies, and daily handoffs. Its deployment-status section is current; the earlier rating is a historical estimate before these additions.
+
 ## Before the demo
 
 ```sh

@@ -26,6 +26,10 @@ This is a local-demo roadmap. A checked item means the relevant code is present 
 - [x] Configurable confidence-gated colony assignment, assigned volunteer clarifications, and separate human-verified counts with source evidence preserved.
 - [x] Persistent missing-cat cases, manager-confirmed missing/reunion events, saved live-agent plans, timestamped field feedback, stale-plan handling, and immediate unsafe-zone exclusion.
 - [x] Internal-only saved missing-case search layer on Field map; public/sponsor views omit private case plans.
+- [x] Actual image-input comparison using the OpenAI Agents SDK, saved evidence/hashes, bounded calls, and a human-only evidence review.
+- [x] Global private search, personal My shift agenda, appointments, supply requests/pledges, and acknowledged daily handoffs.
+- [x] Additional 72-report/four-language synthetic scenario, 18 fictional colonies, new cat-profile catalog, and a generated alternate Marmalade view.
+- [x] Isolated D1/R2 deployment workflow, idempotent hosted seed, and Cloudflare-compatible high-entropy synthetic-demo access codes. Deployment was attempted and remains blocked by D1 authorization.
 
 ## Before any real pilot or deployment
 

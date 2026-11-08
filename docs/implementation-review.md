@@ -2,6 +2,8 @@
 
 Review date: November 8, 2026. All data and credentials discussed here are for the local synthetic hackathon demo only.
 
+**Latest implementation:** [Feature pass 7](feature-pass-7.md) supersedes the earlier vision/data inventory below. There are now 32 passing tests, actual pixel-backed OpenAI comparisons, 72 additional reports/18 colonies, global search, My shift, appointments, supply pledges, and handoffs. Hosted D1/R2 is prepared but blocked by the existing Cloudflare credential's D1 authorization error; see [hosted setup](hosted-demo-setup.md).
+
 ## Formal verification record
 
 The following was observed locally on November 8, 2026 by the implementation owner; it is a verification record, not a production certification.

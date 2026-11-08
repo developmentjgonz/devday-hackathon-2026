@@ -20,7 +20,7 @@ const DETAILS = {
   "CAT-SKIPPER": { coat: "Gray tabby", markings: "Dark stripes; simulated tracker collar", sex: "Unknown", estimated_dob: "2024-02 (estimated)", breed: "Domestic shorthair" },
 };
 function fail(message) { throw new Error(`Canonical census rejected: ${message}`); }
-function negativeCheck(observation) { return /\b(?:did not appear|was not in view|did not see|not seen (?:during|on|at|in))\b/i.test(observation.body_redacted ?? ""); }
+function negativeCheck(observation) { return /\b(?:did not appear|was not in view|did not see|did not return|not seen (?:during|on|at|in|this)|has not (?:appeared|shown)|was not at|pa parèt|não veio)\b/i.test(observation.body_redacted ?? ""); }
 function key(value, field) { const out = String(value ?? "").trim(); if (!/^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(out)) fail(`invalid ${field}`); return out; }
 function actor(value) { const out = Number(value); if (!Number.isInteger(out) || out < 1) fail("reviewerId must be a valid user ID"); return out; }
 function note(value) { const out = String(value ?? "").trim(); if (!out || out.length > 500) fail("invalid reasoning"); return out; }
