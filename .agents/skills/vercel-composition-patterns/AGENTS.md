@@ -897,7 +897,7 @@ Use children when composing static structure.
 
 **Impact: MEDIUM**
 
-React 19+ only. Don't use `forwardRef`; use `use()` instead of `useContext()`.
+React 19+ only. Prefer a regular `ref` prop for new components. `use()` and `useContext()` are supported context APIs.
 
 ### 4.1 React 19 API Changes
 
@@ -905,7 +905,7 @@ React 19+ only. Don't use `forwardRef`; use `use()` instead of `useContext()`.
 
 > **⚠️ React 19+ only.** Skip this if you're on React 18 or earlier.
 
-In React 19, `ref` is now a regular prop (no `forwardRef` wrapper needed), and `use()` replaces `useContext()`.
+In React 19, `ref` can be a regular prop without a `forwardRef` wrapper. Both `use()` and `useContext()` can read context. Do not rewrite a working context consumer solely to replace one supported API with the other.
 
 **Incorrect: forwardRef in React 19**
 
@@ -923,13 +923,13 @@ function ComposerInput({ ref, ...props }: Props & { ref?: React.Ref<TextInput> }
 }
 ```
 
-**Incorrect: useContext in React 19**
+**Supported: useContext in React 19**
 
 ```tsx
 const value = useContext(MyContext)
 ```
 
-**Correct: use instead of useContext**
+**Alternative: use for context**
 
 ```tsx
 const value = use(MyContext)

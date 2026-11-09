@@ -11,6 +11,8 @@ metadata:
 
 Comprehensive performance optimization guide for React and Next.js applications, maintained by Vercel. Contains 70 rules across 8 categories, prioritized by impact to guide automated refactoring and code generation.
 
+Apply rules only when their framework and workload conditions are present. This project uses Vite, React Router, and a Cloudflare Worker. Next.js, RSC, SSR, and hydration examples do not require adding those runtimes here. Require a demonstrated need before adding caches or making performance-only rewrites.
+
 ## When to Apply
 
 Reference these guidelines when:
@@ -48,7 +50,7 @@ Reference these guidelines when:
 
 - `bundle-barrel-imports` - Import directly, avoid barrel files
 - `bundle-analyzable-paths` - Prefer statically analyzable import and file-system paths to avoid broad bundles and traces
-- `bundle-dynamic-imports` - Use next/dynamic for heavy components
+- `bundle-dynamic-imports` - Lazy-load heavy components with the framework-supported API
 - `bundle-defer-third-party` - Load analytics/logging after hydration
 - `bundle-conditional` - Load modules only when feature is activated
 - `bundle-preload` - Preload on hover/focus for perceived speed
@@ -101,7 +103,7 @@ Reference these guidelines when:
 - `rendering-hydration-suppress-warning` - Suppress expected mismatches
 - `rendering-activity` - Use Activity component for show/hide
 - `rendering-conditional-render` - Use ternary, not && for conditionals
-- `rendering-usetransition-loading` - Prefer useTransition for loading state
+- `rendering-usetransition-loading` - Use transitions for suitable render updates; retain request lifecycle state
 - `rendering-resource-hints` - Use React DOM resource hints for preloading
 - `rendering-script-defer-async` - Use defer or async on script tags
 
@@ -127,7 +129,7 @@ Reference these guidelines when:
 - `advanced-effect-event-deps` - Don't put `useEffectEvent` results in effect deps
 - `advanced-event-handler-refs` - Store event handlers in refs
 - `advanced-init-once` - Initialize app once per app load
-- `advanced-use-latest` - useLatest for stable callback refs
+- `advanced-use-latest` - Use Effect Events for current values inside Effects
 
 ## How to Use
 

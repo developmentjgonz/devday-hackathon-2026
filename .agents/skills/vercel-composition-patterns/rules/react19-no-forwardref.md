@@ -9,7 +9,7 @@ tags: react19, refs, context, hooks
 
 > **⚠️ React 19+ only.** Skip this if you're on React 18 or earlier.
 
-In React 19, `ref` is now a regular prop (no `forwardRef` wrapper needed), and `use()` replaces `useContext()`.
+In React 19, `ref` can be a regular prop without a `forwardRef` wrapper. Both `use()` and `useContext()` can read context. Do not rewrite a working context consumer solely to replace one supported API with the other.
 
 **Incorrect (forwardRef in React 19):**
 
@@ -27,13 +27,13 @@ function ComposerInput({ ref, ...props }: Props & { ref?: React.Ref<TextInput> }
 }
 ```
 
-**Incorrect (useContext in React 19):**
+**Supported (useContext in React 19):**
 
 ```tsx
 const value = useContext(MyContext)
 ```
 
-**Correct (use instead of useContext):**
+**Alternative (use for context):**
 
 ```tsx
 const value = use(MyContext)

@@ -52,4 +52,4 @@ function useWindowEvent(event: string, handler: (e) => void) {
 }
 ```
 
-`useEffectEvent` provides a cleaner API for the same pattern: it creates a stable function reference that always calls the latest version of the handler.
+For logic called only from Effects in the same component, `useEffectEvent` reads the current props and state. Effect Event functions do not have stable identity. Do not include them in dependency arrays or pass them to other components. Keep refs for callbacks that need a stable identity outside Effects.

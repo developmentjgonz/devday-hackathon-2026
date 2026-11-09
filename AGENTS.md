@@ -6,7 +6,7 @@ Reference: https://x.com/karpathy/status/2105819303471976479
 
 # Application stage
 
-This is a greenfield application with no users yet. For now, there are no backward compatibility requirements. Breaking changes are acceptable. Do not add compatibility layers, legacy support, or migration paths only to preserve earlier behavior. Prefer the simplest correct design for the current requirements.
+There are no backward compatibility requirements. Breaking changes are acceptable. Do not add compatibility layers, legacy support, or migration paths only to preserve earlier behavior. Prefer the simplest correct design for the current requirements.
 
 # Product interface and shared components
 
@@ -26,10 +26,19 @@ Use `agent-browser` when a change needs a browser check to verify its appearance
 
 # Efficient verification
 
-- Match verification to the size and risk of the change. A quick review is often enough for a small, reversible edit. Run automated tests when they are needed to verify the change or when the user requests them. Do not add tests that only repeat the implementation.
+- Match additional verification to the size and risk of the change. Do not add tests that only repeat the implementation.
 - Group related changes and run the relevant focused checks once, after the changes are ready. Do not run a full suite or repeat a build for every small edit.
 - Run broader checks for large or high-risk changes, or when the user asks for them. Re-run only checks affected by later code changes or failures.
-- If a development server restarts or a test environment fails, retry only the affected check when useful. Do not repeat checks that already passed.
+- If a development server restarts or a test environment fails, retry only the affected check when useful. Do not repeat checks that already passed, except for the required completion gate below.
+
+# Agent enforcement
+
+- Never put secrets in tool arguments, tracked files, or published changes. Keep local credentials in ignored environment files or the configured secret store. Example environment files must contain no secrets.
+- Do not use removal commands, `git reset`, `git clean`, force pushes, remote seed commands, or remote D1 `execute`. This intentionally includes safe forms and dry runs. Use reviewed migrations for production database changes.
+- Protect credential files, Git internals, and the project guard settings. The Claude Code deny rules are in `.claude/settings.json`; the command and secret checks are in `.claude/hooks/check.py`. Have the user review changes to these controls.
+- The Claude Code Stop hook runs `tests/auth`, `tests/directory`, `tests/workspace`, `tests/unit`, and the guard tests before each normal completion. This completion gate is required even for instruction-only changes. It is separate from focused checks during implementation. Do not bypass a failed gate with `stop_hook_active` or claim success after an error or timeout.
+- For Codex and other agents, run the same completion checks before reporting the work complete. The Claude Code hooks do not enforce policy in other agent tools.
+- Install Gitleaks before using the hooks. Missing tools, scan errors, and test failures must block the matching action. See `.claude/README.md` for setup, checks, and limits. Project hooks and deny rules are not an OS security boundary; CI remains the deployment gate.
 
 # Release publishing
 

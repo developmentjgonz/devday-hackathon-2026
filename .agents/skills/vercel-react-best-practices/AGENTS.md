@@ -14,9 +14,13 @@ January 2026
 
 ## Abstract
 
-Comprehensive performance optimization guide for React and Next.js applications, designed for AI agents and LLMs. Contains 40+ rules across 8 categories, prioritized by impact from critical (eliminating waterfalls, reducing bundle size) to incremental (advanced patterns). Each rule includes detailed explanations, real-world examples comparing incorrect vs. correct implementations, and specific impact metrics to guide automated refactoring and code generation.
+Comprehensive performance optimization guide for React and Next.js applications, designed for AI agents and LLMs. Contains 70 rules across 8 categories, prioritized by impact from critical (eliminating waterfalls, reducing bundle size) to incremental (advanced patterns). Each rule includes detailed explanations, real-world examples comparing incorrect vs. correct implementations, and specific impact metrics to guide automated refactoring and code generation.
 
 ---
+
+## Scope
+
+Apply a rule only when its framework and workload conditions are present. This project uses Vite, React Router, and a Cloudflare Worker. Next.js, React Server Component, SSR, and hydration examples do not require adding those runtimes here. Use the equivalent supported API when the behavior applies. Require a demonstrated need before adding caches, resource hints, or performance-only rewrites.
 
 ## Table of Contents
 
@@ -77,7 +81,7 @@ Comprehensive performance optimization guide for React and Next.js applications,
    - 6.8 [Use defer or async on Script Tags](#68-use-defer-or-async-on-script-tags)
    - 6.9 [Use Explicit Conditional Rendering](#69-use-explicit-conditional-rendering)
    - 6.10 [Use React DOM Resource Hints](#610-use-react-dom-resource-hints)
-   - 6.11 [Use useTransition Over Manual Loading States](#611-use-usetransition-over-manual-loading-states)
+   - 6.11 [Use Transitions for Suitable Render Updates](#611-use-transitions-for-suitable-render-updates)
 7. [JavaScript Performance](#7-javascript-performance) — **LOW-MEDIUM**
    - 7.1 [Avoid Layout Thrashing](#71-avoid-layout-thrashing)
    - 7.2 [Build Index Maps for Repeated Lookups](#72-build-index-maps-for-repeated-lookups)
@@ -97,7 +101,7 @@ Comprehensive performance optimization guide for React and Next.js applications,
    - 8.1 [Do Not Put Effect Events in Dependency Arrays](#81-do-not-put-effect-events-in-dependency-arrays)
    - 8.2 [Initialize App Once, Not Per Mount](#82-initialize-app-once-not-per-mount)
    - 8.3 [Store Event Handlers in Refs](#83-store-event-handlers-in-refs)
-   - 8.4 [useEffectEvent for Stable Callback Refs](#84-useeffectevent-for-stable-callback-refs)
+   - 8.4 [useEffectEvent for Current Values in Effects](#84-useeffectevent-for-current-values-in-effects)
 
 ---
 
@@ -552,7 +556,7 @@ export default function RootLayout({ children }) {
 
 **Impact: CRITICAL (directly affects TTI and LCP)**
 
-Use `next/dynamic` to lazy-load large components not needed on initial render.
+Lazy-load large components not needed on initial render. Use `next/dynamic` in Next.js. In a Vite client app, use `React.lazy` with a Suspense boundary; do not add Next.js for this rule.
 
 **Incorrect: Monaco bundles with main chunk ~300KB**
 
@@ -2777,13 +2781,13 @@ function Navigation() {
 
 Reference: [https://react.dev/reference/react-dom#resource-preloading-apis](https://react.dev/reference/react-dom#resource-preloading-apis)
 
-### 6.11 Use useTransition Over Manual Loading States
+### 6.11 Use Transitions for Suitable Render Updates
 
 **Impact: LOW (reduces re-renders and improves code clarity)**
 
-Use `useTransition` instead of manual `useState` for loading states. This provides built-in `isPending` state and automatically manages transitions.
+Use `useTransition` for nonurgent render updates whose pending state belongs to a transition. Keep explicit request state when it controls retries, cancellation, deduplication, or request ordering. A transition does not replace these controls. State updates after an `await` need another `startTransition` call to mark them as transition updates.
 
-**Incorrect: manual loading state**
+**Manual request state (incomplete error and ordering handling)**
 
 ```tsx
 function SearchResults() {
@@ -2809,7 +2813,7 @@ function SearchResults() {
 }
 ```
 
-**Correct: useTransition with built-in pending state**
+**Transition pending state (request cancellation and ordering still required)**
 
 ```tsx
 import { useTransition, useState } from 'react'
@@ -2825,7 +2829,8 @@ function SearchResults() {
     startTransition(async () => {
       // Fetch and update results
       const data = await fetchResults(value)
-      setResults(data)
+      // Use a request-order guard or cancellation when requests can overlap.
+      startTransition(() => setResults(data))
     })
   }
 
@@ -2841,13 +2846,13 @@ function SearchResults() {
 
 **Benefits:**
 
-- **Automatic pending state**: No need to manually manage `setIsLoading(true/false)`
+- **Transition pending state**: `isPending` tracks the transition; keep separate request state when needed
 
 - **Error resilience**: Pending state correctly resets even if the transition throws
 
 - **Better responsiveness**: Keeps the UI responsive during updates
 
-- **Interrupt handling**: New transitions automatically cancel pending ones
+- **Interrupt handling**: React can interrupt transition rendering. Network side effects continue unless explicitly canceled, and awaited requests can finish out of order
 
 Reference: [https://react.dev/reference/react/useTransition](https://react.dev/reference/react/useTransition)
 
@@ -3760,13 +3765,13 @@ function useWindowEvent(event: string, handler: (e) => void) {
 
 **Alternative: use `useEffectEvent` if you're on latest React:**
 
-`useEffectEvent` provides a cleaner API for the same pattern: it creates a stable function reference that always calls the latest version of the handler.
+For logic called only from Effects in the same component, `useEffectEvent` reads the current props and state. Effect Event functions do not have stable identity. Do not include them in dependency arrays or pass them to other components. Keep refs for callbacks that need a stable identity outside Effects.
 
-### 8.4 useEffectEvent for Stable Callback Refs
+### 8.4 useEffectEvent for Current Values in Effects
 
 **Impact: LOW (prevents effect re-runs)**
 
-Access latest values in callbacks without adding them to dependency arrays. Prevents effect re-runs while avoiding stale closures.
+Use Effect Events for event logic called from Effects or subscriptions created by those Effects. They read current props and state. Keep reactive values in the Effect dependency array; do not use Effect Events to hide a real dependency. Effect Event functions do not have stable identity and must stay out of dependency arrays.
 
 **Incorrect: effect re-runs on every callback change**
 

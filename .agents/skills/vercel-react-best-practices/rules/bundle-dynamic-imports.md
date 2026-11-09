@@ -7,7 +7,7 @@ tags: bundle, dynamic-import, code-splitting, next-dynamic
 
 ## Dynamic Imports for Heavy Components
 
-Use `next/dynamic` to lazy-load large components not needed on initial render.
+Lazy-load large components not needed on initial render. Use `next/dynamic` in Next.js. In a Vite client app, use `React.lazy` with a Suspense boundary; do not add Next.js for this rule.
 
 **Incorrect (Monaco bundles with main chunk ~300KB):**
 

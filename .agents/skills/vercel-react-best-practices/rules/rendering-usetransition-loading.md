@@ -1,15 +1,15 @@
 ---
-title: Use useTransition Over Manual Loading States
+title: Use Transitions for Suitable Render Updates
 impact: LOW
 impactDescription: reduces re-renders and improves code clarity
 tags: rendering, transitions, useTransition, loading, state
 ---
 
-## Use useTransition Over Manual Loading States
+## Use Transitions for Suitable Render Updates
 
-Use `useTransition` instead of manual `useState` for loading states. This provides built-in `isPending` state and automatically manages transitions.
+Use `useTransition` for nonurgent render updates whose pending state belongs to a transition. Keep explicit request state when it controls retries, cancellation, deduplication, or request ordering. A transition does not replace these controls. State updates after an `await` need another `startTransition` call to mark them as transition updates.
 
-**Incorrect (manual loading state):**
+**Manual request state (incomplete error and ordering handling):**
 
 ```tsx
 function SearchResults() {
@@ -35,7 +35,7 @@ function SearchResults() {
 }
 ```
 
-**Correct (useTransition with built-in pending state):**
+**Transition pending state (request cancellation and ordering still required):**
 
 ```tsx
 import { useTransition, useState } from 'react'
@@ -51,7 +51,8 @@ function SearchResults() {
     startTransition(async () => {
       // Fetch and update results
       const data = await fetchResults(value)
-      setResults(data)
+      // Use a request-order guard or cancellation when requests can overlap.
+      startTransition(() => setResults(data))
     })
   }
 
@@ -67,9 +68,9 @@ function SearchResults() {
 
 **Benefits:**
 
-- **Automatic pending state**: No need to manually manage `setIsLoading(true/false)`
+- **Transition pending state**: `isPending` tracks the transition; keep separate request state when needed
 - **Error resilience**: Pending state correctly resets even if the transition throws
 - **Better responsiveness**: Keeps the UI responsive during updates
-- **Interrupt handling**: New transitions automatically cancel pending ones
+- **Interrupt handling**: React can interrupt transition rendering. Network side effects continue unless explicitly canceled, and awaited requests can finish out of order
 
 Reference: [useTransition](https://react.dev/reference/react/useTransition)

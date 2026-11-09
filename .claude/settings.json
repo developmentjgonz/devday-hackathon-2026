@@ -1,0 +1,56 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(rm *)",
+      "Bash(git reset *)",
+      "Bash(git clean *)",
+      "Bash(git push --force*)",
+      "Bash(git push -f *)",
+      "Bash(node scripts/seed-user-photos.mjs --remote)",
+      "Bash(*wrangler*d1 execute*--remote*)",
+      "Bash(*--no-sandbox*)",
+      "Bash(*--disable-*-sandbox*)",
+      "Read(.env*)",
+      "Read(!.env.example)",
+      "Edit(.env*)",
+      "Edit(!.env.example)",
+      "Read(.dev.vars*)",
+      "Read(!.dev.vars.example)",
+      "Edit(.dev.vars*)",
+      "Edit(!.dev.vars.example)",
+      "Read(~/.codex/auth.json)",
+      "Edit(~/.codex/auth.json)",
+      "Edit(/.git/**)",
+      "Edit(/.claude/**)",
+      "Edit(/AGENTS.md)",
+      "Edit(/CLAUDE.md)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/check.py", "pre"],
+            "timeout": 60,
+            "onFailure": "block"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/check.py\" stop || exit 2",
+            "timeout": 600
+          }
+        ]
+      }
+    ]
+  }
+}

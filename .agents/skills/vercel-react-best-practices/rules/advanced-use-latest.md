@@ -1,13 +1,13 @@
 ---
-title: useEffectEvent for Stable Callback Refs
+title: useEffectEvent for Current Values in Effects
 impact: LOW
 impactDescription: prevents effect re-runs
 tags: advanced, hooks, useEffectEvent, refs, optimization
 ---
 
-## useEffectEvent for Stable Callback Refs
+## useEffectEvent for Current Values in Effects
 
-Access latest values in callbacks without adding them to dependency arrays. Prevents effect re-runs while avoiding stale closures.
+Use Effect Events for event logic called from Effects or subscriptions created by those Effects. They read current props and state. Keep reactive values in the Effect dependency array; do not use Effect Events to hide a real dependency. Effect Event functions do not have stable identity and must stay out of dependency arrays.
 
 **Incorrect (effect re-runs on every callback change):**
 
